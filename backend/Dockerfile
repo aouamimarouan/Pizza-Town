@@ -8,7 +8,7 @@ WORKDIR /app
 
 # Install dependencies first (layer-cached until package.json changes)
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --loglevel notice
 
 # Copy the rest of the source code
 COPY . .
@@ -16,8 +16,5 @@ COPY . .
 # Expose the Express port
 EXPOSE 5000
 
-# Startup script:
-#   1. Generate Prisma client (always regenerate inside container)
-#   2. Push schema to DB (creates/syncs tables — safe for dev)
-#   3. Start the server
-CMD ["sh", "-c", "npx prisma generate && npx prisma db push && npm start"]
+# Start script
+CMD ["sh", "-c", "npx prisma generate && npx prisma db push --accept-data-loss && npm start"]

@@ -8,3 +8,4 @@
     "prisma:pull": "npx prisma db pull --config backend/prisma.config.ts"
   }
 }
+
