@@ -1,16 +1,51 @@
-# React + Vite
+# 🍕 Pizza Town
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A full-stack pizza ordering application built with React, Express, Prisma, and PostgreSQL.
 
-Currently, two official plugins are available:
+## 🚀 Quick Start (Docker)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+To run the entire application (frontend, backend, and database) with a single command:
 
-## React Compiler
+1.  **Clone the repository**:
+    ```bash
+    git clone <your-repo-url>
+    cd Pizza-Town
+    ```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+2.  **Set up environment variables**:
+    Copy the example environment file:
+    ```bash
+    cp .env.example .env
+    ```
+    *(Note: On Windows PowerShell, use `copy .env.example .env`)*
 
-## Expanding the ESLint configuration
+3.  **Start the services**:
+    ```bash
+    docker compose up -d
+    ```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+4.  **Access the app**:
+    - **Frontend**: [http://localhost:5173](http://localhost:5173)
+    - **Backend API**: [http://localhost:5000/api/status](http://localhost:5000/api/status)
+
+## 🛠️ Management Commands
+
+- **Stop the app**: `docker compose down`
+- **View logs**: `docker compose logs -f`
+- **Rebuild after changes**: `docker compose up --build -d`
+- **Inspect database**: `docker compose exec backend npx prisma studio` (then open [http://localhost:5555](http://localhost:5555))
+
+## 🤝 Sharing with Friends
+
+Since the project is containerized, your friends can run it exactly as you do!
+
+1.  **Push your changes**:
+    ```bash
+    git add .
+    git commit -m "Setup Docker Compose"
+    git push
+    ```
+    *(Note: `.env` is gitignored, so they will need to create their own from `.env.example`)*
+
+2.  **Their setup**: They just need to follow the **Quick Start** instructions above.
+
