@@ -1,0 +1,76 @@
+# =============================================================================
+#  Pizza Town — Docker Compose (Development)
+# =============================================================================
+#  Usage:
+#    1. cp .env.example .env   (fill in your secrets)
+#    2. docker compose up --build
+#
+#  Services:
+#    db       → PostgreSQL 16  (port 5432 — internal only)
+#    backend  → Express API    (port 5000)
+#    frontend → Vite dev UI    (port 5173)
+# =============================================================================
+
+services:
+
+  # ── PostgreSQL Database ────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: pizza_town_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data   # persist data across restarts
+    # The backend will not start until this healthcheck passes
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ── Node.js / Express Backend ──────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pizza_town_backend
+    restart: unless-stopped
+    env_file: .env                       # loads all vars from .env into container
+    environment:
+      # Override DATABASE_URL with the Docker service name ("db") as the host.
+      # This is the key difference vs. local development (where host = localhost).
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app                   # live-reload: code changes reflect instantly
+      - /app/node_modules                # keep container's node_modules intact
+    depends_on:
+      db:
+        condition: service_healthy       # wait until Postgres passes its healthcheck
+
+  # ── React / Vite Frontend ──────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pizza_town_frontend
+    restart: unless-stopped
+    environment:
+      # Vite exposes env vars prefixed with VITE_ to the browser
+      VITE_API_URL: ${VITE_API_URL}
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app                  # live-reload: code changes reflect instantly
+      - /app/node_modules                # keep container's node_modules intact
+    depends_on:
+      - backend
+
+# ── Named Volumes ─────────────────────────────────────────────────────────────
+volumes:
+  postgres_data:
