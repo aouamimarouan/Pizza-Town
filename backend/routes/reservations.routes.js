@@ -1,0 +1,66 @@
+import { Router } from 'express';
+import prisma from '../lib/prisma.js';
+import { authenticate, requireAdmin } from '../middleware/auth.js';
+
+const router = Router();
+
+// POST /api/reservations — Public (no login required)
+router.post('/', async (req, res) => {
+  try {
+    const { full_name, phone_number, res_date, res_time, guests, user_id } = req.body;
+
+    if (!full_name || !phone_number || !res_date || !res_time || !guests) {
+      return res.status(400).json({ error: 'full_name, phone_number, res_date, res_time, and guests are required.' });
+    }
+
+    // If the user is logged in they can optionally link the reservation
+    const data = {
+      full_name,
+      phone_number,
+      res_date: new Date(res_date),
+      res_time: new Date(`1970-01-01T${res_time}:00Z`),
+      guests: parseInt(guests),
+      status: 'pending',
+    };
+
+    if (user_id) data.user = { connect: { user_id } };
+
+    const reservation = await prisma.reservation.create({ data });
+    res.status(201).json(reservation);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+// GET /api/reservations — Admin only
+router.get('/', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const reservations = await prisma.reservation.findMany({
+      orderBy: { res_date: 'asc' },
+      include: { user: { select: { email: true, full_name: true } } },
+    });
+    res.json(reservations);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+// PATCH /api/reservations/:id/status — Admin only
+router.patch('/:id/status', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const { status } = req.body;
+    const reservation = await prisma.reservation.update({
+      where: { res_id: req.params.id },
+      data: { status },
+    });
+    res.json(reservation);
+  } catch (err) {
+    if (err.code === 'P2025') return res.status(404).json({ error: 'Reservation not found.' });
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+export default router;
