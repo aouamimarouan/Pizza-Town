@@ -1,5 +1,3 @@
-import path from 'path';
-import { fileURLToPath } from 'url';
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -10,11 +8,7 @@ import reservationRoutes from './routes/reservations.routes.js';
 import orderRoutes from './routes/orders.routes.js';
 import userRoutes from './routes/user.routes.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Load root .env (project root) so DATABASE_URL and other vars are available.
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
