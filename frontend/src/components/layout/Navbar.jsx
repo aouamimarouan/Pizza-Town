@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, Phone, ShoppingCart, Sun, Moon, User, Settings, LogOut, LayoutDashboard, Package } from 'lucide-react';
+import logo from '../../assets/pizza_town.png';
 
 const Navbar = ({ isDarkMode, toggleDarkMode, cartItemCount, openCart, user, onLogout, clearCart }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -41,8 +42,13 @@ const Navbar = ({ isDarkMode, toggleDarkMode, cartItemCount, openCart, user, onL
             {/* Logo */}
             <Link 
               to="/"
-              className="flex-shrink-0 flex items-center cursor-pointer"
+              className="flex-shrink-0 flex items-center cursor-pointer group"
             >
+              <img 
+                src={logo} 
+                alt="Pizza Town Logo" 
+                className="h-10 w-auto mr-3 transition-transform duration-300 group-hover:scale-110" 
+              />
               <span className="font-heading font-extrabold text-2xl text-red-600 dark:text-red-500 tracking-tighter transition-colors">
                 Pizza Town
               </span>

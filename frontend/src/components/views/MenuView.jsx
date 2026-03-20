@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import MenuCard from '../ui/MenuCard';
+import ItemCustomizationModal from '../ui/ItemCustomizationModal';
 import api from '../../services/api.js';
 
 // Define the categories in order for the sidebar
@@ -25,6 +26,7 @@ const mapDbItemToCard = (item) => ({
   name: item.name,
   description: item.description,
   price: parseFloat(item.price),
+  category: item.category, // Crucial for conditional logic
   image: categoryImages[item.category] || categoryImages['Pizzas'], // fallback
   popular: false, // Could add to DB later if needed
   vegetarian: false, // Could add to DB later if needed
@@ -35,6 +37,7 @@ const MenuView = ({ handleAddToCart }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [menuItems, setMenuItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedItemForModal, setSelectedItemForModal] = useState(null);
 
   // Fetch Menu from Backend
   useEffect(() => {
@@ -144,7 +147,11 @@ const MenuView = ({ handleAddToCart }) => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-12">
               {displayedItems.map((item) => (
                 <div key={item.id} className="h-full">
-                  <MenuCard item={item} handleAddToCart={handleAddToCart} />
+                  <MenuCard 
+                    item={item} 
+                    handleAddToCart={handleAddToCart} 
+                    openModal={() => setSelectedItemForModal(item)}
+                  />
                 </div>
               ))}
               
@@ -166,6 +173,15 @@ const MenuView = ({ handleAddToCart }) => {
         </main>
         
       </div>
+
+      {/* Item Customization Modal */}
+      {selectedItemForModal && (
+        <ItemCustomizationModal 
+          item={selectedItemForModal}
+          onClose={() => setSelectedItemForModal(null)}
+          handleAddToCart={handleAddToCart}
+        />
+      )}
     </div>
   );
 };

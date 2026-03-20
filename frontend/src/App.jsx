@@ -59,10 +59,19 @@ function AppContent() {
       return;
     }
     setCart((prev) => {
-      const existing = prev.find((c) => c.id === item.id);
+      // 1. Identify uniqueness using cartItemId (customized) or standard id (regular)
+      const targetId = item.cartItemId || item.id;
+      const existing = prev.find((c) => (c.cartItemId || c.id) === targetId);
+      
       if (existing) {
-        return prev.map((c) => c.id === item.id ? { ...c, quantity: c.quantity + 1 } : c);
+        // Increment quantity for the exact same item/customization
+        return prev.map((c) => 
+          (c.cartItemId || c.id) === targetId 
+            ? { ...c, quantity: c.quantity + 1 } 
+            : c
+        );
       }
+      // 2. Add new item, strictly preserving specialized properties (price, customizations)
       return [...prev, { ...item, quantity: 1 }];
     });
     
@@ -86,10 +95,10 @@ function AppContent() {
     setIsCartOpen(true);
   };
 
-  const handleUpdateQuantity = (itemId, change) => {
+  const handleUpdateQuantity = (id, change) => {
     setCart((prev) =>
       prev
-        .map((item) => item.id === itemId ? { ...item, quantity: Math.max(0, item.quantity + change) } : item)
+        .map((item) => (item.cartItemId || item.id) === id ? { ...item, quantity: Math.max(0, item.quantity + change) } : item)
         .filter((item) => item.quantity > 0)
     );
   };

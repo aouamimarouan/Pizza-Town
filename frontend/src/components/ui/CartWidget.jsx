@@ -11,7 +11,7 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const subtotal = cart.reduce((sum, item) => sum + ((item.totalPrice || item.price) * item.quantity), 0);
   const deliveryFee = orderMode === 'delivery' ? 3.50 : 0;
   const total = subtotal + deliveryFee;
 
@@ -108,22 +108,30 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart }) => {
             // Cart Items List
             <div className="space-y-4">
               {cart.map((item) => (
-                <div key={item.id} className="flex flex-col sm:flex-row items-center sm:items-start justify-between bg-stone-50 dark:bg-stone-900/50 p-4 rounded-2xl border border-stone-200 dark:border-stone-800/50 gap-4">
+                <div key={item.cartItemId || item.id} className="flex flex-col sm:flex-row items-center sm:items-start justify-between bg-stone-50 dark:bg-stone-900/50 p-4 rounded-2xl border border-stone-200 dark:border-stone-800/50 gap-4">
                   <div className="flex-1 text-center sm:text-left">
                     <h4 className="font-bold text-stone-900 dark:text-white">{item.name}</h4>
-                    <span className="text-emerald-600 dark:text-emerald-400 font-medium text-sm">€{item.price.toFixed(2)}</span>
+                    {item.customizations && (
+                      <div className="text-xs text-stone-500 dark:text-stone-400 mt-1 space-y-0.5">
+                        <p>• {item.customizations.crust.name} Crust</p>
+                        {item.customizations.toppings.length > 0 && (
+                          <p>• + {item.customizations.toppings.join(', ')}</p>
+                        )}
+                      </div>
+                    )}
+                    <span className="text-emerald-600 dark:text-emerald-400 font-medium text-sm mt-1 block">€{(item.totalPrice || item.price).toFixed(2)}</span>
                   </div>
                   
                   <div className="flex items-center space-x-3 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg p-1">
                     <button 
-                      onClick={() => updateQuantity(item.id, -1)}
+                      onClick={() => updateQuantity(item.cartItemId || item.id, -1)}
                       className="p-1.5 text-stone-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 dark:hover:text-red-400 rounded-md transition-colors"
                     >
                       <Minus className="w-4 h-4" />
                     </button>
                     <span className="font-semibold text-stone-900 dark:text-white w-6 text-center">{item.quantity}</span>
                     <button 
-                      onClick={() => updateQuantity(item.id, 1)}
+                      onClick={() => updateQuantity(item.cartItemId || item.id, 1)}
                       className="p-1.5 text-stone-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-400 rounded-md transition-colors"
                     >
                       <Plus className="w-4 h-4" />

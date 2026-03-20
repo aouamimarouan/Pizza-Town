@@ -1,7 +1,7 @@
 import React from 'react';
 import { Plus } from 'lucide-react';
 
-const MenuCard = ({ item, handleAddToCart }) => {
+const MenuCard = ({ item, handleAddToCart, openModal }) => {
   return (
     // Added 'overflow-hidden' here so the image respects the card's rounded corners
     <div className="bg-white dark:bg-stone-900 rounded-2xl shadow-sm border border-stone-100 dark:border-stone-800 transition-all duration-300 hover:shadow-md hover:border-stone-200 dark:hover:border-stone-700 flex flex-col h-full group hover:bg-stone-50 dark:hover:bg-stone-800/50 relative overflow-hidden">
@@ -45,7 +45,11 @@ const MenuCard = ({ item, handleAddToCart }) => {
           <button 
             onClick={(e) => {
               e.stopPropagation();
-              handleAddToCart(item);
+              if (['Pizzas', 'Half-Half Pizzas'].includes(item.category)) {
+                openModal(item);
+              } else {
+                handleAddToCart(item);
+              }
             }}
             className="flex items-center justify-center bg-stone-100 dark:bg-stone-800 hover:bg-red-600 dark:hover:bg-red-600 hover:text-white text-stone-900 dark:text-white p-2 rounded-xl transition-all duration-200 group-hover:ring-2 ring-red-100 dark:ring-red-900/20 shrink-0"
             aria-label={`Add ${item.name} to cart`}
