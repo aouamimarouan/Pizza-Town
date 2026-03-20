@@ -9,6 +9,7 @@ import menuRoutes from './routes/menu.routes.js';
 import reservationRoutes from './routes/reservations.routes.js';
 import orderRoutes from './routes/orders.routes.js';
 import userRoutes from './routes/user.routes.js';
+import auditRoutes from './routes/audit.routes.js';
 
 dotenv.config();
 
@@ -66,6 +67,7 @@ app.use('/api/menu', menuRoutes);
 app.use('/api/reservations', reservationRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/audit-logs', auditRoutes);
 
 // Global 404 handler
 app.use((req, res) => {

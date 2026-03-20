@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { randomUUID } from 'node:crypto';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
 
@@ -15,6 +16,7 @@ router.post('/', async (req, res) => {
 
     // If the user is logged in they can optionally link the reservation
     const data = {
+      res_id: randomUUID(),
       full_name,
       phone_number,
       res_date: new Date(res_date),
@@ -23,11 +25,11 @@ router.post('/', async (req, res) => {
       status: 'pending',
     };
 
-    if (user_id) data.user = { connect: { user_id } };
+    if (user_id) data.users = { connect: { user_id } };
 
-    const reservation = await prisma.reservation.create({ 
+    const reservation = await prisma.reservations.create({ 
       data,
-      include: { user: { select: { email: true, full_name: true } } }
+      include: { users: { select: { email: true, full_name: true } } }
     });
 
     // Notify admins
@@ -45,7 +47,7 @@ router.post('/', async (req, res) => {
 // GET /api/reservations/my-reservations — For logged-in users
 router.get('/my-reservations', authenticate, async (req, res) => {
   try {
-    const reservations = await prisma.reservation.findMany({
+    const reservations = await prisma.reservations.findMany({
       where: { user_id: req.user.user_id },
       orderBy: { created_at: 'desc' },
     });
@@ -59,9 +61,9 @@ router.get('/my-reservations', authenticate, async (req, res) => {
 // GET /api/reservations — Admin only
 router.get('/', authenticate, requireAdmin, async (req, res) => {
   try {
-    const reservations = await prisma.reservation.findMany({
+    const reservations = await prisma.reservations.findMany({
       orderBy: { res_date: 'asc' },
-      include: { user: { select: { email: true, full_name: true } } },
+      include: { users: { select: { email: true, full_name: true } } },
     });
     res.json(reservations);
   } catch (err) {
@@ -74,10 +76,10 @@ router.get('/', authenticate, requireAdmin, async (req, res) => {
 router.patch('/:id/status', authenticate, requireAdmin, async (req, res) => {
   try {
     const { status } = req.body;
-    const reservation = await prisma.reservation.update({
+    const reservation = await prisma.reservations.update({
       where: { res_id: req.params.id },
       data: { status },
-      include: { user: { select: { user_id: true } } }
+      include: { users: { select: { user_id: true } } }
     });
 
     // Notify user if confirmed

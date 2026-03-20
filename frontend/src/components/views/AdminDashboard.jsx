@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  ShoppingBag, UtensilsCrossed, Users, CalendarCheck, Activity, Search, Clock, 
-  CheckCircle, TrendingUp, Truck, AlertCircle, Plus, Edit2, Trash2, X, Loader2 
+  ShoppingBag, Pizza, Users, ConciergeBell, Activity, Search,
+  CheckCircle, Receipt, MapPin, AlertCircle, Plus, Edit2, Trash2, X, Loader2 
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api.js';
@@ -141,6 +141,26 @@ const AdminDashboard = () => {
   const [menuForm, setMenuForm] = useState({ name: '', category: 'Pizzas', price: '', description: '' });
   const [isSaving, setIsSaving] = useState(false);
 
+  // --- Audit Logs State ---
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [isAuditLogsLoading, setIsAuditLogsLoading] = useState(true);
+
+  const fetchAuditLogs = async () => {
+    setIsAuditLogsLoading(true);
+    try {
+      const res = await api.get('/audit-logs');
+      setAuditLogs(res.data);
+    } catch (err) {
+      toast.error('Failed to load audit logs.');
+    } finally {
+      setIsAuditLogsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeAdminTab === 'audit') fetchAuditLogs();
+  }, [activeAdminTab]);
+
   const categories = ['Menu Deals', 'Starters', 'Pizzas', 'Pastas', 'Half-Half Pizzas', 'Salads', 'Desserts', 'Drinks'];
 
   const openMenuModal = (item = null) => {
@@ -199,9 +219,9 @@ const AdminDashboard = () => {
 
   const tabs = [
     { id: 'orders', label: 'Orders', icon: ShoppingBag },
-    { id: 'menu', label: 'Menu Items', icon: UtensilsCrossed },
+    { id: 'menu', label: 'Menu Items', icon: Pizza },
     { id: 'users', label: 'Users', icon: Users },
-    { id: 'reservations', label: 'Reservations', icon: CalendarCheck },
+    { id: 'reservations', label: 'Reservations', icon: ConciergeBell },
     { id: 'audit', label: 'Audit Logs', icon: Activity },
   ];
 
@@ -249,7 +269,7 @@ const AdminDashboard = () => {
           {/* Card 1 */}
           <div className="bg-[#151515] border border-stone-800 rounded-2xl p-6 relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-              <TrendingUp className="w-24 h-24 text-stone-500" />
+              <Receipt className="w-24 h-24 text-stone-500" />
             </div>
             <div className="flex justify-between items-start mb-4 relative z-10">
               <h3 className="text-stone-400 font-medium">Total Orders</h3>
@@ -261,7 +281,7 @@ const AdminDashboard = () => {
           {/* Card 2 */}
           <div className="bg-[#151515] border border-stone-800 rounded-2xl p-6 relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-              <Truck className="w-24 h-24 text-emerald-500" />
+              <MapPin className="w-24 h-24 text-emerald-500" />
             </div>
             <div className="flex justify-between items-start mb-4 relative z-10">
               <h3 className="text-stone-400 font-medium">Active Deliveries</h3>
@@ -278,7 +298,7 @@ const AdminDashboard = () => {
           {/* Card 3 */}
           <div className="bg-[#151515] border border-stone-800 rounded-2xl p-6 relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-              <UtensilsCrossed className="w-24 h-24 text-amber-500" />
+              <Pizza className="w-24 h-24 text-amber-500" />
             </div>
             <div className="flex justify-between items-start mb-4 relative z-10">
               <h3 className="text-stone-400 font-medium">Menu Items</h3>
@@ -345,9 +365,9 @@ const AdminDashboard = () => {
                     <tr key={order.order_id} className="hover:bg-[#1a1a1a] transition-colors group">
                       <td className="p-4 font-mono font-medium text-stone-300">#{order.order_id.split('-')[0]}</td>
                       <td className="p-4 text-stone-400">
-                        <div className="font-medium text-stone-300">{order.user.full_name}</div>
+                        <div className="font-medium text-stone-300">{order.users?.full_name || 'Guest'}</div>
                         <div className="text-xs text-stone-500 mt-1 max-w-[200px] truncate">
-                          {order.orderItems?.map(i => `${i.quantity}x ${i.menuItem.name}`).join(', ')}
+                          {order.orderitems?.map(i => `${i.quantity}x ${i.menuitems.name}`).join(', ')}
                         </div>
                       </td>
                       <td className="p-4">
@@ -357,8 +377,8 @@ const AdminDashboard = () => {
                           isOut ? 'text-indigo-500 border-indigo-900/50' :
                           'text-emerald-500 border-emerald-900/50'
                         }`}>
-                          {isPending && <Clock className="w-3 h-3 mr-1.5" />}
-                          {isOut && <Truck className="w-3 h-3 mr-1.5" />}
+                          {isPending && <ConciergeBell className="w-3 h-3 mr-1.5" />}
+                          {isOut && <MapPin className="w-3 h-3 mr-1.5" />}
                           {statusFormatted}
                         </span>
                       </td>
@@ -539,7 +559,71 @@ const AdminDashboard = () => {
             </div>
             )
 
-          /* --- TAB: UNDER CONSTRUCTION --- */
+          /* --- TAB: AUDIT LOGS --- */
+          ) : activeAdminTab === 'audit' ? (
+             isAuditLogsLoading ? (
+               <div className="py-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-stone-500" /></div>
+            ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-sm">
+                <thead>
+                  <tr className="bg-[#0a0a0a] text-stone-500 border-b border-stone-800 font-mono text-xs uppercase tracking-wider">
+                    <th className="p-4 font-semibold">Timestamp</th>
+                    <th className="p-4 font-semibold">Admin</th>
+                    <th className="p-4 font-semibold">Action</th>
+                    <th className="p-4 font-semibold">Entity</th>
+                    <th className="p-4 font-semibold">Details</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-800/50">
+                  {auditLogs.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" className="p-12 text-center text-stone-600 font-medium">No audit logs found.</td>
+                    </tr>
+                  ) : (
+                    auditLogs.map((log) => {
+                      const isDelete = log.action === 'DELETE';
+                      const isCreate = log.action === 'CREATE';
+                      const isUpdate = log.action === 'UPDATE';
+                      
+                      return (
+                        <tr key={log.id} className="hover:bg-[#1a1a1a] transition-colors">
+                          <td className="p-4 text-stone-500 font-mono text-[11px]">
+                            {new Date(log.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                          </td>
+                          <td className="p-4">
+                            <div className="text-stone-300 font-medium">{log.admin?.full_name || 'System'}</div>
+                            <div className="text-[10px] text-stone-600 font-mono uppercase">{log.admin?.email || 'automated'}</div>
+                          </td>
+                          <td className="p-4">
+                             <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border ${
+                               isDelete ? 'bg-red-950/20 text-red-500 border-red-900/50' :
+                               isCreate ? 'bg-emerald-950/20 text-emerald-500 border-emerald-900/50' :
+                               'bg-blue-950/20 text-blue-500 border-blue-900/50'
+                             }`}>
+                               {log.action}
+                             </span>
+                          </td>
+                          <td className="p-4">
+                            <div className="text-stone-400 font-medium">{log.entity_type}</div>
+                            <div className="text-[10px] text-stone-600 font-mono truncate max-w-[100px]">{log.entity_id}</div>
+                          </td>
+                          <td className="p-4">
+                            <div className="text-stone-500 text-xs italic line-clamp-2 max-w-[200px]">
+                              {log.details && typeof log.details === 'object' 
+                                ? JSON.stringify(log.details).substring(0, 100) + '...'
+                                : 'No extra data'
+                              }
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+            )
           ) : (
             <div className="p-12 text-center flex flex-col items-center justify-center h-64 border-t border-stone-800">
               <Activity className="w-12 h-12 text-stone-800 mb-4" />

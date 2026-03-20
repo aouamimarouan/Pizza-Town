@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { randomUUID } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../lib/prisma.js';
@@ -23,15 +24,15 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required.' });
     }
 
-    const existing = await prisma.user.findUnique({ where: { email } });
+    const existing = await prisma.users.findUnique({ where: { email } });
     if (existing) {
       return res.status(409).json({ error: 'Email already registered.' });
     }
 
     const password_hash = await bcrypt.hash(password, 12);
 
-    const user = await prisma.user.create({
-      data: { full_name, email, password_hash, phone_number, address, role: 'customer' },
+    const user = await prisma.users.create({
+      data: { user_id: randomUUID(), full_name, email, password_hash, phone_number, address, role: 'customer' },
     });
 
     const token = signToken(user);
@@ -51,7 +52,7 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required.' });
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.users.findUnique({ where: { email } });
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials.' });
     }
@@ -72,7 +73,7 @@ router.post('/login', async (req, res) => {
 // GET /api/auth/me — Protected
 router.get('/me', authenticate, async (req, res) => {
   try {
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { user_id: req.user.user_id },
       select: { user_id: true, email: true, full_name: true, phone_number: true, address: true, role: true, created_at: true },
     });

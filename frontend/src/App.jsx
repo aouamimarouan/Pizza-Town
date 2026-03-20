@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
+import { Toaster, toast } from 'react-hot-toast';
 
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
+import SplashScreen from './components/layout/SplashScreen';
 import HomeView from './components/views/HomeView';
 import MenuView from './components/views/MenuView';
 import ServicesView from './components/views/ServicesView';
@@ -27,6 +28,7 @@ function AppContent() {
   const [user, setUser] = useState(() => toAppUser(getStoredUser()));
   const [cart, setCart] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
   
   const navigate = useNavigate();
 
@@ -107,7 +109,8 @@ function AppContent() {
   const cartItemCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
-    <div className="flex flex-col min-h-screen bg-stone-50 dark:bg-stone-950 transition-colors">
+    <div className={`flex flex-col min-h-screen bg-stone-50 dark:bg-stone-950 transition-colors ${showSplash ? 'overflow-hidden h-screen' : ''}`}>
+      {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
       {/* Toast Notifications */}
       <Toaster 
         position="bottom-right" 

@@ -1,13 +1,15 @@
 import { Router } from 'express';
+import { randomUUID } from 'node:crypto';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
+import { logAdminAction } from '../lib/auditLogger.js';
 
 const router = Router();
 
 // GET /api/menu — Public
 router.get('/', async (req, res) => {
   try {
-    const items = await prisma.menuItem.findMany({
+    const items = await prisma.menuitems.findMany({
       where: { is_available: true },
       orderBy: { category: 'asc' },
     });
@@ -21,7 +23,7 @@ router.get('/', async (req, res) => {
 // GET /api/menu/:id — Public
 router.get('/:id', async (req, res) => {
   try {
-    const item = await prisma.menuItem.findUnique({ where: { item_id: req.params.id } });
+    const item = await prisma.menuitems.findUnique({ where: { item_id: req.params.id } });
     if (!item) return res.status(404).json({ error: 'Item not found.' });
     res.json(item);
   } catch (err) {
@@ -37,9 +39,21 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
     if (!name || !price) {
       return res.status(400).json({ error: 'Name and price are required.' });
     }
-    const item = await prisma.menuItem.create({
-      data: { name, category, description, price: parseFloat(price), image_url, is_available: is_available ?? true },
+    const item = await prisma.menuitems.create({
+      data: { 
+        item_id: randomUUID(),
+        name, 
+        category, 
+        description, 
+        price: parseFloat(price), 
+        image_url, 
+        is_available: is_available ?? true 
+      },
     });
+
+    // Logging
+    await logAdminAction(req.user.user_id, 'CREATE', 'MenuItem', item.item_id, item);
+
     res.status(201).json(item);
   } catch (err) {
     console.error(err);
@@ -51,7 +65,7 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
 router.put('/:id', authenticate, requireAdmin, async (req, res) => {
   try {
     const { name, category, description, price, image_url, is_available } = req.body;
-    const item = await prisma.menuItem.update({
+    const item = await prisma.menuitems.update({
       where: { item_id: req.params.id },
       data: {
         ...(name && { name }),
@@ -62,6 +76,13 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
         ...(is_available !== undefined && { is_available }),
       },
     });
+
+    // Logging
+    await logAdminAction(req.user.user_id, 'UPDATE', 'MenuItem', item.item_id, { 
+      updatedFields: req.body,
+      finalState: item 
+    });
+
     res.json(item);
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ error: 'Item not found.' });
@@ -73,7 +94,14 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
 // DELETE /api/menu/:id — Admin only
 router.delete('/:id', authenticate, requireAdmin, async (req, res) => {
   try {
-    await prisma.menuItem.delete({ where: { item_id: req.params.id } });
+    const item = await prisma.menuitems.findUnique({ where: { item_id: req.params.id } });
+    if (!item) return res.status(404).json({ error: 'Item not found.' });
+
+    await prisma.menuitems.delete({ where: { item_id: req.params.id } });
+
+    // Logging
+    await logAdminAction(req.user.user_id, 'DELETE', 'MenuItem', req.params.id, item);
+
     res.json({ message: 'Item deleted.' });
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ error: 'Item not found.' });

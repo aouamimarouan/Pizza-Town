@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Minus, Plus, ShoppingBag, CreditCard, MapPin, Store, Loader2 } from 'lucide-react';
+import { usePlacesWidget } from 'react-google-autocomplete';
 import toast from 'react-hot-toast';
 import api from '../../services/api.js';
 import socket from '../../services/socket.js';
@@ -10,6 +11,15 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart }) => {
   const [address, setAddress] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  
+  const { ref: autocompleteRef } = usePlacesWidget({
+    apiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+    onPlaceSelected: (place) => setAddress(place.formatted_address || place.name),
+    options: {
+      types: ['address'],
+      componentRestrictions: { country: 'be' },
+    },
+  });
 
   const subtotal = cart.reduce((sum, item) => sum + ((item.totalPrice || item.price) * item.quantity), 0);
   const deliveryFee = orderMode === 'delivery' ? 3.50 : 0;
@@ -176,11 +186,10 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart }) => {
                 {orderMode === 'delivery' && (
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-stone-700 dark:text-stone-300">Delivery Address</label>
-                    <input 
-                      type="text" 
+                    <input
+                      ref={autocompleteRef}
                       required
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
+                      defaultValue={address}
                       placeholder="Street name & number, City"
                       className="w-full px-4 py-3 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-[#0a0a0a] text-stone-900 dark:text-white focus:bg-white dark:focus:bg-[#151515] focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors outline-none"
                     />

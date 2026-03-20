@@ -154,13 +154,13 @@ const MyOrders = () => {
                     <div className="px-8 py-6">
                       <p className="text-[10px] font-black text-stone-400 uppercase tracking-[0.2em] mb-5 border-l-2 border-red-600 pl-3">Order Composition</p>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
-                        {order.orderItems.map((item) => (
+                        {order.orderitems.map((item) => (
                           <div key={item.id} className="flex justify-between items-center group">
                             <div className="flex items-center gap-4">
                               <span className="w-8 h-8 rounded-xl bg-stone-100 dark:bg-stone-800 flex items-center justify-center text-xs font-black text-red-600 ring-2 ring-stone-200 dark:ring-stone-700 shadow-sm group-hover:scale-110 transition-transform">
                                 {item.quantity}×
                               </span>
-                              <span className="text-stone-800 dark:text-stone-200 font-bold group-hover:text-red-500 transition-colors">{item.menuItem.name}</span>
+                              <span className="text-stone-800 dark:text-stone-200 font-bold group-hover:text-red-500 transition-colors">{item.menuitems.name}</span>
                             </div>
                             <div className="h-px flex-grow mx-4 bg-stone-100 dark:bg-stone-800 hidden lg:block"></div>
                             <span className="text-stone-500 font-bold text-sm leading-none">${parseFloat(item.subtotal).toFixed(2)}</span>

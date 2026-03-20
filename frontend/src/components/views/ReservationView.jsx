@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, Users, Phone, User, Send, Loader2, CheckCircle2 } from 'lucide-react';
+import { Calendar, ConciergeBell, UtensilsCrossed, Phone, User, Send, Loader2, CheckCircle2 } from 'lucide-react';
 import api from '../../services/api.js';
 import socket from '../../services/socket.js';
 import toast from 'react-hot-toast';
@@ -100,7 +100,7 @@ const ReservationView = () => {
           <div className="space-y-4 pt-4">
             <div className="flex items-center gap-4 p-4 bg-white dark:bg-stone-900 border border-stone-100 dark:border-stone-800 rounded-2xl">
               <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600">
-                <Clock className="w-6 h-6" />
+                <ConciergeBell className="w-6 h-6" />
               </div>
               <div>
                 <h4 className="font-bold text-stone-900 dark:text-white">Quick Confirmation</h4>
@@ -109,7 +109,7 @@ const ReservationView = () => {
             </div>
             <div className="flex items-center gap-4 p-4 bg-white dark:bg-stone-900 border border-stone-100 dark:border-stone-800 rounded-2xl">
               <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
-                <Users className="w-6 h-6" />
+                <UtensilsCrossed className="w-6 h-6" />
               </div>
               <div>
                 <h4 className="font-bold text-stone-900 dark:text-white">Group Friendly</h4>
@@ -169,7 +169,7 @@ const ReservationView = () => {
               </div>
               <div>
                 <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                  <Clock className="w-3 h-3" /> Time
+                  <ConciergeBell className="w-3 h-3" /> Time
                 </label>
                 <input 
                   type="time" 
@@ -183,7 +183,7 @@ const ReservationView = () => {
 
             <div>
               <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                <Users className="w-3 h-3" /> Guests
+                <UtensilsCrossed className="w-3 h-3" /> Guests
               </label>
               <select 
                 className="w-full bg-stone-50 dark:bg-[#0a0a0a] border border-stone-200 dark:border-stone-800 text-stone-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:border-red-500 transition-colors appearance-none"

@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 async function updateUser() {
   try {
     const password_hash = await bcrypt.hash('password123', 12);
-    await prisma.user.update({
+    await prisma.users.update({
       where: { email: 'test1@gmail.com' },
       data: { password_hash }
     });

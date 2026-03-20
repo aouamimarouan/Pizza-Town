@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, Phone, ShoppingCart, Sun, Moon, User, Settings, LogOut, LayoutDashboard, Package } from 'lucide-react';
+import LanguageSwitcher from './LanguageSwitcher';
 import logo from '../../assets/pizza_town.png';
 
 const Navbar = ({ isDarkMode, toggleDarkMode, cartItemCount, openCart, user, onLogout, clearCart }) => {
@@ -80,6 +81,8 @@ const Navbar = ({ isDarkMode, toggleDarkMode, cartItemCount, openCart, user, onL
             
             <div className="h-6 w-px bg-stone-200 dark:bg-stone-700 mx-2"></div>
             
+            <LanguageSwitcher />
+
             <button 
               onClick={toggleDarkMode}
               className="p-2 rounded-full bg-stone-100 dark:bg-stone-900 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-white transition-colors"
@@ -233,6 +236,9 @@ const Navbar = ({ isDarkMode, toggleDarkMode, cartItemCount, openCart, user, onL
               <Phone className="h-5 w-5 mr-3 text-stone-400 dark:text-stone-500" />
               02 269 71 76
             </a>
+            <div className="flex items-center justify-end py-2">
+              <LanguageSwitcher />
+            </div>
           </div>
         </div>
       </div>

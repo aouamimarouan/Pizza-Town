@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Lock, Mail, AlertCircle, Phone, MapPin, User, ArrowRight, Loader2 } from 'lucide-react';
+import { usePlacesWidget } from 'react-google-autocomplete';
 import { login, register } from '../../services/authService.js';
 
 const LoginView = ({ onAuthSuccess }) => {
@@ -16,6 +17,15 @@ const LoginView = ({ onAuthSuccess }) => {
 
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  const { ref: regAutocompleteRef } = usePlacesWidget({
+    apiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+    onPlaceSelected: (place) => setRegAddress(place.formatted_address || place.name),
+    options: {
+      types: ['address'],
+      componentRestrictions: { country: 'be' },
+    },
+  });
 
   const handleAuth = async (e) => {
     e.preventDefault();
@@ -35,10 +45,17 @@ const LoginView = ({ onAuthSuccess }) => {
           address: regAddress,
         });
       }
-      // Pass raw API user to App.jsx — it will normalize + set activeTab
       onAuthSuccess(result.user);
     } catch (err) {
-      const msg = err.response?.data?.error || 'Something went wrong. Please try again.';
+      const status = err.response?.status;
+      let msg = 'Something went wrong. Please try again.';
+      
+      if (status === 401 || status === 404) {
+        msg = 'Invalid email or password.';
+      } else if (err.response?.data?.error) {
+        msg = err.response.data.error;
+      }
+      
       setError(msg);
     } finally {
       setIsLoading(false);
@@ -92,7 +109,7 @@ const LoginView = ({ onAuthSuccess }) => {
         </div>
 
         {error && (
-          <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 text-red-700 dark:text-red-400 px-4 py-3 rounded-xl flex items-start">
+          <div className="mb-6 bg-red-500/10 border border-red-500/50 text-red-500 px-4 py-3 rounded-xl flex items-start animate-in fade-in duration-300">
             <AlertCircle className="w-5 h-5 mr-3 shrink-0 mt-0.5" />
             <span className="text-sm font-medium">{error}</span>
           </div>
@@ -151,10 +168,9 @@ const LoginView = ({ onAuthSuccess }) => {
                       <MapPin className="h-5 w-5 text-stone-400 dark:text-stone-500" />
                     </div>
                     <input
-                      type="text"
+                      ref={regAutocompleteRef}
+                      defaultValue={regAddress}
                       required={!isLogin}
-                      value={regAddress}
-                      onChange={(e) => setRegAddress(e.target.value)}
                       className="w-full pl-10 pr-4 py-3 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-[#151515] text-stone-900 dark:text-white focus:bg-white dark:focus:bg-[#1a1a1a] focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors outline-none font-medium"
                       placeholder="Stationsstraat 14"
                     />
@@ -217,6 +233,35 @@ const LoginView = ({ onAuthSuccess }) => {
               : isLogin ? 'Secure Sign In' : 'Complete VIP Registration'
             }
           </button>
+
+          {isLogin && (
+            <div className="mt-6 text-center">
+              <p className="text-stone-500 dark:text-stone-400 text-sm">
+                Don't have an account?{' '}
+                <button 
+                  type="button"
+                  onClick={() => setIsLogin(false)}
+                  className="font-bold text-stone-900 dark:text-white hover:text-red-600 dark:hover:text-red-500 transition-colors"
+                >
+                  Create one
+                </button>
+              </p>
+            </div>
+          )}
+          {!isLogin && (
+            <div className="mt-6 text-center">
+              <p className="text-stone-500 dark:text-stone-400 text-sm">
+                Already have an account?{' '}
+                <button 
+                  type="button"
+                  onClick={() => setIsLogin(true)}
+                  className="font-bold text-stone-900 dark:text-white hover:text-emerald-500 transition-colors"
+                >
+                  Sign In
+                </button>
+              </p>
+            </div>
+          )}
         </form>
 
       </div>

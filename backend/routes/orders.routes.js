@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { randomUUID } from 'node:crypto';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
 
@@ -17,7 +18,7 @@ router.post('/', authenticate, async (req, res) => {
 
     // Fetch prices for all requested items in one query
     const menuItemIds = items.map((i) => i.menu_item_id);
-    const menuItems = await prisma.menuItem.findMany({
+    const menuItems = await prisma.menuitems.findMany({
       where: { item_id: { in: menuItemIds }, is_available: true },
     });
 
@@ -35,6 +36,7 @@ router.post('/', authenticate, async (req, res) => {
       const subtotal = unit_price * item.quantity;
       total_price += subtotal;
       return {
+        id: randomUUID(),
         menu_item_id: item.menu_item_id,
         quantity: item.quantity,
         subtotal,
@@ -43,19 +45,20 @@ router.post('/', authenticate, async (req, res) => {
 
     // Create order + order items in a single transaction
     const order = await prisma.$transaction(async (tx) => {
-      const newOrder = await tx.order.create({
+      const newOrder = await tx.orders.create({
         data: {
+          order_id: randomUUID(),
           user_id,
           total_price,
           status: 'pending',
           delivery_type: delivery_type || 'delivery',
-          orderItems: {
+          orderitems: {
             create: orderItemsData,
           },
         },
         include: {
-          orderItems: { include: { menuItem: { select: { name: true, price: true } } } },
-          user: { select: { full_name: true, email: true } },
+          orderitems: { include: { menuitems: { select: { name: true, price: true } } } },
+          users: { select: { full_name: true, email: true } },
         },
       });
       return newOrder;
@@ -79,11 +82,11 @@ router.get('/', authenticate, async (req, res) => {
   try {
     const isAdmin = req.user.role === 'admin' || req.user.role === 'moderator';
 
-    const orders = await prisma.order.findMany({
+    const orders = await prisma.orders.findMany({
       where: isAdmin ? {} : { user_id: req.user.user_id },
       include: {
-        orderItems: { include: { menuItem: { select: { name: true, price: true } } } },
-        user: { select: { full_name: true, email: true } },
+        orderitems: { include: { menuitems: { select: { name: true, price: true } } } },
+        users: { select: { full_name: true, email: true } },
       },
       orderBy: { created_at: 'desc' },
     });
@@ -105,7 +108,7 @@ router.patch('/:id/status', authenticate, requireAdmin, async (req, res) => {
       return res.status(400).json({ error: `Status must be one of: ${validStatuses.join(', ')}` });
     }
 
-    const order = await prisma.order.update({
+    const order = await prisma.orders.update({
       where: { order_id: req.params.id },
       data: { status },
     });

@@ -7,7 +7,7 @@ const router = Router();
 // GET /api/users - Admin only: Fetch all users
 router.get('/', authenticate, requireAdmin, async (req, res) => {
   try {
-    const users = await prisma.user.findMany({
+    const users = await prisma.users.findMany({
       orderBy: { created_at: 'desc' },
       select: {
         user_id: true,
@@ -32,15 +32,15 @@ router.get('/', authenticate, requireAdmin, async (req, res) => {
 // GET /api/users/profile
 router.get('/profile', authenticate, async (req, res) => {
   try {
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { user_id: req.user.user_id },
       include: {
         orders: {
           orderBy: { created_at: 'desc' },
           include: {
-            orderItems: {
+            orderitems: {
               include: {
-                menuItem: { select: { name: true, price: true, category: true } }
+                menuitems: { select: { name: true, price: true, category: true } }
               }
             }
           }
