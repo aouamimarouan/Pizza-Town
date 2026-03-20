@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { createServer } from 'node:http';
+import { Server } from 'socket.io';
 
 import authRoutes from './routes/auth.routes.js';
 import menuRoutes from './routes/menu.routes.js';
@@ -11,6 +13,14 @@ import userRoutes from './routes/user.routes.js';
 dotenv.config();
 
 const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: {
+    origin: '*', // In production, use your frontend URL
+    methods: ['GET', 'POST']
+  }
+});
+
 const PORT = process.env.PORT || 5000;
 
 app.use(cors({
@@ -19,6 +29,31 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
 }));
 app.use(express.json());
+
+// Attach Socket.io instance to req object
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
+
+// Socket.io connection handler
+io.on('connection', (socket) => {
+  console.log('⚡ Client connected:', socket.id);
+
+  socket.on('join_admin', () => {
+    socket.join('admin');
+    console.log(`🛡️ Admin joined room: admin (${socket.id})`);
+  });
+
+  socket.on('join_user', (userId) => {
+    socket.join(`user_${userId}`);
+    console.log(`👤 User joined room: user_${userId} (${socket.id})`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('❌ Client disconnected:', socket.id);
+  });
+});
 
 // Health check
 app.get('/api/status', (req, res) => {
@@ -43,6 +78,6 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Something went wrong.' });
 });
 
-app.listen(PORT, () => {
-  console.log(`🍕 Pizza Town API running on port ${PORT}`);
+httpServer.listen(PORT, () => {
+  console.log(`🍕 Pizza Town API + Real-time running on port ${PORT}`);
 });

@@ -28,6 +28,7 @@ const Navbar = ({ isDarkMode, toggleDarkMode, cartItemCount, openCart, user, onL
   const navLinks = [
     { id: '/', label: 'Home' },
     { id: '/menu', label: 'Menu' },
+    { id: '/book', label: 'Book a Table' },
     { id: '/services', label: 'Services' },
     { id: '/location', label: 'Location' },
   ];

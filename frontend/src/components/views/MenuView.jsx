@@ -21,7 +21,7 @@ const categoryImages = {
 
 // Helper to map DB item to Component format
 const mapDbItemToCard = (item) => ({
-  id: item.menu_item_id,
+  id: item.item_id,
   name: item.name,
   description: item.description,
   price: parseFloat(item.price),

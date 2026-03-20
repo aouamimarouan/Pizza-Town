@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api.js';
+import socket from '../../services/socket.js';
 
 const AdminDashboard = () => {
   const [activeAdminTab, setActiveAdminTab] = useState('orders');
@@ -28,6 +29,42 @@ const AdminDashboard = () => {
   useEffect(() => {
     if (activeAdminTab === 'orders') fetchOrders();
   }, [activeAdminTab]);
+  useEffect(() => {
+    socket.emit('join_admin');
+
+    socket.on('new_order', (newOrder) => {
+      setOrders((prev) => {
+        const exists = prev.some(o => o.order_id === newOrder.order_id);
+        if (exists) return prev;
+        return [newOrder, ...prev];
+      });
+      
+      toast.success('New real-time order received!', {
+        duration: 6000,
+        position: 'top-right',
+        style: { background: '#059669', color: '#fff', fontWeight: 'bold', border: '1px solid #065f46' }
+      });
+    });
+
+    socket.on('new_reservation', (newRes) => {
+      setReservations((prev) => {
+        const exists = prev.some(r => r.res_id === newRes.res_id);
+        if (exists) return prev;
+        return [newRes, ...prev];
+      });
+
+      toast.success('📅 New table reservation received!', {
+        duration: 8000,
+        position: 'top-right',
+        style: { background: '#8b5cf6', color: '#fff', fontWeight: 'bold', border: '1px solid #7c3aed' }
+      });
+    });
+
+    return () => {
+      socket.off('new_order');
+      socket.off('new_reservation');
+    };
+  }, []);
 
   const handleUpdateStatus = async (id, newStatus) => {
     try {
@@ -78,6 +115,26 @@ const AdminDashboard = () => {
   useEffect(() => {
     if (activeAdminTab === 'users') fetchUsers();
   }, [activeAdminTab]);
+
+  // --- Reservations State ---
+  const [reservations, setReservations] = useState([]);
+  const [isReservationsLoading, setIsReservationsLoading] = useState(true);
+
+  const fetchReservations = async () => {
+    setIsReservationsLoading(true);
+    try {
+      const res = await api.get('/reservations');
+      setReservations(res.data);
+    } catch (err) {
+      toast.error('Failed to load reservations.');
+    } finally {
+      setIsReservationsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeAdminTab === 'reservations') fetchReservations();
+  }, [activeAdminTab]);
   
   const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -88,7 +145,7 @@ const AdminDashboard = () => {
 
   const openMenuModal = (item = null) => {
     if (item) {
-      setEditingItem(item.menu_item_id);
+      setEditingItem(item.item_id);
       setMenuForm({ name: item.name, category: item.category, price: item.price, description: item.description || '' });
     } else {
       setEditingItem(null);
@@ -115,6 +172,16 @@ const AdminDashboard = () => {
       toast.error('Failed to save menu item.');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleConfirmReservation = async (id) => {
+    try {
+      await api.patch(`/reservations/${id}/status`, { status: 'confirmed' });
+      toast.success('Reservation confirmed!');
+      fetchReservations();
+    } catch (err) {
+      toast.error('Failed to confirm reservation.');
     }
   };
 
@@ -339,7 +406,7 @@ const AdminDashboard = () => {
                 </thead>
                 <tbody className="divide-y divide-stone-800/50">
                   {menuItems.map((item) => (
-                    <tr key={item.menu_item_id} className="hover:bg-[#1a1a1a] transition-colors group">
+                    <tr key={item.item_id} className="hover:bg-[#1a1a1a] transition-colors group">
                       <td className="p-4 text-stone-400">
                         <div className="font-medium text-stone-300">{item.name}</div>
                         <div className="text-xs text-stone-500 mt-1 max-w-[250px] truncate">{item.description}</div>
@@ -355,7 +422,7 @@ const AdminDashboard = () => {
                           <button onClick={() => openMenuModal(item)} className="p-1.5 bg-stone-800 text-stone-400 hover:text-white rounded border border-stone-700 hover:bg-stone-700 transition-colors">
                             <Edit2 className="w-4 h-4" />
                           </button>
-                          <button onClick={() => handleDeleteMenuItem(item.menu_item_id)} className="p-1.5 bg-red-900/30 text-red-500 hover:text-red-400 rounded border border-red-900/50 hover:bg-red-900/50 transition-colors">
+                          <button onClick={() => handleDeleteMenuItem(item.item_id)} className="p-1.5 bg-red-900/30 text-red-500 hover:text-red-400 rounded border border-red-900/50 hover:bg-red-900/50 transition-colors">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
@@ -411,6 +478,62 @@ const AdminDashboard = () => {
                       </td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+            </div>
+            )
+
+          /* --- TAB: RESERVATIONS --- */
+          ) : activeAdminTab === 'reservations' ? (
+             isReservationsLoading ? (
+               <div className="py-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-stone-500" /></div>
+            ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-sm">
+                <thead>
+                  <tr className="bg-[#0a0a0a] text-stone-500 border-b border-stone-800 font-mono text-xs uppercase tracking-wider">
+                    <th className="p-4 font-semibold">Guest</th>
+                    <th className="p-4 font-semibold">Date & Time</th>
+                    <th className="p-4 font-semibold text-center">Guests</th>
+                    <th className="p-4 font-semibold">Status</th>
+                    <th className="p-4 font-semibold text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-800/50">
+                  {reservations.map((res) => {
+                    const isPending = res.status === 'pending';
+                    return (
+                    <tr key={res.res_id} className="hover:bg-[#1a1a1a] transition-colors group">
+                      <td className="p-4 text-stone-400">
+                        <div className="font-medium text-stone-300">{res.full_name}</div>
+                        <div className="text-xs text-stone-500 mt-1">{res.phone_number}</div>
+                      </td>
+                      <td className="p-4 text-stone-400">
+                        <div>{new Date(res.res_date).toLocaleDateString()}</div>
+                        <div className="text-xs text-stone-500 mt-1">{new Date(res.res_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                      </td>
+                      <td className="p-4 text-center text-stone-300">
+                        {res.guests}
+                      </td>
+                      <td className="p-4">
+                        <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase border ${
+                          isPending ? 'text-amber-500 border-amber-900/50' : 'text-emerald-500 border-emerald-900/50'
+                        }`}>
+                          {res.status}
+                        </span>
+                      </td>
+                      <td className="p-4 text-right">
+                        {isPending && (
+                          <button 
+                            onClick={() => handleConfirmReservation(res.res_id)}
+                            className="text-xs bg-emerald-900/40 text-emerald-400 border border-emerald-800/50 px-3 py-1.5 rounded hover:bg-emerald-900/60 transition-colors font-semibold"
+                          >
+                            Confirm
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  )})}
                 </tbody>
               </table>
             </div>

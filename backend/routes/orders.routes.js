@@ -53,10 +53,18 @@ router.post('/', authenticate, async (req, res) => {
             create: orderItemsData,
           },
         },
-        include: { orderItems: true },
+        include: {
+          orderItems: { include: { menuItem: { select: { name: true, price: true } } } },
+          user: { select: { full_name: true, email: true } },
+        },
       });
       return newOrder;
     });
+
+    // Emit the new order to all connected clients (especially admins)
+    if (req.io) {
+      req.io.emit('new_order', order);
+    }
 
     res.status(201).json(order);
   } catch (err) {

@@ -25,8 +25,31 @@ router.post('/', async (req, res) => {
 
     if (user_id) data.user = { connect: { user_id } };
 
-    const reservation = await prisma.reservation.create({ data });
+    const reservation = await prisma.reservation.create({ 
+      data,
+      include: { user: { select: { email: true, full_name: true } } }
+    });
+
+    // Notify admins
+    if (req.io) {
+      req.io.to('admin').emit('new_reservation', reservation);
+    }
+
     res.status(201).json(reservation);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+// GET /api/reservations/my-reservations — For logged-in users
+router.get('/my-reservations', authenticate, async (req, res) => {
+  try {
+    const reservations = await prisma.reservation.findMany({
+      where: { user_id: req.user.user_id },
+      orderBy: { created_at: 'desc' },
+    });
+    res.json(reservations);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal server error.' });
@@ -54,7 +77,17 @@ router.patch('/:id/status', authenticate, requireAdmin, async (req, res) => {
     const reservation = await prisma.reservation.update({
       where: { res_id: req.params.id },
       data: { status },
+      include: { user: { select: { user_id: true } } }
     });
+
+    // Notify user if confirmed
+    if (req.io && status === 'confirmed') {
+      const room = reservation.user_id ? `user_${reservation.user_id}` : null;
+      if (room) {
+        req.io.to(room).emit('reservation_confirmed', reservation);
+      }
+    }
+
     res.json(reservation);
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ error: 'Reservation not found.' });

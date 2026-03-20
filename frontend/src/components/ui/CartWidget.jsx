@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Minus, Plus, ShoppingBag, CreditCard, MapPin, Store, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api.js';
+import socket from '../../services/socket.js';
 
 const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart }) => {
   const [checkoutStep, setCheckoutStep] = useState(false);
@@ -29,10 +30,13 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart }) => {
         quantity: item.quantity
       }));
 
-      await api.post('/orders', {
+      const res = await api.post('/orders', {
         items,
         delivery_address: orderMode === 'delivery' ? address : null
       });
+
+      // Emit a socket event (though backend also emits 'new_order' for admins)
+      socket.emit('order_placed', res.data);
 
       setIsSuccess(true);
       toast.success('Order placed successfully!');

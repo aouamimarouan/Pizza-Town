@@ -9,6 +9,7 @@ import MenuView from './components/views/MenuView';
 import ServicesView from './components/views/ServicesView';
 import LocationView from './components/views/LocationView';
 import LoginView from './components/views/LoginView';
+import ReservationView from './components/views/ReservationView';
 import AdminDashboard from './components/views/AdminDashboard';
 import MyOrders from './components/views/MyOrders';
 import CartWidget from './components/ui/CartWidget';
@@ -64,7 +65,16 @@ function AppContent() {
       }
       return [...prev, { ...item, quantity: 1 }];
     });
-    setIsCartOpen(true);
+    
+    // Subtle success feedback instead of interrupting the user
+    toast.success(`🍕 ${item.name} added to cart!`, {
+      style: {
+        borderRadius: '12px',
+        background: '#1c1917',
+        color: '#fff',
+        border: '1px solid #292524',
+      },
+    });
   };
 
   const handleOpenCart = () => {
@@ -113,6 +123,7 @@ function AppContent() {
           <Route path="/menu" element={<MenuView handleAddToCart={handleAddToCart} />} />
           <Route path="/services" element={<ServicesView user={user} />} />
           <Route path="/location" element={<LocationView />} />
+          <Route path="/book" element={<ReservationView />} />
           <Route path="/login" element={user.isLoggedIn ? <Navigate to="/" /> : <LoginView onAuthSuccess={handleAuthSuccess} />} />
           
           {/* Protected Routes */}
