@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Lock, Mail, AlertCircle, Phone, MapPin, User, ArrowRight, Loader2 } from 'lucide-react';
-import { usePlacesWidget } from 'react-google-autocomplete';
+
 import { login, register } from '../../services/authService.js';
 
 const LoginView = ({ onAuthSuccess }) => {
@@ -18,14 +18,7 @@ const LoginView = ({ onAuthSuccess }) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const { ref: regAutocompleteRef } = usePlacesWidget({
-    apiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-    onPlaceSelected: (place) => setRegAddress(place.formatted_address || place.name),
-    options: {
-      types: ['address'],
-      componentRestrictions: { country: 'be' },
-    },
-  });
+
 
   const handleAuth = async (e) => {
     e.preventDefault();
@@ -168,9 +161,10 @@ const LoginView = ({ onAuthSuccess }) => {
                       <MapPin className="h-5 w-5 text-stone-400 dark:text-stone-500" />
                     </div>
                     <input
-                      ref={regAutocompleteRef}
-                      defaultValue={regAddress}
+                      type="text"
                       required={!isLogin}
+                      value={regAddress}
+                      onChange={(e) => setRegAddress(e.target.value)}
                       className="w-full pl-10 pr-4 py-3 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-[#151515] text-stone-900 dark:text-white focus:bg-white dark:focus:bg-[#1a1a1a] focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors outline-none font-medium"
                       placeholder="Stationsstraat 14"
                     />
