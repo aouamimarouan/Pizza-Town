@@ -8,17 +8,8 @@ import api from '../../services/api.js';
 // Define the categories in order for the sidebar
 const categories = ['Menu Deals', 'Starters', 'Pizzas', 'Pastas', 'Half-Half Pizzas', 'Salads', 'Desserts', 'Drinks'];
 
-// 1. Premium Unsplash Curated Images mapping
-const categoryImages = {
-  'Menu Deals': 'https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?q=80&w=800&auto=format&fit=crop',
-  'Starters': 'https://images.unsplash.com/photo-1573140247632-f8fd74997d5c?q=80&w=800&auto=format&fit=crop',
-  'Pizzas': 'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=800&auto=format&fit=crop',
-  'Pastas': 'https://images.unsplash.com/photo-1473093295043-cdd812d0e601?q=80&w=800&auto=format&fit=crop',
-  'Half-Half Pizzas': 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=800&auto=format&fit=crop',
-  'Salads': 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=800&auto=format&fit=crop',
-  'Desserts': 'https://images.unsplash.com/photo-1571115177098-24ec42ed204d?q=80&w=800&auto=format&fit=crop',
-  'Drinks': 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?q=80&w=800&auto=format&fit=crop',
-};
+// 1. Premium Category Labels (if needed for later)
+const categoryLabels = categories.reduce((acc, cat) => ({ ...acc, [cat]: cat }), {});
 
 // Helper to map DB item to Component format
 const mapDbItemToCard = (item) => ({
@@ -27,7 +18,6 @@ const mapDbItemToCard = (item) => ({
   description: item.description,
   price: parseFloat(item.price),
   category: item.category, // Crucial for conditional logic
-  image: categoryImages[item.category] || categoryImages['Pizzas'], // fallback
   popular: false, // Could add to DB later if needed
   vegetarian: false, // Could add to DB later if needed
 });

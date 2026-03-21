@@ -32,8 +32,8 @@ model orderitems {
   quantity       Int
   subtotal       Decimal   @db.Decimal(10, 2)
   customizations Json?
-  menuitems      menuitems @relation(fields: [menu_item_id], references: [item_id])
-  orders         orders    @relation(fields: [order_id], references: [order_id])
+  menuitems      menuitems @relation(fields: [menu_item_id], references: [item_id], onDelete: Cascade)
+  orders         orders    @relation(fields: [order_id], references: [order_id], onDelete: Cascade)
 }
 
 model orders {
