@@ -1,50 +1,42 @@
 import React from 'react';
 import { Truck, ShoppingBag, UtensilsCrossed, Music, Info, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const ServicesView = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const services = [
     {
       id: 'delivery',
-      title: 'Delivery',
-      description: 'Fast and hot delivery straight to your door.',
+      title: t('services.delivery'),
+      description: t('services.deliveryDesc'),
       icon: Truck,
-      actionText: 'Order Delivery',
+      actionText: t('services.deliveryAction'),
       link: '/menu',
       color: 'text-red-500',
       bgColor: 'bg-red-500/10'
     },
     {
       id: 'takeaway',
-      title: 'Takeaway',
-      description: 'Order ahead and pick up your meal fresh.',
+      title: t('services.takeaway'),
+      description: t('services.takeawayDesc'),
       icon: ShoppingBag,
-      actionText: 'Order Takeaway',
+      actionText: t('services.takeawayAction'),
       link: '/menu',
       color: 'text-amber-500',
       bgColor: 'bg-amber-500/10'
     },
     {
       id: 'dine-in',
-      title: 'Dine-In',
-      description: 'Enjoy our authentic Italian atmosphere.',
+      title: t('services.dineIn'),
+      description: t('services.dineInDesc'),
       icon: UtensilsCrossed,
-      actionText: 'Reserve a Table',
+      actionText: t('services.dineInAction'),
       link: '/book',
       color: 'text-emerald-500',
       bgColor: 'bg-emerald-500/10'
-    },
-    {
-      id: 'private-events',
-      title: 'Private Events',
-      description: 'Celebrate your special moments with us.',
-      icon: Music,
-      actionText: 'Contact Us',
-      link: '#footer', // Usually contact is in footer or separate page
-      color: 'text-blue-500',
-      bgColor: 'bg-blue-500/10'
     }
   ];
 
@@ -54,15 +46,15 @@ const ServicesView = () => {
       {/* Header Section */}
       <div className="text-center mb-20">
         <h1 className="text-5xl font-black text-white tracking-tighter uppercase mb-4 font-heading">
-          Our <span className="text-red-600">Services</span>
+          {t('services.title')} <span className="text-red-600">{t('services.titleAccent')}</span>
         </h1>
         <p className="text-stone-400 text-lg max-w-2xl mx-auto">
-          Discover all the ways you can experience Pizza Town. We bring the heart of Italy to your table, your home, and your events.
+          {t('services.description')}
         </p>
       </div>
 
       {/* Services Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-20">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 mb-20 max-w-5xl mx-auto">
         {services.map((service) => {
           const Icon = service.icon;
           return (
@@ -104,9 +96,9 @@ const ServicesView = () => {
             <Info className="w-6 h-6" />
           </div>
           <div>
-            <h4 className="font-bold text-amber-500 uppercase tracking-widest text-xs mb-1">Payment Options</h4>
+            <h4 className="font-bold text-amber-500 uppercase tracking-widest text-xs mb-1">{t('services.paymentOptions')}</h4>
             <p className="text-stone-400 text-sm">
-              We accept <span className="text-white font-medium">Cash</span> upon delivery or pickup. <span className="text-white font-medium">Bancontact</span> is available for all in-store orders.
+              {t('services.paymentDesc')}
             </p>
           </div>
         </div>

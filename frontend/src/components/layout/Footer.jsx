@@ -1,7 +1,9 @@
 import React from 'react';
 import { Facebook, Instagram, Mail, MapPin, Phone } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const Footer = () => {
+  const { t } = useTranslation();
   return (
     <footer className="bg-stone-900 text-stone-300 py-12 px-4 sm:px-6 lg:px-8 mt-auto">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -29,14 +31,14 @@ const Footer = () => {
 
         {/* Hours */}
         <div className="space-y-4">
-          <h4 className="font-heading font-semibold text-lg text-white">Opening Hours</h4>
+          <h4 className="font-heading font-semibold text-lg text-white">{t('footer.openingHours')}</h4>
           <ul className="space-y-2 text-sm text-stone-400">
             <li className="flex justify-between border-b border-stone-800 pb-1">
-              <span>Monday - Saturday</span>
+              <span>{t('footer.monSat')}</span>
               <span>17:00 - 23:00</span>
             </li>
             <li className="flex justify-between border-b border-stone-800 pb-1 text-amber-500 font-medium">
-              <span>Sunday</span>
+              <span>{t('footer.sun')}</span>
               <span>16:00 - 23:00</span>
             </li>
           </ul>
@@ -44,7 +46,7 @@ const Footer = () => {
 
         {/* Social & Message */}
         <div className="space-y-4 md:text-right">
-          <h4 className="font-heading font-semibold text-lg text-white">Follow Us</h4>
+          <h4 className="font-heading font-semibold text-lg text-white">{t('footer.followUs')}</h4>
           <div className="flex space-x-4 md:justify-end">
              <a href="#" className="h-10 w-10 flex items-center justify-center rounded-full bg-stone-800 text-stone-400 hover:bg-red-600 hover:text-white transition-all duration-300">
               <Instagram className="h-5 w-5" />
@@ -54,14 +56,14 @@ const Footer = () => {
             </a>
           </div>
           <p className="mt-6 text-sm italic text-stone-500">
-            Thank you for visiting!
+            {t('footer.thankYou')}
           </p>
         </div>
       
       </div>
 
       <div className="max-w-7xl mx-auto mt-12 pt-8 border-t border-stone-800 text-center text-xs text-stone-500">
-        <p>&copy; {new Date().getFullYear()} Pizza Town Meise. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} Pizza Town Meise. {t('footer.rights')}</p>
       </div>
     </footer>
   );

@@ -2,14 +2,23 @@ import { Router } from 'express';
 import { randomUUID } from 'node:crypto';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
+import { sendOrderToPrintNode } from '../services/printerService.js';
 
 const router = Router();
 
 // POST /api/orders — Protected (must be logged in)
-// Body: { items: [{ menu_item_id, quantity }], delivery_type }
+// Body: { items: [{ menu_item_id, quantity, customizations }], delivery_type }
 router.post('/', authenticate, async (req, res) => {
   try {
-    const { items, delivery_type } = req.body;
+    // --- Store Operating Hours Check (Belgium: 11:00 to 23:00) ---
+    const belgiumTime = new Date().toLocaleString("en-US", { timeZone: "Europe/Brussels" });
+    const currentHour = new Date(belgiumTime).getHours();
+    if (currentHour < 11 || currentHour >= 23) {
+      return res.status(403).json({ error: "Le magasin est fermé. Nos horaires : 11h - 23h." });
+    }
+    // -------------------------------------------------------------
+
+    const { items, delivery_type, delivery_address } = req.body;
     const user_id = req.user.user_id;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -29,19 +38,27 @@ router.post('/', authenticate, async (req, res) => {
     // Build a price map
     const priceMap = Object.fromEntries(menuItems.map((m) => [m.item_id, m.price]));
 
-    // Calculate total
-    let total_price = 0;
+    // Calculate totals
+    const delivery_fee = (delivery_type === 'delivery') ? 3.50 : 0.00;
+    let items_total = 0;
     const orderItemsData = items.map((item) => {
+      const quantity = parseInt(item.quantity);
+      if (isNaN(quantity) || quantity <= 0) {
+        throw new Error(`Invalid quantity for item ${item.menu_item_id}`);
+      }
       const unit_price = parseFloat(priceMap[item.menu_item_id]);
-      const subtotal = unit_price * item.quantity;
-      total_price += subtotal;
+      const subtotal = unit_price * quantity;
+      items_total += subtotal;
       return {
         id: randomUUID(),
         menu_item_id: item.menu_item_id,
-        quantity: item.quantity,
+        quantity,
         subtotal,
+        customizations: item.customizations || null,
       };
     });
+
+    const total_price = items_total + delivery_fee;
 
     // Create order + order items in a single transaction
     const order = await prisma.$transaction(async (tx) => {
@@ -52,19 +69,51 @@ router.post('/', authenticate, async (req, res) => {
           total_price,
           status: 'pending',
           delivery_type: delivery_type || 'delivery',
+          delivery_address: (delivery_type === 'delivery') ? (delivery_address || req.user.address) : null,
+          delivery_fee,
           orderitems: {
             create: orderItemsData,
           },
         },
         include: {
           orderitems: { include: { menuitems: { select: { name: true, price: true } } } },
-          users: { select: { full_name: true, email: true } },
+          users: { select: { full_name: true, email: true, phone_number: true, address: true } },
         },
       });
       return newOrder;
     });
 
-    // Emit the new order to all connected clients (especially admins)
+    // Format the payload for PrintNode
+    const printPayload = {
+      orderId: order.order_id,
+      date: order.created_at ? order.created_at.toLocaleString('fr-FR') : new Date().toLocaleString('fr-FR'),
+      deliveryType: order.delivery_type.toUpperCase(),
+      customer: {
+        name: order.users.full_name,
+        phone: order.users.phone_number || 'N/A', 
+        address: order.delivery_address || order.users.address || 'N/A'
+      },
+      items: order.orderitems.map(item => ({
+        name: item.menuitems.name,
+        quantity: item.quantity,
+        price: parseFloat(item.menuitems.price),
+        // Map customizations JSON to subItems and extras for the printer
+        subItems: item.customizations?.subItems || [], 
+        extras: item.customizations?.extras || []
+      })),
+      subtotal: items_total,
+      deliveryFee: delivery_fee,
+      total: total_price
+    };
+
+    // 1. Cloud-based Printing (PrintNode)
+    try {
+      await sendOrderToPrintNode(printPayload);
+    } catch (printErr) {
+      console.error("⚠️ Print job failed, but order was saved successfully.");
+    }
+
+    // 2. Real-time Dashboard Update (Socket.io)
     if (req.io) {
       req.io.emit('new_order', order);
     }
@@ -82,11 +131,25 @@ router.get('/', authenticate, async (req, res) => {
   try {
     const isAdmin = req.user.role === 'admin' || req.user.role === 'moderator';
 
+    // --- Dashboard logic ---
+    let where = { user_id: req.user.user_id };
+    
+    if (isAdmin) {
+      if (req.query.today === 'true') {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        where = { created_at: { gte: today } };
+      } else {
+        where = {}; // Show all to admin unless today is requested
+      }
+    }
+    // --------------------------
+
     const orders = await prisma.orders.findMany({
-      where: isAdmin ? {} : { user_id: req.user.user_id },
+      where,
       include: {
         orderitems: { include: { menuitems: { select: { name: true, price: true } } } },
-        users: { select: { full_name: true, email: true } },
+        users: { select: { full_name: true, email: true, phone_number: true, address: true } },
       },
       orderBy: { created_at: 'desc' },
     });
@@ -102,7 +165,15 @@ router.get('/', authenticate, async (req, res) => {
 router.patch('/:id/status', authenticate, requireAdmin, async (req, res) => {
   try {
     const { status } = req.body;
-    const validStatuses = ['pending', 'cooking', 'out_for_delivery', 'delivered', 'cancelled'];
+    const validStatuses = [
+      'pending', 
+      'cooking', 
+      'out_for_delivery', 
+      'delivered', 
+      'ready_for_pickup', 
+      'picked_up', 
+      'cancelled'
+    ];
 
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ error: `Status must be one of: ${validStatuses.join(', ')}` });

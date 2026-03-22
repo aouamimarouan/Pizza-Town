@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, ConciergeBell, UtensilsCrossed, Phone, User, Send, Loader2, CheckCircle2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import api from '../../services/api.js';
 import socket from '../../services/socket.js';
 import toast from 'react-hot-toast';
 import { getStoredUser } from '../../services/authService.js';
 
 const ReservationView = () => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     full_name: '',
     phone_number: '',
@@ -24,7 +26,10 @@ const ReservationView = () => {
     }
 
     const handleConfirmed = (reservation) => {
-      toast.success(`✅ Your table for ${reservation.guests} guests on ${new Date(reservation.res_date).toLocaleDateString()} has been confirmed!`, {
+      toast.success(t('reservation.toastConfirmed', { 
+        count: reservation.guests, 
+        date: new Date(reservation.res_date).toLocaleDateString() 
+      }), {
         duration: 10000,
         icon: '🍕',
         style: {
@@ -48,13 +53,12 @@ const ReservationView = () => {
     setIsLoading(true);
     try {
       await api.post('/reservations', {
-        ...formData,
-        user_id: user ? user.user_id : null
+        ...formData
       });
       setIsSuccess(true);
-      toast.success('Reservation request sent! We will notify you once confirmed.');
+      toast.success(t('reservation.toastSent'));
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to send reservation request.');
+      toast.error(err.response?.data?.error || t('reservation.toastError'));
     } finally {
       setIsLoading(false);
     }
@@ -66,16 +70,18 @@ const ReservationView = () => {
         <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 mb-6">
           <CheckCircle2 className="w-10 h-10" />
         </div>
-        <h2 className="text-3xl font-black text-stone-900 dark:text-white mb-4 uppercase tracking-tighter">Reservation Sent!</h2>
+        <h2 className="text-3xl font-black text-stone-900 dark:text-white mb-4 uppercase tracking-tighter">{t('reservation.successTitle')}</h2>
         <p className="text-stone-500 dark:text-stone-400 mb-8 max-w-md mx-auto">
-          We've received your request for <strong>{formData.guests} guests</strong> on <strong>{new Date(formData.res_date).toLocaleDateString()}</strong>. 
-          Stay on this page or keep exploring; we'll notify you here as soon as it's confirmed!
+          {t('reservation.successDesc', { 
+            count: formData.guests, 
+            date: new Date(formData.res_date).toLocaleDateString() 
+          })}
         </p>
         <button 
           onClick={() => setIsSuccess(false)}
           className="px-8 py-3 bg-stone-900 dark:bg-white text-white dark:text-stone-900 rounded-xl font-bold hover:scale-105 transition-transform"
         >
-          Book Another Table
+          {t('reservation.bookAnother')}
         </button>
       </div>
     );
@@ -88,13 +94,13 @@ const ReservationView = () => {
         {/* Left Side: Info */}
         <div className="space-y-6">
           <div className="inline-block px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full text-xs font-bold uppercase tracking-widest mb-2">
-            Table Booking
+            {t('reservation.badge')}
           </div>
           <h1 className="text-5xl font-black text-stone-900 dark:text-white leading-none uppercase tracking-tighter">
-            Reserve Your <span className="text-red-600">Spot</span>
+            {t('reservation.title')} <span className="text-red-600">{t('reservation.titleAccent')}</span>
           </h1>
           <p className="text-stone-500 dark:text-stone-400 text-lg">
-            Join us for an authentic artisan pizza experience. Secure your table in seconds and get real-time confirmation.
+            {t('reservation.description')}
           </p>
           
           <div className="space-y-4 pt-4">
@@ -103,8 +109,8 @@ const ReservationView = () => {
                 <ConciergeBell className="w-6 h-6" />
               </div>
               <div>
-                <h4 className="font-bold text-stone-900 dark:text-white">Quick Confirmation</h4>
-                <p className="text-xs text-stone-500">Our team reviews requests instantly</p>
+                <h4 className="font-bold text-stone-900 dark:text-white">{t('reservation.quickConfirm')}</h4>
+                <p className="text-xs text-stone-500">{t('reservation.quickConfirmDesc')}</p>
               </div>
             </div>
             <div className="flex items-center gap-4 p-4 bg-white dark:bg-stone-900 border border-stone-100 dark:border-stone-800 rounded-2xl">
@@ -112,8 +118,8 @@ const ReservationView = () => {
                 <UtensilsCrossed className="w-6 h-6" />
               </div>
               <div>
-                <h4 className="font-bold text-stone-900 dark:text-white">Group Friendly</h4>
-                <p className="text-xs text-stone-500">Special seating for large parties available</p>
+                <h4 className="font-bold text-stone-900 dark:text-white">{t('reservation.groupFriendly')}</h4>
+                <p className="text-xs text-stone-500">{t('reservation.groupFriendlyDesc')}</p>
               </div>
             </div>
           </div>
@@ -127,7 +133,7 @@ const ReservationView = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
                 <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                  <User className="w-3 h-3" /> Full Name
+                  <User className="w-3 h-3" /> {t('reservation.fullName')}
                 </label>
                 <input 
                   type="text" 
@@ -140,7 +146,7 @@ const ReservationView = () => {
               </div>
               <div>
                 <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                  <Phone className="w-3 h-3" /> Phone
+                  <Phone className="w-3 h-3" /> {t('reservation.phone')}
                 </label>
                 <input 
                   type="tel" 
@@ -156,7 +162,7 @@ const ReservationView = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
                 <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                  <Calendar className="w-3 h-3" /> Date
+                  <Calendar className="w-3 h-3" /> {t('reservation.date')}
                 </label>
                 <input 
                   type="date" 
@@ -169,7 +175,7 @@ const ReservationView = () => {
               </div>
               <div>
                 <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                  <ConciergeBell className="w-3 h-3" /> Time
+                  <ConciergeBell className="w-3 h-3" /> {t('reservation.time')}
                 </label>
                 <input 
                   type="time" 
@@ -183,7 +189,7 @@ const ReservationView = () => {
 
             <div>
               <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                <UtensilsCrossed className="w-3 h-3" /> Guests
+                <UtensilsCrossed className="w-3 h-3" /> {t('reservation.guests')}
               </label>
               <select 
                 className="w-full bg-stone-50 dark:bg-[#0a0a0a] border border-stone-200 dark:border-stone-800 text-stone-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:border-red-500 transition-colors appearance-none"
@@ -191,7 +197,7 @@ const ReservationView = () => {
                 onChange={(e) => setFormData({...formData, guests: parseInt(e.target.value)})}
               >
                 {[1,2,3,4,5,6,7,8,10,12].map(n => (
-                  <option key={n} value={n}>{n} {n === 1 ? 'Guest' : 'Guests'}</option>
+                  <option key={n} value={n}>{n} {n === 1 ? t('reservation.guest_singular') : t('reservation.guest_plural')}</option>
                 ))}
               </select>
             </div>
@@ -201,7 +207,7 @@ const ReservationView = () => {
               disabled={isLoading}
               className="w-full bg-red-600 hover:bg-red-500 text-white font-black uppercase tracking-tighter py-4 rounded-2xl shadow-lg shadow-red-900/20 flex items-center justify-center gap-2 transition-all hover:-translate-y-1 disabled:opacity-50 disabled:transform-none"
             >
-              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Send className="w-5 h-5" /> Request Reservation</>}
+              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Send className="w-5 h-5" /> {t('reservation.requestBtn')}</>}
             </button>
           </form>
         </div>

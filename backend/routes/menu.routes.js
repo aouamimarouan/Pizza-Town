@@ -36,8 +36,8 @@ router.get('/:id', async (req, res) => {
 router.post('/', authenticate, requireAdmin, async (req, res) => {
   try {
     const { name, category, description, price, image_url, is_available } = req.body;
-    if (!name || !price) {
-      return res.status(400).json({ error: 'Name and price are required.' });
+    if (!name || isNaN(parseFloat(price)) || parseFloat(price) < 0) {
+      return res.status(400).json({ error: 'Name and a valid non-negative price are required.' });
     }
     const item = await prisma.menuitems.create({
       data: { 
@@ -64,7 +64,10 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
 // PUT /api/menu/:id — Admin only
 router.put('/:id', authenticate, requireAdmin, async (req, res) => {
   try {
-    const { name, category, description, price, image_url, is_available } = req.body;
+    if (price !== undefined && (isNaN(parseFloat(price)) || parseFloat(price) < 0)) {
+       return res.status(400).json({ error: 'Price must be a non-negative number.' });
+    }
+
     const item = await prisma.menuitems.update({
       where: { item_id: req.params.id },
       data: {

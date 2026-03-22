@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { X, Minus, Plus, ShoppingBag, CreditCard, MapPin, Store, Loader2 } from 'lucide-react';
-
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import api from '../../services/api.js';
 import socket from '../../services/socket.js';
 
 const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart }) => {
+  const { t } = useTranslation();
   const [checkoutStep, setCheckoutStep] = useState(false);
   const [orderMode, setOrderMode] = useState('delivery'); // 'delivery' or 'takeaway'
   const [address, setAddress] = useState('');
@@ -21,7 +22,7 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart }) => {
   const handleCheckout = async (e) => {
     e.preventDefault();
     if (orderMode === 'delivery' && !address.trim()) {
-      toast.error("Please enter a delivery address.");
+      toast.error(t('cart.toastAddress'));
       return;
     }
     
@@ -30,19 +31,20 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart }) => {
       // Map frontend cart structure to backend expected structure
       const items = cart.map(item => ({
         menu_item_id: item.id,
-        quantity: item.quantity
+        quantity: item.quantity,
+        customizations: item.customizations // Send crust, toppings, etc.
       }));
 
       const res = await api.post('/orders', {
         items,
-        delivery_address: orderMode === 'delivery' ? address : null
+        delivery_address: orderMode === 'delivery' ? address : null,
+        delivery_type: orderMode
       });
 
-      // Emit a socket event (though backend also emits 'new_order' for admins)
-      socket.emit('order_placed', res.data);
+      // Redundant socket emit removed (backend already notifies admins via 'new_order')
 
       setIsSuccess(true);
-      toast.success('Order placed successfully!');
+      toast.success(t('cart.toastSuccess'));
       
       setTimeout(() => {
         setIsSuccess(false);
@@ -52,7 +54,12 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart }) => {
       }, 3000);
     } catch (err) {
       console.error(err);
-      toast.error(err.response?.data?.error || 'Failed to process order. Please try again.');
+      // Specifically handle the 403 "Store Closed" error
+      if (err.response?.status === 403) {
+        toast.error(err.response.data.error || "Le magasin est fermé");
+      } else {
+        toast.error(err.response?.data?.error || t('cart.toastError'));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -74,7 +81,7 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart }) => {
         <div className="flex items-center justify-between p-6 border-b border-stone-200 dark:border-stone-800">
           <h2 className="text-2xl font-bold font-heading text-stone-900 dark:text-white flex items-center">
             <ShoppingBag className="w-6 h-6 mr-3 text-red-600 dark:text-red-500" />
-            Your Order
+            {t('cart.title')}
           </h2>
           <button 
             onClick={() => setIsOpen(false)}
@@ -93,18 +100,18 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart }) => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-stone-900 dark:text-white">Order Confirmed!</h3>
-              <p className="text-stone-500 dark:text-stone-400">Your delicious pizza is being prepared right now.</p>
+              <h3 className="text-2xl font-bold text-stone-900 dark:text-white">{t('cart.confirmedTitle')}</h3>
+              <p className="text-stone-500 dark:text-stone-400">{t('cart.confirmedDesc')}</p>
             </div>
           ) : cart.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center space-y-4 opacity-50">
               <ShoppingBag className="w-16 h-16 text-stone-300 dark:text-stone-600 mb-2" />
-              <p className="text-lg text-stone-500 dark:text-stone-400 font-medium">Your cart is completely empty.</p>
+              <p className="text-lg text-stone-500 dark:text-stone-400 font-medium">{t('cart.emptyDesc')}</p>
               <button 
                 onClick={() => setIsOpen(false)}
                 className="mt-4 text-red-600 dark:text-red-400 font-semibold hover:underline"
               >
-                Browse Menu
+                {t('cart.browseMenu')}
               </button>
             </div>
           ) : !checkoutStep ? (
@@ -116,7 +123,7 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart }) => {
                     <h4 className="font-bold text-stone-900 dark:text-white">{item.name}</h4>
                     {item.customizations && (
                       <div className="text-xs text-stone-500 dark:text-stone-400 mt-1 space-y-0.5">
-                        <p>• {item.customizations.crust.name} Crust</p>
+                        <p>• {t('cart.crust', { crust: item.customizations.crust.name })}</p>
                         {item.customizations.toppings.length > 0 && (
                           <p>• + {item.customizations.toppings.join(', ')}</p>
                         )}
@@ -147,7 +154,7 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart }) => {
             // Checkout Form Step
             <form id="checkout-form" onSubmit={handleCheckout} className="space-y-6 animate-in slide-in-from-right-4">
               <div>
-                <h3 className="text-lg font-bold text-stone-900 dark:text-white mb-4">Order Details</h3>
+                <h3 className="text-lg font-bold text-stone-900 dark:text-white mb-4">{t('cart.orderDetails')}</h3>
                 
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <button
@@ -160,7 +167,7 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart }) => {
                     }`}
                   >
                     <MapPin className="w-6 h-6 mb-2" />
-                    <span className="font-medium">Delivery</span>
+                    <span className="font-medium">{t('cart.delivery')}</span>
                   </button>
                   <button
                     type="button"
@@ -172,19 +179,19 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart }) => {
                     }`}
                   >
                     <Store className="w-6 h-6 mb-2" />
-                    <span className="font-medium">Takeaway</span>
+                    <span className="font-medium">{t('cart.takeaway')}</span>
                   </button>
                 </div>
 
                 {orderMode === 'delivery' && (
                   <div className="space-y-2">
-                    <label className="block text-sm font-medium text-stone-700 dark:text-stone-300">Delivery Address</label>
+                    <label className="block text-sm font-medium text-stone-700 dark:text-stone-300">{t('cart.deliveryAddress')}</label>
                     <input
                       type="text"
                       required
                       value={address}
                       onChange={(e) => setAddress(e.target.value)}
-                      placeholder="Street name & number, City"
+                      placeholder={t('cart.addressPlaceholder')}
                       className="w-full bg-stone-900 border border-stone-800 rounded-md p-3 text-white focus:outline-none focus:border-red-500 transition-colors"
                     />
                   </div>
@@ -193,7 +200,7 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart }) => {
                 {orderMode === 'takeaway' && (
                   <div className="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-900/30 text-emerald-800 dark:text-emerald-400 p-4 rounded-xl flex items-start">
                     <Store className="w-5 h-5 mr-3 shrink-0 mt-0.5" />
-                    <p className="text-sm">Pick up your order at Stationsstraat 14, 1861 Meise in ~30 minutes.</p>
+                    <p className="text-sm">{t('cart.pickupInfo')}</p>
                   </div>
                 )}
               </div>
@@ -206,17 +213,17 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart }) => {
           <div className="p-6 border-t border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-900/20">
             <div className="space-y-3 mb-6">
               <div className="flex justify-between text-stone-500 dark:text-stone-400">
-                <span>Subtotal</span>
+                <span>{t('cart.subtotal')}</span>
                 <span>€{subtotal.toFixed(2)}</span>
               </div>
               {orderMode === 'delivery' && (
                 <div className="flex justify-between text-stone-500 dark:text-stone-400">
-                  <span>Delivery Fee</span>
+                  <span>{t('cart.deliveryFee')}</span>
                   <span>€{deliveryFee.toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between text-xl font-bold text-stone-900 dark:text-white pt-3 border-t border-stone-200 dark:border-stone-800">
-                <span>Total</span>
+                <span>{t('cart.total')}</span>
                 <span className="text-red-600 dark:text-red-500">€{total.toFixed(2)}</span>
               </div>
             </div>
@@ -226,7 +233,7 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart }) => {
                 onClick={() => setCheckoutStep(true)}
                 className="w-full flex items-center justify-center px-6 py-4 rounded-xl bg-red-600 text-white font-semibold transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-red-900/20 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-[#151515] outline-none text-lg"
               >
-                Proceed to Checkout
+                {t('cart.proceedCheckout')}
               </button>
             ) : (
               <div className="flex gap-3">
@@ -234,7 +241,7 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart }) => {
                   onClick={() => setCheckoutStep(false)}
                   className="px-6 py-4 rounded-xl bg-stone-200 dark:bg-stone-800 text-stone-900 dark:text-white font-semibold hover:bg-stone-300 dark:hover:bg-stone-700 transition-colors"
                 >
-                  Back
+                  {t('cart.btnBack')}
                 </button>
                 <button 
                   form="checkout-form"
@@ -245,7 +252,7 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart }) => {
                   {isLoading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
-                    <><CreditCard className="w-5 h-5 mr-2" /> Confirm Order</>
+                    <><CreditCard className="w-5 h-5 mr-2" /> {t('cart.btnConfirm')}</>
                   )}
                 </button>
               </div>

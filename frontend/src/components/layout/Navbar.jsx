@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, Phone, ShoppingCart, Sun, Moon, User, Settings, LogOut, LayoutDashboard, Package } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from './LanguageSwitcher';
 import logo from '../../assets/pizza_town.png';
 
 const Navbar = ({ isDarkMode, toggleDarkMode, cartItemCount, openCart, user, onLogout, clearCart }) => {
+  const { t } = useTranslation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -28,11 +30,11 @@ const Navbar = ({ isDarkMode, toggleDarkMode, cartItemCount, openCart, user, onL
   };
 
   const navLinks = [
-    { id: '/', label: 'Home' },
-    { id: '/menu', label: 'Menu' },
-    { id: '/book', label: 'Book a Table' },
-    { id: '/services', label: 'Services' },
-    { id: '/location', label: 'Location' },
+    { id: '/', label: t('navbar.home') },
+    { id: '/menu', label: t('navbar.menu') },
+    { id: '/book', label: t('navbar.bookTable') },
+    { id: '/services', label: t('navbar.services') },
+    { id: '/location', label: t('navbar.location') },
   ];
 
   return (
@@ -124,31 +126,34 @@ const Navbar = ({ isDarkMode, toggleDarkMode, cartItemCount, openCart, user, onL
                           className="w-full text-left px-4 py-3 flex items-center text-stone-200 hover:bg-stone-800 hover:text-white transition-colors"
                         >
                           <LayoutDashboard className="w-4 h-4 mr-3 text-stone-400" />
-                          Administration
+                          {t('navbar.admin')}
                         </button>
                         <div className="h-px bg-stone-800 my-1 mx-2"></div>
                       </>
                     )}
 
-                    <button
-                      onClick={() => {
-                        navigate('/orders');
-                        setIsDropdownOpen(false);
-                      }}
-                      className="w-full text-left px-4 py-3 flex items-center text-stone-200 hover:bg-stone-800 hover:text-white transition-colors"
-                    >
-                      <Package className="w-4 h-4 mr-3 text-stone-400" />
-                      My Orders
-                    </button>
-                    
-                    <div className="h-px bg-stone-800 my-1 mx-2"></div>
+                    {user?.role !== 'admin' && user?.role !== 'moderator' && (
+                      <>
+                        <button
+                          onClick={() => {
+                            navigate('/orders');
+                            setIsDropdownOpen(false);
+                          }}
+                          className="w-full text-left px-4 py-3 flex items-center text-stone-200 hover:bg-stone-800 hover:text-white transition-colors"
+                        >
+                          <Package className="w-4 h-4 mr-3 text-stone-400" />
+                          {t('navbar.myOrders')}
+                        </button>
+                        <div className="h-px bg-stone-800 my-1 mx-2"></div>
+                      </>
+                    )}
                     
                     <button
                       onClick={handleLogout}
                       className="w-full text-left px-4 py-3 flex items-center text-red-400 hover:bg-red-950/30 transition-colors group"
                     >
                       <LogOut className="w-4 h-4 mr-3 text-red-500 group-hover:text-red-400" />
-                      Log Out
+                      {t('navbar.logout')}
                     </button>
                   </div>
                 )}
@@ -163,17 +168,19 @@ const Navbar = ({ isDarkMode, toggleDarkMode, cartItemCount, openCart, user, onL
               </Link>
             )}
 
-            <button 
-              onClick={openCart}
-              className="relative p-2 rounded-full bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
-            >
-              <ShoppingCart className="h-5 w-5" />
-              {cartItemCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-emerald-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                  {cartItemCount}
-                </span>
-              )}
-            </button>
+            {user?.role !== 'admin' && user?.role !== 'moderator' && (
+              <button 
+                onClick={openCart}
+                className="relative p-2 rounded-full bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+              >
+                <ShoppingCart className="h-5 w-5" />
+                {cartItemCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-emerald-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                    {cartItemCount}
+                  </span>
+                )}
+              </button>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -229,7 +236,7 @@ const Navbar = ({ isDarkMode, toggleDarkMode, cartItemCount, openCart, user, onL
                   : 'text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-900 hover:text-stone-900 dark:hover:text-white'
               }`}
             >
-              Login / Account
+              {t('navbar.login')}
           </Link>
           <div className="pt-4 mt-2 border-t border-stone-100 dark:border-stone-800 px-3 flex justify-between items-center">
              <a href="tel:022697176" className="flex items-center text-stone-700 dark:text-stone-300 py-2">

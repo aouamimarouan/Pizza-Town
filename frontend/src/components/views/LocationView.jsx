@@ -1,13 +1,15 @@
 import React from 'react';
 import { MapPin, Phone, Mail, Clock, Instagram } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const LocationView = () => {
+  const { t } = useTranslation();
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 transition-colors">
       
       <div className="mb-12 text-center md:text-left">
-        <h2 className="text-3xl font-extrabold text-stone-900 dark:text-white tracking-tight">Location & Contact</h2>
-        <p className="text-stone-500 dark:text-stone-400 mt-2 text-lg">Come visit us in the heart of Meise.</p>
+        <h2 className="text-3xl font-extrabold text-stone-900 dark:text-white tracking-tight">{t('location.title')}</h2>
+        <p className="text-stone-500 dark:text-stone-400 mt-2 text-lg">{t('location.subtitle')}</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
@@ -16,7 +18,7 @@ const LocationView = () => {
         <div className="space-y-8">
           
           <div className="bg-white dark:bg-stone-900 rounded-2xl p-6 shadow-sm border border-stone-100 dark:border-stone-800 transition-all duration-300 hover:shadow-md hover:border-stone-200 dark:hover:border-stone-700 space-y-6">
-            <h3 className="text-xl font-bold text-stone-900 dark:text-white border-b border-stone-100 dark:border-stone-800 pb-4">Contact Information</h3>
+            <h3 className="text-xl font-bold text-stone-900 dark:text-white border-b border-stone-100 dark:border-stone-800 pb-4">{t('location.contactInfo')}</h3>
             
             <div className="space-y-4">
               <a href="tel:022697176" className="flex items-center text-stone-700 dark:text-stone-300 hover:text-red-600 dark:hover:text-red-400 transition-colors group">
@@ -52,36 +54,36 @@ const LocationView = () => {
           <div className="bg-white dark:bg-stone-900 rounded-2xl p-6 shadow-sm border border-stone-100 dark:border-stone-800 transition-all duration-300 hover:shadow-md hover:border-stone-200 dark:hover:border-stone-700">
             <h3 className="text-xl font-bold text-stone-900 dark:text-white border-b border-stone-100 dark:border-stone-800 pb-4 mb-4 flex items-center">
               <Clock className="w-5 h-5 mr-2 text-stone-400 dark:text-stone-500" />
-              Opening Hours
+              {t('location.openingHours')}
             </h3>
             
             <ul className="space-y-3">
               <li className="flex justify-between items-center text-stone-700 dark:text-stone-300">
-                <span className="font-medium">Monday</span>
+                <span className="font-medium">{t('location.monday')}</span>
                 <span>17:00 - 23:00</span>
               </li>
               <li className="flex justify-between items-center text-stone-700 dark:text-stone-300">
-                <span className="font-medium">Tuesday</span>
+                <span className="font-medium">{t('location.tuesday')}</span>
                 <span>17:00 - 23:00</span>
               </li>
               <li className="flex justify-between items-center text-stone-700 dark:text-stone-300">
-                <span className="font-medium">Wednesday</span>
+                <span className="font-medium">{t('location.wednesday')}</span>
                 <span>17:00 - 23:00</span>
               </li>
               <li className="flex justify-between items-center text-stone-700 dark:text-stone-300">
-                <span className="font-medium">Thursday</span>
+                <span className="font-medium">{t('location.thursday')}</span>
                 <span>17:00 - 23:00</span>
               </li>
               <li className="flex justify-between items-center text-stone-700 dark:text-stone-300">
-                <span className="font-medium">Friday</span>
+                <span className="font-medium">{t('location.friday')}</span>
                 <span>17:00 - 23:00</span>
               </li>
               <li className="flex justify-between items-center text-stone-700 dark:text-stone-300">
-                <span className="font-medium">Saturday</span>
+                <span className="font-medium">{t('location.saturday')}</span>
                 <span>17:00 - 23:00</span>
               </li>
               <li className="flex justify-between items-center text-stone-900 dark:text-white bg-stone-50 dark:bg-stone-950 p-2 rounded-lg mt-2 font-bold border border-transparent dark:border-stone-800">
-                <span>Sunday</span>
+                <span>{t('location.sunday')}</span>
                 <span>16:00 - 23:00</span>
               </li>
             </ul>

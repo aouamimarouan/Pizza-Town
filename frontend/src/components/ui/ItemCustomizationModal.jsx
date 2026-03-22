@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { X, Check, MousePointer2, Info, Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const CRUST_OPTIONS = [
   { id: 'classic', name: 'Classic', price: 0 },
@@ -18,6 +19,7 @@ const EXTRA_TOPPINGS = [
 const TOPPING_PRICE = 1.0;
 
 const ItemCustomizationModal = ({ item, onClose, handleAddToCart }) => {
+  const { t } = useTranslation();
   const [selectedCrust, setSelectedCrust] = useState(CRUST_OPTIONS[0]);
   const [selectedToppings, setSelectedToppings] = useState([]);
 
@@ -64,7 +66,7 @@ const ItemCustomizationModal = ({ item, onClose, handleAddToCart }) => {
         <div className="px-6 py-4 border-b border-stone-100 dark:border-stone-800 flex justify-between items-center bg-stone-50/50 dark:bg-stone-800/50">
           <div>
             <h2 className="text-xl font-bold text-stone-900 dark:text-white">{item.name}</h2>
-            <p className="text-sm text-stone-500 dark:text-stone-400">Customize your pizza</p>
+            <p className="text-sm text-stone-500 dark:text-stone-400">{t('modal.subtitle')}</p>
           </div>
           <button 
             onClick={onClose}
@@ -81,7 +83,7 @@ const ItemCustomizationModal = ({ item, onClose, handleAddToCart }) => {
           <section>
             <div className="flex items-center gap-2 mb-4">
               <MousePointer2 className="w-5 h-5 text-red-500" />
-              <h3 className="text-lg font-bold text-stone-900 dark:text-white uppercase tracking-wider text-sm">Keuze bodem (Required)</h3>
+              <h3 className="text-lg font-bold text-stone-900 dark:text-white uppercase tracking-wider text-sm">{t('modal.crustSelection')}</h3>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {CRUST_OPTIONS.map((crust) => (
@@ -98,7 +100,7 @@ const ItemCustomizationModal = ({ item, onClose, handleAddToCart }) => {
                     {crust.name}
                   </span>
                   <span className="text-sm text-stone-500 dark:text-stone-500 mt-1">
-                    {crust.price === 0 ? 'FREE' : `+€${crust.price.toFixed(2)}`}
+                    {crust.price === 0 ? t('modal.free') : `+€${crust.price.toFixed(2)}`}
                   </span>
                 </button>
               ))}
@@ -109,7 +111,7 @@ const ItemCustomizationModal = ({ item, onClose, handleAddToCart }) => {
           <section>
             <div className="flex items-center gap-2 mb-4">
               <Plus className="w-5 h-5 text-red-500" />
-              <h3 className="text-lg font-bold text-stone-900 dark:text-white uppercase tracking-wider text-sm">Extra garneringen (+€{TOPPING_PRICE.toFixed(2)} per item)</h3>
+              <h3 className="text-lg font-bold text-stone-900 dark:text-white uppercase tracking-wider text-sm">{t('modal.extraToppings', { price: TOPPING_PRICE.toFixed(2) })}</h3>
             </div>
             
             <div className="space-y-6">
@@ -153,12 +155,12 @@ const ItemCustomizationModal = ({ item, onClose, handleAddToCart }) => {
             onClick={handleConfirm}
             className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-6 rounded-2xl shadow-lg shadow-red-600/20 transition-all duration-200 flex items-center justify-between"
           >
-            <span>Confirm & Add to Cart</span>
+            <span>{t('modal.confirmBtn')}</span>
             <span className="bg-red-700/50 px-3 py-1 rounded-lg">€{totalPrice.toFixed(2)}</span>
           </button>
           <div className="mt-3 flex items-center justify-center gap-1.5 text-stone-400 dark:text-stone-500 text-xs">
             <Info className="w-3.5 h-3.5" />
-            <span>Actual delivery price might vary based on your location</span>
+            <span>{t('modal.deliveryNote')}</span>
           </div>
         </div>
       </div>

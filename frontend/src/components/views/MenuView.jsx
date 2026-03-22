@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 import MenuCard from '../ui/MenuCard';
 import ItemCustomizationModal from '../ui/ItemCustomizationModal';
 import api from '../../services/api.js';
@@ -8,10 +9,18 @@ import api from '../../services/api.js';
 // Define the categories in order for the sidebar
 const categories = ['Menu Deals', 'Starters', 'Pizzas', 'Pastas', 'Half-Half Pizzas', 'Salads', 'Desserts', 'Drinks'];
 
-// 1. Premium Category Labels (if needed for later)
-const categoryLabels = categories.reduce((acc, cat) => ({ ...acc, [cat]: cat }), {});
+const categoryTranslationKeys = {
+  'Menu Deals': 'catMenuDeals',
+  'Starters': 'catStarters',
+  'Pizzas': 'catPizzas',
+  'Pastas': 'catPastas',
+  'Half-Half Pizzas': 'catHalfHalf',
+  'Salads': 'catSalads',
+  'Desserts': 'catDesserts',
+  'Drinks': 'catDrinks'
+};
 
-// Helper to map DB item to Component format
+// Map DB item to Component format
 const mapDbItemToCard = (item) => ({
   id: item.item_id,
   name: item.name,
@@ -23,6 +32,7 @@ const mapDbItemToCard = (item) => ({
 });
 
 const MenuView = ({ handleAddToCart }) => {
+  const { t } = useTranslation();
   const [activeCategory, setActiveCategory] = useState(categories[0]);
   const [searchQuery, setSearchQuery] = useState('');
   const [menuItems, setMenuItems] = useState([]);
@@ -38,7 +48,7 @@ const MenuView = ({ handleAddToCart }) => {
         setMenuItems(res.data);
       } catch (err) {
         console.error(err);
-        toast.error('Failed to load the menu. Please refresh.');
+        toast.error(t('menu.toastError'));
       } finally {
         setIsLoading(false);
       }
@@ -57,7 +67,7 @@ const MenuView = ({ handleAddToCart }) => {
       .map(mapDbItemToCard);
   } else {
     // If searching, show "Search Results" and flatten all categories
-    displayTitle = 'Search Results';
+    displayTitle = t('menu.searchResults');
     displayedItems = menuItems
       .filter((item) => 
         item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -70,8 +80,8 @@ const MenuView = ({ handleAddToCart }) => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 transition-colors">
       
       <div className="mb-10 text-center md:text-left">
-        <h2 className="text-3xl font-extrabold text-stone-900 dark:text-white tracking-tight">Our Menu</h2>
-        <p className="text-stone-500 dark:text-stone-400 mt-2 text-lg">Authentic Italian recipes, baked to perfection.</p>
+        <h2 className="text-3xl font-extrabold text-stone-900 dark:text-white tracking-tight">{t('menu.title')}</h2>
+        <p className="text-stone-500 dark:text-stone-400 mt-2 text-lg">{t('menu.subtitle')}</p>
       </div>
 
       <div className="flex flex-col md:flex-row gap-8">
@@ -92,7 +102,7 @@ const MenuView = ({ handleAddToCart }) => {
                     : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-white border border-transparent dark:border-stone-800'
                 }`}
               >
-                {category}
+                {t(`menu.${categoryTranslationKeys[category]}`)}
               </button>
             ))}
           </div>
@@ -109,7 +119,7 @@ const MenuView = ({ handleAddToCart }) => {
               </div>
               <input
                 type="text"
-                placeholder="Search entire menu for pizzas, pastas..."
+                placeholder={t('menu.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 text-stone-900 dark:text-white focus:bg-white dark:focus:bg-stone-900 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors shadow-sm outline-none"
@@ -119,11 +129,11 @@ const MenuView = ({ handleAddToCart }) => {
 
           <div className="mb-6 pb-4 border-b border-stone-200 dark:border-stone-800 flex justify-between items-end">
             <h3 className="text-2xl font-bold text-stone-900 dark:text-white capitalize">
-              {displayTitle}
+              {Object.keys(categoryTranslationKeys).includes(displayTitle) ? t(`menu.${categoryTranslationKeys[displayTitle]}`) : displayTitle}
             </h3>
             {!isLoading && searchQuery && (
               <span className="text-sm font-medium text-stone-500 dark:text-stone-400">
-                Found {displayedItems.length} result(s)
+                {t('menu.foundResults', { count: displayedItems.length })}
               </span>
             )}
           </div>
@@ -131,7 +141,7 @@ const MenuView = ({ handleAddToCart }) => {
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-20 text-stone-500">
               <Loader2 className="w-10 h-10 animate-spin text-red-500 mb-4" />
-              <p>Loading fresh menu items from the oven...</p>
+              <p>{t('menu.loading')}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-12">
@@ -149,12 +159,12 @@ const MenuView = ({ handleAddToCart }) => {
               {displayedItems.length === 0 && (
                 <div className="col-span-1 lg:col-span-2 py-12 text-center bg-stone-50 dark:bg-stone-900/50 rounded-2xl border border-dashed border-stone-200 dark:border-stone-800">
                   <Search className="h-8 w-8 text-stone-300 dark:text-stone-600 mx-auto mb-3" />
-                  <p className="text-stone-500 dark:text-stone-400 font-medium">No items found matching "{searchQuery}".</p>
+                  <p className="text-stone-500 dark:text-stone-400 font-medium">{t('menu.noItems', { query: searchQuery })}</p>
                   <button 
                     onClick={() => setSearchQuery('')}
                     className="mt-4 text-red-600 dark:text-red-400 hover:underline text-sm font-medium"
                   >
-                    Clear search
+                    {t('menu.clearSearch')}
                   </button>
                 </div>
               )}

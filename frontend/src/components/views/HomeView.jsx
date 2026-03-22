@@ -1,9 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChefHat, Flame, Award } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const HomeView = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   return (
     <div className="w-full">
       {/* Hero Section */}
@@ -21,11 +23,11 @@ const HomeView = () => {
         {/* Hero Content */}
         <div className="relative z-10 text-center px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto mt-16">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white tracking-tight mb-6 text-shadow-lg leading-tight">
-            Welcome to Pizza Town <br/>
-            <span className="text-red-500 text-3xl sm:text-4xl md:text-5xl block mt-2">De Beste Pizza In Meise En Omstreken!</span>
+            {t('home.heroTitle1')} <br/>
+            <span className="text-red-500 text-3xl sm:text-4xl md:text-5xl block mt-2">{t('home.heroTitle2')}</span>
           </h1>
           <p className="text-lg sm:text-xl text-stone-200 mb-10 max-w-2xl mx-auto text-shadow-md leading-relaxed font-medium">
-            Delicious artisan pizzas and pastas, made with fresh ingredients and delivered fast to your door.
+            {t('home.heroDesc')}
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -33,13 +35,13 @@ const HomeView = () => {
               onClick={() => navigate('/menu')}
               className="inline-flex items-center justify-center px-6 py-3 rounded-full bg-red-600 text-white font-semibold transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-red-900/10 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-stone-950 outline-none text-lg w-full sm:w-auto"
             >
-              View Menu
+              {t('home.viewMenu')}
             </button>
             <button 
               onClick={() => navigate('/book')}
               className="inline-flex items-center justify-center px-6 py-3 rounded-full bg-white dark:bg-stone-900 text-stone-900 dark:text-white font-semibold border border-stone-200 dark:border-stone-800 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-stone-900/5 focus:ring-2 focus:ring-stone-500 focus:ring-offset-2 dark:focus:ring-offset-stone-950 outline-none text-lg w-full sm:w-auto"
             >
-              Book a Table
+              {t('home.bookTable')}
             </button>
           </div>
         </div>
@@ -54,8 +56,8 @@ const HomeView = () => {
             <div className="w-16 h-16 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center mb-4 text-red-600 dark:text-red-500 shadow-sm border border-red-100 dark:border-red-900/30">
               <ChefHat className="w-8 h-8" />
             </div>
-            <h3 className="text-xl font-bold text-stone-900 dark:text-white mb-2">Fresh Ingredients</h3>
-            <p className="text-stone-600 dark:text-stone-400">Locally sourced produce and premium Italian flour for the perfect crust.</p>
+            <h3 className="text-xl font-bold text-stone-900 dark:text-white mb-2">{t('home.feature1Title')}</h3>
+            <p className="text-stone-600 dark:text-stone-400">{t('home.feature1Desc')}</p>
           </div>
 
           {/* Feature 2 */}
@@ -63,8 +65,8 @@ const HomeView = () => {
             <div className="w-16 h-16 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center mb-4 text-emerald-600 dark:text-emerald-500 shadow-sm border border-emerald-100 dark:border-emerald-900/30">
               <Flame className="w-8 h-8" />
             </div>
-            <h3 className="text-xl font-bold text-stone-900 dark:text-white mb-2">Fast Delivery</h3>
-            <p className="text-stone-600 dark:text-stone-400">Hot and fresh to your door in Meise and surrounding areas.</p>
+            <h3 className="text-xl font-bold text-stone-900 dark:text-white mb-2">{t('home.feature2Title')}</h3>
+            <p className="text-stone-600 dark:text-stone-400">{t('home.feature2Desc')}</p>
           </div>
 
           {/* Feature 3 */}
@@ -72,8 +74,8 @@ const HomeView = () => {
             <div className="w-16 h-16 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center mb-4 text-amber-600 dark:text-amber-500 shadow-sm border border-amber-100 dark:border-amber-900/30">
               <Award className="w-8 h-8" />
             </div>
-            <h3 className="text-xl font-bold text-stone-900 dark:text-white mb-2">Best in Town</h3>
-            <p className="text-stone-600 dark:text-stone-400">Voted the best artisan pizza by our loyal local customers.</p>
+            <h3 className="text-xl font-bold text-stone-900 dark:text-white mb-2">{t('home.feature3Title')}</h3>
+            <p className="text-stone-600 dark:text-stone-400">{t('home.feature3Desc')}</p>
           </div>
 
         </div>

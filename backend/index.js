@@ -1,8 +1,10 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { createServer } from 'node:http';
 import { Server } from 'socket.io';
+
 
 import authRoutes from './routes/auth.routes.js';
 import menuRoutes from './routes/menu.routes.js';
@@ -14,10 +16,14 @@ import auditRoutes from './routes/audit.routes.js';
 dotenv.config();
 
 const app = express();
+
+// Security Headers
+app.use(helmet());
+
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: '*', // In production, use your frontend URL
+    origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
     methods: ['GET', 'POST']
   }
 });
@@ -25,7 +31,7 @@ const io = new Server(httpServer, {
 const PORT = process.env.PORT || 5000;
 
 app.use(cors({
-  origin: '*', // For dev, allow everything. Alternatively: 'http://localhost:5173'
+  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
 }));

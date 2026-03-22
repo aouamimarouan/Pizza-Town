@@ -2,10 +2,21 @@ import { Router } from 'express';
 import { randomUUID } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import rateLimit from 'express-rate-limit';
 import prisma from '../lib/prisma.js';
 import { authenticate } from '../middleware/auth.js';
 
 const router = Router();
+
+// Rate limiting for auth routes (max 10 attempts per 15 mins)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: 'Trop de tentatives. Veuillez réessayer plus tard.' }
+});
+
+router.use('/login', authLimiter);
+router.use('/register', authLimiter);
 
 // Helper to sign a JWT
 const signToken = (user) =>

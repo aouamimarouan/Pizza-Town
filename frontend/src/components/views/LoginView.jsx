@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Lock, Mail, AlertCircle, Phone, MapPin, User, ArrowRight, Loader2 } from 'lucide-react';
+import { Lock, Mail, AlertCircle, Phone, MapPin, User, ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { login, register } from '../../services/authService.js';
 
 const LoginView = ({ onAuthSuccess }) => {
+  const { t } = useTranslation();
   const [isLogin, setIsLogin] = useState(true);
 
   // Login State
@@ -17,6 +19,7 @@ const LoginView = ({ onAuthSuccess }) => {
 
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
 
 
@@ -41,12 +44,12 @@ const LoginView = ({ onAuthSuccess }) => {
       onAuthSuccess(result.user);
     } catch (err) {
       const status = err.response?.status;
-      let msg = 'Something went wrong. Please try again.';
+      let msg = t('login.errorGeneric');
       
       if (status === 401 || status === 404) {
-        msg = 'Invalid email or password.';
+        msg = t('login.errorInvalid');
       } else if (err.response?.data?.error) {
-        msg = err.response.data.error;
+        msg = err.response.data.error; // Keep backend string for specific validation errors
       }
       
       setError(msg);
@@ -69,7 +72,7 @@ const LoginView = ({ onAuthSuccess }) => {
                 : 'text-stone-500 hover:bg-stone-50 dark:hover:bg-[#111] border border-transparent'
             }`}
           >
-            Sign In
+            {t('login.signInTab')}
           </button>
           
           <button
@@ -86,7 +89,7 @@ const LoginView = ({ onAuthSuccess }) => {
             )}
             
             <span className={`relative z-10 flex items-center ${!isLogin ? 'text-white' : ''}`}>
-              Access Pizza Town
+              {t('login.vipTab')}
               {!isLogin && <ArrowRight className="w-4 h-4 ml-2 animate-pulse" />}
             </span>
           </button>
@@ -94,10 +97,10 @@ const LoginView = ({ onAuthSuccess }) => {
 
         <div className="text-center mb-8">
           <h2 className="text-3xl font-extrabold text-stone-900 dark:text-white tracking-tight font-heading">
-            {isLogin ? 'Welcome Back' : 'VIP Onboarding'}
+            {isLogin ? t('login.welcomeTitle') : t('login.vipTitle')}
           </h2>
           <p className="text-stone-500 dark:text-stone-400 mt-2">
-            {isLogin ? 'Sign in to track your artisan orders.' : 'Join the family for exclusive deals and fast checkout.'}
+            {isLogin ? t('login.welcomeDesc') : t('login.vipDesc')}
           </p>
         </div>
 
@@ -115,7 +118,7 @@ const LoginView = ({ onAuthSuccess }) => {
             <>
               <div>
                 <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">
-                  Full Name
+                  {t('login.fullName')}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -127,7 +130,7 @@ const LoginView = ({ onAuthSuccess }) => {
                     value={regName}
                     onChange={(e) => setRegName(e.target.value)}
                     className="w-full pl-10 pr-4 py-3 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-[#151515] text-stone-900 dark:text-white focus:bg-white dark:focus:bg-[#1a1a1a] focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors outline-none font-medium"
-                    placeholder="John Doe"
+                    placeholder={t('login.fullNamePlaceholder')}
                   />
                 </div>
               </div>
@@ -135,7 +138,7 @@ const LoginView = ({ onAuthSuccess }) => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">
-                    Phone Number
+                    {t('login.phone')}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -147,14 +150,14 @@ const LoginView = ({ onAuthSuccess }) => {
                       value={regPhone}
                       onChange={(e) => setRegPhone(e.target.value)}
                       className="w-full pl-10 pr-4 py-3 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-[#151515] text-stone-900 dark:text-white focus:bg-white dark:focus:bg-[#1a1a1a] focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors outline-none font-medium"
-                      placeholder="0412 34 56 78"
+                      placeholder={t('login.phonePlaceholder')}
                     />
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">
-                    Delivery Address
+                    {t('login.address')}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -166,7 +169,7 @@ const LoginView = ({ onAuthSuccess }) => {
                       value={regAddress}
                       onChange={(e) => setRegAddress(e.target.value)}
                       className="w-full pl-10 pr-4 py-3 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-[#151515] text-stone-900 dark:text-white focus:bg-white dark:focus:bg-[#1a1a1a] focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors outline-none font-medium"
-                      placeholder="Stationsstraat 14"
+                      placeholder={t('login.addressPlaceholder')}
                     />
                   </div>
                 </div>
@@ -177,7 +180,7 @@ const LoginView = ({ onAuthSuccess }) => {
           {/* Standard Fields (Always Visible) */}
           <div>
             <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">
-              Email Address
+              {t('login.email')}
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -189,27 +192,39 @@ const LoginView = ({ onAuthSuccess }) => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className={`w-full pl-10 pr-4 py-3 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-[#151515] text-stone-900 dark:text-white focus:bg-white dark:focus:bg-[#1a1a1a] focus:ring-2 transition-colors outline-none font-medium ${isLogin ? 'focus:ring-red-500 focus:border-red-500' : 'focus:ring-emerald-500 focus:border-emerald-500'}`}
-                placeholder="email@example.com"
+                placeholder={t('login.emailPlaceholder')}
               />
             </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">
-              Password
+              {t('login.password')}
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Lock className="h-5 w-5 text-stone-400 dark:text-stone-500" />
               </div>
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={`w-full pl-10 pr-4 py-3 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-[#151515] text-stone-900 dark:text-white focus:bg-white dark:focus:bg-[#1a1a1a] focus:ring-2 transition-colors outline-none font-medium ${isLogin ? 'focus:ring-red-500 focus:border-red-500' : 'focus:ring-emerald-500 focus:border-emerald-500'}`}
-                placeholder="••••••••"
+                className={`w-full pl-10 pr-12 py-3 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-[#151515] text-stone-900 dark:text-white focus:bg-white dark:focus:bg-[#1a1a1a] focus:ring-2 transition-colors outline-none font-medium ${isLogin ? 'focus:ring-red-500 focus:border-red-500' : 'focus:ring-emerald-500 focus:border-emerald-500'}`}
+                placeholder={t('login.passwordPlaceholder')}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-5 w-5" />
+                ) : (
+                  <Eye className="h-5 w-5" />
+                )}
+              </button>
             </div>
           </div>
 
@@ -223,21 +238,21 @@ const LoginView = ({ onAuthSuccess }) => {
             } focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-[#0a0a0a]`}
           >
             {isLoading
-              ? <><Loader2 className="w-5 h-5 animate-spin" /> {isLogin ? 'Signing in…' : 'Creating account…'}</>
-              : isLogin ? 'Secure Sign In' : 'Complete VIP Registration'
+              ? <><Loader2 className="w-5 h-5 animate-spin" /> {isLogin ? t('login.btnSigningIn') : t('login.btnCreating')}</>
+              : isLogin ? t('login.btnSecureSignIn') : t('login.btnCompleteVIP')
             }
           </button>
 
           {isLogin && (
             <div className="mt-6 text-center">
               <p className="text-stone-500 dark:text-stone-400 text-sm">
-                Don't have an account?{' '}
+                {t('login.noAccount')}{' '}
                 <button 
                   type="button"
                   onClick={() => setIsLogin(false)}
                   className="font-bold text-stone-900 dark:text-white hover:text-red-600 dark:hover:text-red-500 transition-colors"
                 >
-                  Create one
+                  {t('login.createOne')}
                 </button>
               </p>
             </div>
@@ -245,13 +260,13 @@ const LoginView = ({ onAuthSuccess }) => {
           {!isLogin && (
             <div className="mt-6 text-center">
               <p className="text-stone-500 dark:text-stone-400 text-sm">
-                Already have an account?{' '}
+                {t('login.hasAccount')}{' '}
                 <button 
                   type="button"
                   onClick={() => setIsLogin(true)}
                   className="font-bold text-stone-900 dark:text-white hover:text-emerald-500 transition-colors"
                 >
-                  Sign In
+                  {t('login.signInTab')}
                 </button>
               </p>
             </div>

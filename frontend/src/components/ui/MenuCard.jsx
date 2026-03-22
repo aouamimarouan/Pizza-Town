@@ -1,7 +1,9 @@
 import React from 'react';
 import { Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const MenuCard = ({ item, handleAddToCart, openModal }) => {
+  const { t } = useTranslation();
   return (
     // Added 'overflow-hidden' here so the image respects the card's rounded corners
     <div 
@@ -16,12 +18,12 @@ const MenuCard = ({ item, handleAddToCart, openModal }) => {
       <div className="flex gap-2 mb-3">
         {item.popular && (
           <span className="text-[10px] uppercase tracking-widest font-bold bg-amber-900/20 text-amber-500 border border-amber-900/50 px-2 py-0.5 rounded">
-            Popular
+            {t('card.popular')}
           </span>
         )}
         {item.vegetarian && (
           <span className="text-[10px] uppercase tracking-widest font-bold bg-emerald-900/20 text-emerald-500 border border-emerald-900/50 px-2 py-0.5 rounded">
-            Vegetarian
+            {t('card.vegetarian')}
           </span>
         )}
       </div>
@@ -52,7 +54,7 @@ const MenuCard = ({ item, handleAddToCart, openModal }) => {
             }
           }}
           className="bg-stone-800 hover:bg-red-600 text-white p-2.5 rounded-lg transition-all duration-300 shadow-lg shadow-black/20"
-          aria-label={`Add ${item.name} to cart`}
+          aria-label={t('card.addCart', { name: item.name })}
         >
           <Plus className="w-5 h-5" />
         </button>
