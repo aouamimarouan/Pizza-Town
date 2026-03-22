@@ -4,14 +4,8 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-  "name": "pizza-town-root",
-  "version": "1.0.0",
-  "scripts": {
-    "install": "cd backend && npm install",
-    "build": "cd backend && npx prisma generate",
-    "start": "cd backend && node index.js" 
-  }
-},
+    "start": "node index.js" 
+  },
   "dependencies": {
     "@prisma/client": "^6.0.0",
     "axios": "^1.13.6",
