@@ -39,20 +39,20 @@ const Navbar = ({ isDarkMode, toggleDarkMode, cartItemCount, openCart, user, onL
 
   return (
     <nav className="bg-white/90 dark:bg-stone-950/90 backdrop-blur-md border-b border-stone-100 dark:border-stone-800 sticky top-0 z-50 transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-20">
+      <div className="max-w-7xl mx-auto px-4 lg:px-8">
+        <div className="flex justify-between items-center h-16 md:h-20">
           <div className="flex items-center">
             {/* Logo */}
             <Link 
               to="/"
-              className="flex-shrink-0 flex items-center cursor-pointer group"
+              className="flex-shrink-0 flex items-center cursor-pointer group mr-2"
             >
               <img 
                 src={logo} 
                 alt="Pizza Town Logo" 
-                className="h-10 w-auto mr-3 transition-transform duration-300 group-hover:scale-110" 
+                className="h-8 md:h-10 w-auto mr-2 md:mr-3 transition-transform duration-300 group-hover:scale-110" 
               />
-              <span className="font-heading font-extrabold text-2xl text-red-600 dark:text-red-500 tracking-tighter transition-colors">
+              <span className="font-heading font-extrabold text-xl md:text-2xl text-red-600 dark:text-red-500 tracking-tighter transition-colors whitespace-nowrap">
                 Pizza Town
               </span>
             </Link>
@@ -75,34 +75,37 @@ const Navbar = ({ isDarkMode, toggleDarkMode, cartItemCount, openCart, user, onL
             </div>
           </div>
 
-          <div className="hidden md:flex items-center space-x-4">
-            <a href="tel:022697176" className="inline-flex items-center text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200 transition-colors">
-              <Phone className="h-4 w-4 mr-2" />
-              <span className="text-sm font-medium">02 269 71 76</span>
-            </a>
+          <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4">
             
-            <div className="h-6 w-px bg-stone-200 dark:bg-stone-700 mx-2"></div>
-            
-            <LanguageSwitcher />
+            {/* Desktop Only Phone & Language */}
+            <div className="hidden lg:flex items-center space-x-4">
+              <a href="tel:022697176" className="inline-flex items-center text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200 transition-colors">
+                <Phone className="h-4 w-4 mr-2" />
+                <span className="text-sm font-medium">02 269 71 76</span>
+              </a>
+              <div className="h-6 w-px bg-stone-200 dark:bg-stone-700 mx-2"></div>
+              <LanguageSwitcher />
+            </div>
 
             <button 
               onClick={toggleDarkMode}
-              className="p-2 rounded-full bg-stone-100 dark:bg-stone-900 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-white transition-colors"
+              className="hidden md:flex p-2 rounded-full bg-stone-100 dark:bg-stone-900 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-white transition-colors"
               aria-label="Toggle Dark Mode"
             >
               {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </button>
 
-            {user.isLoggedIn ? (
+            {/* User Login/Dropdown - Always Visible */}
+            {user?.isLoggedIn ? (
               <div className="relative" ref={dropdownRef}>
                 <button 
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="flex items-center gap-3 rounded-full bg-stone-900 border border-stone-800 p-1 pr-4 hover:border-stone-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="flex items-center gap-1 md:gap-3 rounded-full bg-stone-900 border border-stone-800 p-1 md:pr-4 hover:border-stone-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
                 >
                   <div className="w-8 h-8 rounded-full bg-stone-800 flex items-center justify-center shrink-0 border border-stone-700 text-stone-300">
-                    <User className="w-4 h-4" />
+                    <User className="w-4 h-4 md:w-4 md:h-4" />
                   </div>
-                  <div className="flex flex-col items-start leading-tight">
+                  <div className="hidden md:flex flex-col items-start leading-tight">
                     <span className="text-white font-bold text-sm">{user.full_name?.split(' ')[0] || 'User'}</span>
                     {user.role === 'admin' || user.role === 'moderator' ? (
                       <span className="text-amber-500 font-bold text-[10px] tracking-wider uppercase">{user.role}</span>
@@ -110,12 +113,12 @@ const Navbar = ({ isDarkMode, toggleDarkMode, cartItemCount, openCart, user, onL
                       <span className="text-emerald-500 font-bold text-[10px] tracking-wider uppercase">Member</span>
                     )}
                   </div>
-                  <Settings className="w-4 h-4 text-stone-400 ml-1" />
+                  <Settings className="hidden md:block w-4 h-4 text-stone-400 ml-1" />
                 </button>
 
                 {/* Dropdown Menu */}
                 {isDropdownOpen && (
-                  <div className="absolute right-0 mt-3 w-56 bg-[#1a1a1a] border border-stone-800 rounded-xl shadow-2xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="absolute right-0 mt-3 w-56 bg-[#1a1a1a] border border-stone-800 rounded-xl shadow-2xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200 text-stone-200">
                     {(user.role === 'admin' || user.role === 'moderator') && (
                       <>
                         <button
@@ -123,7 +126,7 @@ const Navbar = ({ isDarkMode, toggleDarkMode, cartItemCount, openCart, user, onL
                             navigate('/admin');
                             setIsDropdownOpen(false);
                           }}
-                          className="w-full text-left px-4 py-3 flex items-center text-stone-200 hover:bg-stone-800 hover:text-white transition-colors"
+                          className="w-full text-left px-4 py-3 flex items-center hover:bg-stone-800 hover:text-white transition-colors"
                         >
                           <LayoutDashboard className="w-4 h-4 mr-3 text-stone-400" />
                           {t('navbar.admin')}
@@ -139,7 +142,7 @@ const Navbar = ({ isDarkMode, toggleDarkMode, cartItemCount, openCart, user, onL
                             navigate('/orders');
                             setIsDropdownOpen(false);
                           }}
-                          className="w-full text-left px-4 py-3 flex items-center text-stone-200 hover:bg-stone-800 hover:text-white transition-colors"
+                          className="w-full text-left px-4 py-3 flex items-center hover:bg-stone-800 hover:text-white transition-colors"
                         >
                           <Package className="w-4 h-4 mr-3 text-stone-400" />
                           {t('navbar.myOrders')}
@@ -168,6 +171,7 @@ const Navbar = ({ isDarkMode, toggleDarkMode, cartItemCount, openCart, user, onL
               </Link>
             )}
 
+            {/* Cart - Always Visible */}
             {user?.role !== 'admin' && user?.role !== 'moderator' && (
               <button 
                 onClick={openCart}
@@ -181,35 +185,30 @@ const Navbar = ({ isDarkMode, toggleDarkMode, cartItemCount, openCart, user, onL
                 )}
               </button>
             )}
-          </div>
 
-          {/* Mobile menu button */}
-          <div className="flex items-center md:hidden space-x-2">
-            <button 
-              onClick={toggleDarkMode}
-              className="p-2 rounded-md text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
-            >
-              {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </button>
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-md text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-800 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-red-500 transition-colors"
-            >
-              <span className="sr-only">Open main menu</span>
-              {isMobileMenuOpen ? (
-                <X className="block h-6 w-6" aria-hidden="true" />
-              ) : (
-                <Menu className="block h-6 w-6" aria-hidden="true" />
-              )}
-            </button>
+            {/* Mobile menu toggle */}
+            <div className="flex items-center md:hidden">
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="inline-flex items-center justify-center p-2 rounded-md text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-800 focus:outline-none transition-colors"
+              >
+                <span className="sr-only">Open main menu</span>
+                {isMobileMenuOpen ? (
+                  <X className="block h-6 w-6" aria-hidden="true" />
+                ) : (
+                  <Menu className="block h-6 w-6" aria-hidden="true" />
+                )}
+              </button>
+            </div>
+            
           </div>
         </div>
       </div>
 
-      {/* Mobile Navigation */}
+      {/* Mobile Navigation Dropdown Menu */}
       <div 
         className={`md:hidden absolute w-full bg-white dark:bg-stone-950 border-b border-stone-200 dark:border-stone-800 shadow-xl transition-all duration-300 ease-in-out ${
-          isMobileMenuOpen ? 'max-h-96 opacity-100 visible' : 'max-h-0 opacity-0 invisible overflow-hidden'
+          isMobileMenuOpen ? 'max-h-[32rem] opacity-100 visible' : 'max-h-0 opacity-0 invisible overflow-hidden'
         }`}
       >
         <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
@@ -227,24 +226,35 @@ const Navbar = ({ isDarkMode, toggleDarkMode, cartItemCount, openCart, user, onL
               {link.label}
             </Link>
           ))}
-          <Link
-              to="/login"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className={`block w-full text-left px-3 py-3 rounded-md text-base font-medium transition-colors ${
-                location.pathname === '/login'
-                  ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
-                  : 'text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-900 hover:text-stone-900 dark:hover:text-white'
-              }`}
-            >
-              {t('navbar.login')}
-          </Link>
-          <div className="pt-4 mt-2 border-t border-stone-100 dark:border-stone-800 px-3 flex justify-between items-center">
-             <a href="tel:022697176" className="flex items-center text-stone-700 dark:text-stone-300 py-2">
+          
+          <div className="pt-4 mt-2 border-t border-stone-100 dark:border-stone-800 px-3 flex flex-col space-y-4">
+            {/* Phone & Contact */}
+            <a href="tel:022697176" className="flex items-center text-stone-700 dark:text-stone-300 py-2">
               <Phone className="h-5 w-5 mr-3 text-stone-400 dark:text-stone-500" />
               02 269 71 76
             </a>
-            <div className="flex items-center justify-end py-2">
+            
+            {/* Language & Dark Mode */}
+            <div className="flex items-center justify-between py-2 gap-4">
               <LanguageSwitcher />
+              
+              <button 
+                onClick={toggleDarkMode}
+                className="flex p-2 flex-1 justify-center items-center gap-2 rounded-md bg-stone-100 dark:bg-stone-900 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-800 transition-colors"
+                aria-label="Toggle Dark Mode"
+              >
+                {isDarkMode ? (
+                  <>
+                    <Sun className="h-5 w-5" />
+                    <span className="text-sm font-medium">Light</span>
+                  </>
+                ) : (
+                  <>
+                    <Moon className="h-5 w-5" />
+                    <span className="text-sm font-medium">Dark</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
