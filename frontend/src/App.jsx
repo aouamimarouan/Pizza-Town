@@ -19,8 +19,8 @@ import { logout as authLogout, getStoredUser } from './services/authService.js';
 
 // Normalize the stored user object
 const toAppUser = (apiUser) => apiUser
-  ? { isLoggedIn: true, role: apiUser.role || 'customer', email: apiUser.email, full_name: apiUser.full_name, user_id: apiUser.user_id }
-  : { isLoggedIn: false, role: null, email: '', full_name: '', user_id: null };
+  ? { isLoggedIn: true, role: apiUser.role || 'customer', email: apiUser.email, full_name: apiUser.full_name, user_id: apiUser.user_id, address: apiUser.address }
+  : { isLoggedIn: false, role: null, email: '', full_name: '', user_id: null, address: '' };
 
 // Inner app component so we can use hooks like useNavigate if needed, though most routing is declarative
 function AppContent() {
@@ -169,6 +169,7 @@ function AppContent() {
         cart={cart}
         updateQuantity={handleUpdateQuantity}
         clearCart={clearCart}
+        user={user}
       />
     </div>
   );

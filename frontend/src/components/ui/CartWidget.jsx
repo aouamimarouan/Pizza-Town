@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import api from '../../services/api.js';
 import socket from '../../services/socket.js';
 
-const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart }) => {
+const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user }) => {
   const { t } = useTranslation();
   const [checkoutStep, setCheckoutStep] = useState(false);
   const [orderMode, setOrderMode] = useState('delivery'); // 'delivery' or 'takeaway'
@@ -13,6 +13,12 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   
+  // Pre-fill address from user profile when entering checkout step
+  React.useEffect(() => {
+    if (checkoutStep && user?.address && !address) {
+      setAddress(user.address);
+    }
+  }, [checkoutStep, user?.address]);
 
 
   const subtotal = cart.reduce((sum, item) => sum + ((item.totalPrice || item.price) * item.quantity), 0);

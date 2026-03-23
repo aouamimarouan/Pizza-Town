@@ -47,7 +47,17 @@ router.post('/register', async (req, res) => {
     });
 
     const token = signToken(user);
-    res.status(201).json({ token, user: { user_id: user.user_id, email: user.email, full_name: user.full_name, role: user.role } });
+    res.status(201).json({ 
+      token, 
+      user: { 
+        user_id: user.user_id, 
+        email: user.email, 
+        full_name: user.full_name, 
+        role: user.role,
+        address: user.address,
+        phone_number: user.phone_number
+      } 
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal server error.' });
@@ -74,7 +84,17 @@ router.post('/login', async (req, res) => {
     }
 
     const token = signToken(user);
-    res.json({ token, user: { user_id: user.user_id, email: user.email, full_name: user.full_name, role: user.role } });
+    res.json({ 
+      token, 
+      user: { 
+        user_id: user.user_id, 
+        email: user.email, 
+        full_name: user.full_name, 
+        role: user.role,
+        address: user.address,
+        phone_number: user.phone_number
+      } 
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal server error.' });

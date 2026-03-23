@@ -394,7 +394,7 @@ const AdminDashboard = () => {
                                     {customizations?.crust && (
                                       <li className="text-[10px] text-stone-400 flex items-center gap-2">
                                         <span className="w-1 h-1 rounded-full bg-stone-700"></span>
-                                        <span className="italic font-medium">{t('admin.lblCrust') || 'Crust'}:</span> {customizations.crust.name}
+                                        <span className="italic font-medium">{t('Crust') || 'Crust'}:</span> {customizations.crust.name}
                                       </li>
                                     )}
                                     

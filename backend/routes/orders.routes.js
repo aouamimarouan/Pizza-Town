@@ -69,7 +69,7 @@ router.post('/', authenticate, async (req, res) => {
           total_price,
           status: 'pending',
           delivery_type: delivery_type || 'delivery',
-          delivery_address: (delivery_type === 'delivery') ? (delivery_address || req.user.address) : null,
+          delivery_address: (delivery_type === 'delivery') ? delivery_address : null,
           delivery_fee,
           orderitems: {
             create: orderItemsData,
