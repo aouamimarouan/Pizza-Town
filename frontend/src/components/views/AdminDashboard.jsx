@@ -438,7 +438,7 @@ const AdminDashboard = () => {
                             </div>
                           ) : (
                             <div className="text-[11px] text-stone-600 flex items-center gap-1.5 italic">
-                              <span>🛍️ {t('admin.storePickup') || 'Store Pickup'}</span>
+                              <span>🛍️ {t('Store Pickup') || 'Store Pickup'}</span>
                             </div>
                           )}
                         </div>
