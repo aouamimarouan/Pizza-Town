@@ -1,8 +1,9 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  baseURL: import.meta.env.VITE_API_URL || 'https://app-e079a1ab-622e-4a3f-9710-3cce046231f4.cleverapps.io/api',
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,
 });
 
 // ─── Request Interceptor ───────────────────────────────────────────────────
