@@ -5,6 +5,7 @@ const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://app-e079a1ab-622e
 
 const socket = io(SOCKET_URL, {
   autoConnect: true,
+  withCredentials: true
 });
 
 export default socket;
