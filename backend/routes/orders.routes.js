@@ -93,14 +93,28 @@ router.post('/', authenticate, async (req, res) => {
         phone: order.users.phone_number || 'N/A', 
         address: order.delivery_address || order.users.address || 'N/A'
       },
-      items: order.orderitems.map(item => ({
-        name: item.menuitems.name,
-        quantity: item.quantity,
-        price: parseFloat(item.menuitems.price),
-        // Map customizations JSON to subItems and extras for the printer
-        subItems: item.customizations?.subItems || [], 
-        extras: item.customizations?.extras || []
-      })),
+      items: order.orderitems.map(item => {
+        const cust = item.customizations || {};
+        const extras = [...(cust.extras || [])];
+        
+        // Add Toppings to extras for the printer
+        if (cust.toppings && Array.isArray(cust.toppings)) {
+          cust.toppings.forEach(t => extras.push({ name: t }));
+        }
+        
+        // Add Crust to extras for the printer
+        if (cust.crust) {
+          extras.push({ name: `Crust: ${cust.crust.name}` });
+        }
+
+        return {
+          name: item.menuitems.name,
+          quantity: item.quantity,
+          price: parseFloat(item.menuitems.price),
+          subItems: cust.subItems || [], 
+          extras: extras
+        };
+      }),
       subtotal: items_total,
       deliveryFee: delivery_fee,
       total: total_price

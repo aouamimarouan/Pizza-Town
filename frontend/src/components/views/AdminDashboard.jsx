@@ -387,19 +387,38 @@ const AdminDashboard = () => {
                                   {item.quantity}x {item.menuitems?.name}
                                 </span>
                                 
-                                {/* Render Nested Selections (subItems) and Extras */}
-                                {(customizations?.subItems?.length > 0 || customizations?.extras?.length > 0) && (
-                                  <ul className="ml-4 mt-1 space-y-0.5 border-l border-stone-800 pl-3">
-                                    {customizations?.subItems?.map((sub, sIdx) => (
-                                      <li key={`sub-${sIdx}`} className="text-[10px] text-stone-500 flex items-center gap-2">
+                                {/* Render Nested Selections / Customizations (Robust Support) */}
+                                {(customizations?.crust || customizations?.toppings?.length > 0 || customizations?.subItems?.length > 0 || customizations?.extras?.length > 0) && (
+                                  <ul className="ml-4 mt-1 space-y-1 border-l border-stone-800 pl-3">
+                                    {/* Handle Crust */}
+                                    {customizations?.crust && (
+                                      <li className="text-[10px] text-stone-400 flex items-center gap-2">
                                         <span className="w-1 h-1 rounded-full bg-stone-700"></span>
+                                        <span className="italic font-medium">{t('admin.lblCrust') || 'Crust'}:</span> {customizations.crust.name}
+                                      </li>
+                                    )}
+                                    
+                                    {/* Handle Toppings (Standard Format) */}
+                                    {customizations?.toppings?.map((topping, tIdx) => (
+                                      <li key={`top-${tIdx}`} className="text-[10px] text-emerald-500/80 flex items-center gap-2 font-medium">
+                                        <span className="w-1 h-1 rounded-full bg-emerald-900/50"></span>
+                                        + {topping}
+                                      </li>
+                                    ))}
+
+                                    {/* Handle subItems (Deals/Combos Format) */}
+                                    {customizations?.subItems?.map((sub, sIdx) => (
+                                      <li key={`sub-${sIdx}`} className="text-[10px] text-stone-300 flex items-center gap-2">
+                                        <span className="w-1 h-1 rounded-full bg-stone-500"></span>
                                         {sub.quantity > 1 ? `${sub.quantity}x ` : ''}{sub.name}
                                       </li>
                                     ))}
+
+                                    {/* Handle extras (Generic Format) */}
                                     {customizations?.extras?.map((extra, eIdx) => (
                                       <li key={`extra-${eIdx}`} className="text-[10px] text-emerald-600/60 flex items-center gap-2">
                                         <span className="w-1 h-1 rounded-full bg-emerald-900/50"></span>
-                                        +{extra.name}
+                                        + {extra.name}
                                       </li>
                                     ))}
                                   </ul>
