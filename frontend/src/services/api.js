@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://app-e079a1ab-622e-4a3f-9710-3cce046231f4.cleverapps.io/api',
+  // Hardcoded to Clever Cloud to ensure Vercel doesn't use an incorrect environment variable
+  baseURL: 'https://app-e079a1ab-622e-4a3f-9710-3cce046231f4.cleverapps.io/api',
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
 });
