@@ -359,43 +359,54 @@ const AdminDashboard = () => {
                 </thead>
                 <tbody className="divide-y divide-stone-800/50">
                   {orders.map((order) => {
-                    const statusFormatted = order.status.replace(/_/g, ' ');
+                    // STEP 1: Debugging the raw order structure
+                    console.log('DEBUG ORDER:', order);
+
+                    const statusFormatted = order.status?.replace(/_/g, ' ') || 'pending';
                     const isPending = order.status === 'pending';
                     const isCooking = order.status === 'cooking';
                     const isOut = order.status === 'out_for_delivery';
                     
                     return (
                     <tr key={order.order_id} className="hover:bg-[#1a1a1a] transition-colors group">
-                      <td className="p-4 font-mono font-medium text-stone-300">#{order.order_id.split('-')[0]}</td>
+                      <td className="p-4 font-mono font-medium text-stone-300">#{order.order_id?.split('-')[0]}</td>
                       <td className="p-4 text-stone-400">
                         <div className="font-medium text-stone-300">{order.users?.full_name || t('admin.guestUser')}</div>
+                        
+                        {/* STEP 3: Robust Mapping for Order Items and Nested Selections */}
                         <div className="text-xs text-stone-500 mt-1 space-y-2">
-                          {console.log('Order Items:', order.items)}
-                          {order.items?.map((item, idx) => (
-                            <div key={item.id || idx} className="flex flex-col">
-                              <span className="font-semibold text-stone-300">
-                                {item.quantity}x {item.menuitems.name}
-                              </span>
-                              
-                              {/* DEEP NESTED SELECTIONS (for Deals/Combos) */}
-                              {(item.customizations?.subItems?.length > 0 || item.customizations?.extras?.length > 0) && (
-                                <ul className="ml-4 mt-1 space-y-0.5 border-l border-stone-800 pl-3">
-                                  {item.customizations.subItems.map((sub, sIdx) => (
-                                    <li key={`sub-${sIdx}`} className="text-[10px] text-stone-500 flex items-center gap-2">
-                                      <span className="w-1 h-1 rounded-full bg-stone-700"></span>
-                                      {sub.quantity ? `${sub.quantity}x ` : ''}{sub.name}
-                                    </li>
-                                  ))}
-                                  {item.customizations.extras.map((extra, eIdx) => (
-                                    <li key={`extra-${eIdx}`} className="text-[10px] text-emerald-600/60 flex items-center gap-2">
-                                      <span className="w-1 h-1 rounded-full bg-emerald-900/50"></span>
-                                      +{extra.name}
-                                    </li>
-                                  ))}
-                                </ul>
-                              )}
-                            </div>
-                          ))}
+                          {order.items?.map((item, idx) => {
+                            // Ensure customizations is an object if it comes as a string
+                            const customizations = typeof item.customizations === 'string' 
+                              ? JSON.parse(item.customizations) 
+                              : item.customizations;
+
+                            return (
+                              <div key={item.id || idx} className="flex flex-col">
+                                <span className="font-semibold text-stone-300">
+                                  {item.quantity}x {item.menuitems?.name}
+                                </span>
+                                
+                                {/* Render Nested Selections (subItems) and Extras */}
+                                {(customizations?.subItems?.length > 0 || customizations?.extras?.length > 0) && (
+                                  <ul className="ml-4 mt-1 space-y-0.5 border-l border-stone-800 pl-3">
+                                    {customizations?.subItems?.map((sub, sIdx) => (
+                                      <li key={`sub-${sIdx}`} className="text-[10px] text-stone-500 flex items-center gap-2">
+                                        <span className="w-1 h-1 rounded-full bg-stone-700"></span>
+                                        {sub.quantity > 1 ? `${sub.quantity}x ` : ''}{sub.name}
+                                      </li>
+                                    ))}
+                                    {customizations?.extras?.map((extra, eIdx) => (
+                                      <li key={`extra-${eIdx}`} className="text-[10px] text-emerald-600/60 flex items-center gap-2">
+                                        <span className="w-1 h-1 rounded-full bg-emerald-900/50"></span>
+                                        +{extra.name}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                         
                         {/* --- NEW: Conditional Address / Pickup Label --- */}

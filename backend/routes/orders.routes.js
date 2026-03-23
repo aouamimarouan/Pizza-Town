@@ -113,12 +113,18 @@ router.post('/', authenticate, async (req, res) => {
       console.error("⚠️ Print job failed, but order was saved successfully.");
     }
 
+    // PREPARE FOR FRONTEND: Rename orderitems to items
+    const formattedOrder = {
+      ...order,
+      items: order.orderitems
+    };
+
     // 2. Real-time Dashboard Update (Socket.io)
     if (req.io) {
-      req.io.emit('new_order', order);
+      req.io.emit('new_order', formattedOrder);
     }
 
-    res.status(201).json(order);
+    res.status(201).json(formattedOrder);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal server error.' });
