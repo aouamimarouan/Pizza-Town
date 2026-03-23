@@ -88,7 +88,13 @@ const MenuView = ({ handleAddToCart }) => {
         
         {/* Sidebar Categories */}
         <aside className="w-full md:w-1/4">
-          <div className="md:sticky md:top-28 space-y-2">
+          <div 
+            className="md:sticky md:top-28 flex overflow-x-auto md:flex-col gap-3 md:gap-0 md:space-y-2 pb-2 md:pb-0"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            <style>{`
+              aside div::-webkit-scrollbar { display: none; }
+            `}</style>
             {categories.map((category) => (
               <button
                 key={category}
@@ -96,7 +102,7 @@ const MenuView = ({ handleAddToCart }) => {
                   setActiveCategory(category);
                   setSearchQuery(''); // Clear search when clicking a new category
                 }}
-                className={`w-full text-left px-5 py-3.5 rounded-xl transition-all duration-200 font-semibold ${
+                className={`flex-shrink-0 whitespace-nowrap w-auto md:w-full text-left px-5 py-3.5 rounded-xl transition-all duration-200 font-semibold ${
                   activeCategory === category && searchQuery === ''
                     ? 'bg-red-600 text-white shadow-md shadow-red-900/20'
                     : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-white border border-transparent dark:border-stone-800'

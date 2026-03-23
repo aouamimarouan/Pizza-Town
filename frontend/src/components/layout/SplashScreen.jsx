@@ -64,12 +64,12 @@ const SplashScreen = ({ onComplete }) => {
               className="h-32 md:h-48 w-auto relative drop-shadow-[0_0_20px_rgba(220,38,38,0.3)] transition-transform duration-500 group-hover:scale-105"
             />
           </div>
-          <div className="mt-8 flex items-center gap-3">
-             <div className="h-[1px] w-16 bg-gradient-to-r from-transparent via-stone-700 to-transparent"></div>
-             <span className="text-stone-500 uppercase tracking-[0.4em] text-[10px] font-bold">
+          <div className="mt-6 md:mt-8 flex flex-row items-center justify-center w-full px-4 max-w-[90vw] gap-2 md:gap-3">
+             <div className="hidden md:block h-[1px] w-12 md:w-16 bg-gradient-to-r from-transparent via-stone-700 to-transparent flex-shrink-0"></div>
+             <span className="text-stone-500 uppercase tracking-widest sm:tracking-widest md:tracking-[0.4em] text-[9px] sm:text-[10px] font-bold text-center whitespace-normal md:whitespace-nowrap leading-relaxed">
                De Beste Pizza In Meise En Omstreken
              </span>
-             <div className="h-[1px] w-16 bg-gradient-to-r from-transparent via-stone-700 to-transparent"></div>
+             <div className="hidden md:block h-[1px] w-12 md:w-16 bg-gradient-to-r from-transparent via-stone-700 to-transparent flex-shrink-0"></div>
           </div>
         </div>
 

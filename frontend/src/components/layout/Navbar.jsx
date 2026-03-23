@@ -45,14 +45,14 @@ const Navbar = ({ isDarkMode, toggleDarkMode, cartItemCount, openCart, user, onL
             {/* Logo */}
             <Link 
               to="/"
-              className="flex-shrink-0 flex items-center cursor-pointer group mr-2"
+              className="flex-shrink-0 flex items-center cursor-pointer group mr-1 sm:mr-2"
             >
               <img 
                 src={logo} 
                 alt="Pizza Town Logo" 
-                className="h-8 md:h-10 w-auto mr-2 md:mr-3 transition-transform duration-300 group-hover:scale-110" 
+                className="h-7 sm:h-8 md:h-10 w-auto mr-1.5 sm:mr-2 md:mr-3 transition-transform duration-300 group-hover:scale-110" 
               />
-              <span className="font-heading font-extrabold text-xl md:text-2xl text-red-600 dark:text-red-500 tracking-tighter transition-colors whitespace-nowrap">
+              <span className="font-heading font-extrabold text-base sm:text-lg md:text-2xl text-red-600 dark:text-red-500 tracking-tighter transition-colors whitespace-nowrap">
                 Pizza Town
               </span>
             </Link>
@@ -75,7 +75,7 @@ const Navbar = ({ isDarkMode, toggleDarkMode, cartItemCount, openCart, user, onL
             </div>
           </div>
 
-          <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4">
+          <div className="flex items-center space-x-1.5 sm:space-x-3 md:space-x-4">
             
             {/* Desktop Only Phone & Language */}
             <div className="hidden lg:flex items-center space-x-4">
@@ -102,8 +102,8 @@ const Navbar = ({ isDarkMode, toggleDarkMode, cartItemCount, openCart, user, onL
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className="flex items-center gap-1 md:gap-3 rounded-full bg-stone-900 border border-stone-800 p-1 md:pr-4 hover:border-stone-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
                 >
-                  <div className="w-8 h-8 rounded-full bg-stone-800 flex items-center justify-center shrink-0 border border-stone-700 text-stone-300">
-                    <User className="w-4 h-4 md:w-4 md:h-4" />
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 md:w-8 md:h-8 rounded-full bg-stone-800 flex items-center justify-center shrink-0 border border-stone-700 text-stone-300">
+                    <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-4 md:h-4" />
                   </div>
                   <div className="hidden md:flex flex-col items-start leading-tight">
                     <span className="text-white font-bold text-sm">{user.full_name?.split(' ')[0] || 'User'}</span>
@@ -175,9 +175,9 @@ const Navbar = ({ isDarkMode, toggleDarkMode, cartItemCount, openCart, user, onL
             {user?.role !== 'admin' && user?.role !== 'moderator' && (
               <button 
                 onClick={openCart}
-                className="relative p-2 rounded-full bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+                className="relative p-1.5 sm:p-2 rounded-full bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
               >
-                <ShoppingCart className="h-5 w-5" />
+                <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 md:h-5 md:w-5" />
                 {cartItemCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-emerald-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
                     {cartItemCount}
@@ -186,17 +186,16 @@ const Navbar = ({ isDarkMode, toggleDarkMode, cartItemCount, openCart, user, onL
               </button>
             )}
 
-            {/* Mobile menu toggle */}
             <div className="flex items-center md:hidden">
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="inline-flex items-center justify-center p-2 rounded-md text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-800 focus:outline-none transition-colors"
+                className="inline-flex items-center justify-center p-1 sm:p-2 rounded-md text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-800 focus:outline-none transition-colors"
               >
                 <span className="sr-only">Open main menu</span>
                 {isMobileMenuOpen ? (
-                  <X className="block h-6 w-6" aria-hidden="true" />
+                  <X className="block h-5 w-5 sm:h-6 sm:w-6" aria-hidden="true" />
                 ) : (
-                  <Menu className="block h-6 w-6" aria-hidden="true" />
+                  <Menu className="block h-5 w-5 sm:h-6 sm:w-6" aria-hidden="true" />
                 )}
               </button>
             </div>
