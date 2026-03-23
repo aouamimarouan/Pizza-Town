@@ -369,24 +369,25 @@ const AdminDashboard = () => {
                       <td className="p-4 font-mono font-medium text-stone-300">#{order.order_id.split('-')[0]}</td>
                       <td className="p-4 text-stone-400">
                         <div className="font-medium text-stone-300">{order.users?.full_name || t('admin.guestUser')}</div>
-                        <div className="text-xs text-stone-500 mt-1 space-y-1">
-                          {order.orderitems?.map((item, idx) => (
+                        <div className="text-xs text-stone-500 mt-1 space-y-2">
+                          {console.log('Order Items:', order.items)}
+                          {order.items?.map((item, idx) => (
                             <div key={item.id || idx} className="flex flex-col">
-                              <span className="font-semibold text-stone-400">
+                              <span className="font-semibold text-stone-300">
                                 {item.quantity}x {item.menuitems.name}
                               </span>
                               
-                              {/* Display selections/variations if it's a Deal or has customizations */}
+                              {/* DEEP NESTED SELECTIONS (for Deals/Combos) */}
                               {(item.customizations?.subItems?.length > 0 || item.customizations?.extras?.length > 0) && (
-                                <ul className="ml-3 mt-0.5 space-y-0.5 border-l border-stone-800 pl-2">
+                                <ul className="ml-4 mt-1 space-y-0.5 border-l border-stone-800 pl-3">
                                   {item.customizations.subItems.map((sub, sIdx) => (
-                                    <li key={sIdx} className="text-[10px] text-stone-500 flex items-center gap-1">
+                                    <li key={`sub-${sIdx}`} className="text-[10px] text-stone-500 flex items-center gap-2">
                                       <span className="w-1 h-1 rounded-full bg-stone-700"></span>
                                       {sub.quantity ? `${sub.quantity}x ` : ''}{sub.name}
                                     </li>
                                   ))}
                                   {item.customizations.extras.map((extra, eIdx) => (
-                                    <li key={eIdx} className="text-[10px] text-emerald-600/70 flex items-center gap-1">
+                                    <li key={`extra-${eIdx}`} className="text-[10px] text-emerald-600/60 flex items-center gap-2">
                                       <span className="w-1 h-1 rounded-full bg-emerald-900/50"></span>
                                       +{extra.name}
                                     </li>

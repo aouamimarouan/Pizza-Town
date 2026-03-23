@@ -148,13 +148,27 @@ router.get('/', authenticate, async (req, res) => {
     const orders = await prisma.orders.findMany({
       where,
       include: {
-        orderitems: { include: { menuitems: { select: { name: true, price: true } } } },
-        users: { select: { full_name: true, email: true, phone_number: true, address: true } },
+        orderitems: { 
+          include: { 
+            menuitems: { 
+              select: { name: true, price: true } 
+            } 
+          } 
+        },
+        users: { 
+          select: { full_name: true, email: true, phone_number: true, address: true } 
+        },
       },
       orderBy: { created_at: 'desc' },
     });
 
-    res.json(orders);
+    // Rename orderitems to items for frontend consistency
+    const formattedOrders = orders.map(order => ({
+      ...order,
+      items: order.orderitems
+    }));
+
+    res.json(formattedOrders);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal server error.' });
