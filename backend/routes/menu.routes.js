@@ -64,6 +64,7 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
 // PUT /api/menu/:id — Admin only
 router.put('/:id', authenticate, requireAdmin, async (req, res) => {
   try {
+    const { name, category, description, price, image_url, is_available } = req.body;
     if (price !== undefined && (isNaN(parseFloat(price)) || parseFloat(price) < 0)) {
        return res.status(400).json({ error: 'Price must be a non-negative number.' });
     }
