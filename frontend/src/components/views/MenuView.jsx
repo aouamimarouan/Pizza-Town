@@ -7,7 +7,7 @@ import ItemCustomizationModal from '../ui/ItemCustomizationModal';
 import api from '../../services/api.js';
 
 // Define the categories in order for the sidebar
-const categories = ['Menu Deals', 'Starters', 'Pizzas', 'Pastas', 'Half-Half Pizzas', 'Salads', 'Desserts', 'Drinks'];
+const categories = ['Menu Deals', 'Starters', 'Pizzas', 'Pastas', 'Half-Half Pizzas', 'Salads', 'Desserts', 'Drinks', 'Sauces'];
 
 const categoryTranslationKeys = {
   'Menu Deals': 'catMenuDeals',
@@ -17,7 +17,8 @@ const categoryTranslationKeys = {
   'Half-Half Pizzas': 'catHalfHalf',
   'Salads': 'catSalads',
   'Desserts': 'catDesserts',
-  'Drinks': 'catDrinks'
+  'Drinks': 'catDrinks',
+  'Sauces': 'catSauces'
 };
 
 // Map DB item to Component format

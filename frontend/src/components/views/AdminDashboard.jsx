@@ -163,7 +163,7 @@ const AdminDashboard = () => {
     if (activeAdminTab === 'audit') fetchAuditLogs();
   }, [activeAdminTab]);
 
-  const categories = ['Menu Deals', 'Starters', 'Pizzas', 'Pastas', 'Half-Half Pizzas', 'Salads', 'Desserts', 'Drinks'];
+  const categories = ['Menu Deals', 'Starters', 'Pizzas', 'Pastas', 'Half-Half Pizzas', 'Salads', 'Desserts', 'Drinks', 'Sauces'];
 
   const openMenuModal = (item = null) => {
     if (item) {
