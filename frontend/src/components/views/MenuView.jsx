@@ -26,37 +26,48 @@ const getDealConfiguration = (dealName) => {
   let steps = [];
   if (dealName === 'Deal 1') {
     steps = [
-      { id: 'step1', title: 'Choose 1 Large Pizza', categoryConstraint: 'Pizzas', requiredQuantity: 1, sizeConstraint: 'large' },
-      { id: 'step2', title: 'Choose 2 Drinks', categoryConstraint: 'Drinks', requiredQuantity: 2 },
-      { id: 'step3', title: 'Choose 1 Starter', categoryConstraint: 'Starters', requiredQuantity: 1 }
+      { id: 'step1', title: 'Choose 1 Large Pizza', category: 'Pizzas', requiredQuantity: 1, sizeConstraint: 'large' },
+      { id: 'step2', title: 'Choose 2 Drinks', category: 'Drinks', requiredQuantity: 2 },
+      { id: 'step3', title: 'Choose 1 Starter', category: 'Starters', requiredQuantity: 1 }
     ];
   } else if (dealName === 'Deal 2') {
     steps = [
-      { id: 'step1', title: 'Choose 2 Small Pizzas', categoryConstraint: 'Pizzas', requiredQuantity: 2, sizeConstraint: 'small' },
-      { id: 'step2', title: 'Choose 2 Drinks', categoryConstraint: 'Drinks', requiredQuantity: 2 },
-      { id: 'step3', title: 'Choose 1 Starter', categoryConstraint: 'Starters', requiredQuantity: 1 }
+      { id: 'step1', title: 'Choose 2 Small Pizzas', category: 'Pizzas', requiredQuantity: 2, sizeConstraint: 'small' },
+      { id: 'step2', title: 'Choose 2 Drinks', category: 'Drinks', requiredQuantity: 2 },
+      { id: 'step3', title: 'Choose 1 Starter', category: 'Starters', requiredQuantity: 1 }
     ];
   } else if (dealName === 'Deal 3') {
     steps = [
-      { id: 'step1', title: 'Choose 1 Medium Pizza', categoryConstraint: 'Pizzas', requiredQuantity: 1, sizeConstraint: 'medium' },
-      { id: 'step2', title: 'Choose 2 Drinks', categoryConstraint: 'Drinks', requiredQuantity: 2 },
-      { id: 'step3', title: 'Choose 1 Starter', categoryConstraint: 'Starters', requiredQuantity: 1 }
+      { id: 'step1', title: 'Choose 1 Medium Pizza', category: 'Pizzas', requiredQuantity: 1, sizeConstraint: 'medium' },
+      { id: 'step2', title: 'Choose 2 Drinks', category: 'Drinks', requiredQuantity: 2 },
+      { id: 'step3', title: 'Choose 1 Starter', category: 'Starters', requiredQuantity: 1 }
     ];
   } else if (dealName === 'Deal 4') {
     steps = [
-      { id: 'step1', title: 'Choose 3 Starters', categoryConstraint: 'Starters', requiredQuantity: 3 }
+      { 
+        id: 'step1', 
+        title: 'Review Fixed Items', 
+        category: 'Fixed', 
+        requiredQuantity: 0,
+        isFixed: true,
+        fixedItems: [
+          { name: '4x Chicken Wings' },
+          { name: '4x Chicken Nuggets' },
+          { name: '1x American Potatoes' }
+        ]
+      }
     ];
   } else if (dealName === 'Deal 5') {
     steps = [
-      { id: 'step1', title: 'Choose 1 Pasta', categoryConstraint: 'Pastas', requiredQuantity: 1 },
-      { id: 'step2', title: 'Choose 1 Drink', categoryConstraint: 'Drinks', requiredQuantity: 1 },
-      { id: 'step3', title: 'Choose 1 Starter', categoryConstraint: 'Starters', requiredQuantity: 1 }
+      { id: 'step1', title: 'Choose 1 Pasta', category: 'Pastas', requiredQuantity: 1 },
+      { id: 'step2', title: 'Choose 1 Drink', category: 'Drinks', requiredQuantity: 1 },
+      { id: 'step3', title: 'Choose 1 Starter', category: 'Starters', requiredQuantity: 1 }
     ];
   } else {
     // Fallback
     steps = [
-      { id: 'step1', title: 'Choose 1 Pizza', categoryConstraint: 'Pizzas', requiredQuantity: 1 },
-      { id: 'step2', title: 'Choose 1 Drink', categoryConstraint: 'Drinks', requiredQuantity: 1 }
+      { id: 'step1', title: 'Choose 1 Pizza', category: 'Pizzas', requiredQuantity: 1 },
+      { id: 'step2', title: 'Choose 1 Drink', category: 'Drinks', requiredQuantity: 1 }
     ];
   }
   return { steps };

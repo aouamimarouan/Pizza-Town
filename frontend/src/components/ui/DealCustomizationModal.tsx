@@ -43,12 +43,14 @@ export const DealCustomizationModal: React.FC<DealCustomizationModalProps> = ({
         <div className="px-6 py-4 border-b border-stone-800 flex justify-between items-center bg-stone-900/50">
           <div>
             <h2 className="text-xl font-bold text-white">{deal.name}</h2>
-            <p className="text-sm text-stone-400">
-              {t('dealModal.stepProgress', 'Step {{current}} of {{total}}', { 
-                current: customizer.currentStepIndex + 1, 
-                total: customizer.steps.length 
-              })} - {customizer.currentStep.title}
-            </p>
+            {(!customizer.steps || !customizer.steps[0]?.isFixed || customizer.steps.length > 1) && (
+              <p className="text-sm text-stone-400">
+                {t('dealModal.stepProgress', 'Step {{current}} of {{total}}', { 
+                  current: customizer.currentStepIndex + 1, 
+                  total: customizer.steps.length 
+                })} - {customizer.currentStep.title}
+              </p>
+            )}
           </div>
           <button 
             onClick={onClose}
@@ -59,17 +61,19 @@ export const DealCustomizationModal: React.FC<DealCustomizationModalProps> = ({
         </div>
 
         {/* Progress Bar */}
-        <div className="flex h-1.5 bg-stone-900 w-full">
-          {customizer.steps.map((step, idx) => (
-            <div 
-              key={step.id} 
-              className={`h-full transition-all duration-300 ${
-                idx <= customizer.currentStepIndex ? 'bg-red-600' : 'bg-transparent'
-              }`}
-              style={{ width: `${100 / customizer.steps.length}%` }}
-            />
-          ))}
-        </div>
+        {(!customizer.steps || !customizer.steps[0]?.isFixed || customizer.steps.length > 1) && (
+          <div className="flex h-1.5 bg-stone-900 w-full">
+            {customizer.steps.map((step, idx) => (
+              <div 
+                key={step.id} 
+                className={`h-full transition-all duration-300 ${
+                  idx <= customizer.currentStepIndex ? 'bg-red-600' : 'bg-transparent'
+                }`}
+                style={{ width: `${100 / customizer.steps.length}%` }}
+              />
+            ))}
+          </div>
+        )}
 
         {/* Scrollable Content */}
         <div className="flex-grow overflow-y-auto p-6 space-y-6 custom-scrollbar bg-stone-950">
