@@ -5,6 +5,13 @@ import { authenticate, requireAdmin } from '../middleware/auth.js';
 import { logAdminAction } from '../lib/auditLogger.js';
 
 const router = Router();
+const sanitizeItem = (item) => {
+  if (!item) return null;
+  return {
+    ...item,
+    price: item.price ? parseFloat(item.price.toString()) : 0
+  };
+};
 
 // GET /api/menu — Public
 router.get('/', async (req, res) => {
@@ -13,10 +20,10 @@ router.get('/', async (req, res) => {
       where: { is_available: true },
       orderBy: { category: 'asc' },
     });
-    res.json(items);
+    res.json(items.map(sanitizeItem));
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Internal server error.' });
+    console.error('[Menu GET error]:', err);
+    res.status(500).json({ error: 'Internal server error.', details: err.message });
   }
 });
 
@@ -25,10 +32,10 @@ router.get('/:id', async (req, res) => {
   try {
     const item = await prisma.menuitems.findUnique({ where: { item_id: req.params.id } });
     if (!item) return res.status(404).json({ error: 'Item not found.' });
-    res.json(item);
+    res.json(sanitizeItem(item));
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Internal server error.' });
+    console.error(`[Menu GET item ${req.params.id} error]:`, err);
+    res.status(500).json({ error: 'Internal server error.', details: err.message });
   }
 });
 
@@ -52,12 +59,12 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
     });
 
     // Logging
-    await logAdminAction(req.user.user_id, 'CREATE', 'MenuItem', item.item_id, item);
+    await logAdminAction(req.user.user_id, 'CREATE', 'MenuItem', item.item_id, sanitizeItem(item));
 
-    res.status(201).json(item);
+    res.status(201).json(sanitizeItem(item));
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Internal server error.' });
+    console.error('[Menu POST error]:', err);
+    res.status(500).json({ error: 'Internal server error.', details: err.message });
   }
 });
 
@@ -87,11 +94,11 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
       finalState: item 
     });
 
-    res.json(item);
+    res.json(sanitizeItem(item));
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ error: 'Item not found.' });
-    console.error(err);
-    res.status(500).json({ error: 'Internal server error.' });
+    console.error(`[Menu PUT item ${req.params.id} error]:`, err);
+    res.status(500).json({ error: 'Internal server error.', details: err.message });
   }
 });
 

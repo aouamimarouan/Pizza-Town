@@ -6,6 +6,23 @@ import { sendOrderToPrintNode } from '../services/printerService.js';
 
 const router = Router();
 
+const sanitizeOrder = (order) => {
+  if (!order) return null;
+  return {
+    ...order,
+    total_price: order.total_price ? parseFloat(order.total_price.toString()) : 0,
+    delivery_fee: order.delivery_fee ? parseFloat(order.delivery_fee.toString()) : 0,
+    items: (order.orderitems || []).map(oi => ({
+      ...oi,
+      subtotal: oi.subtotal ? parseFloat(oi.subtotal.toString()) : 0,
+      menuitems: oi.menuitems ? {
+        ...oi.menuitems,
+        price: oi.menuitems.price ? parseFloat(oi.menuitems.price.toString()) : 0
+      } : null
+    }))
+  };
+};
+
 // POST /api/orders — Protected (must be logged in)
 // Body: { items: [{ menu_item_id, quantity, customizations }], delivery_type }
 router.post('/', authenticate, async (req, res) => {
@@ -138,10 +155,10 @@ router.post('/', authenticate, async (req, res) => {
       req.io.emit('new_order', formattedOrder);
     }
 
-    res.status(201).json(formattedOrder);
+    res.status(201).json(sanitizeOrder(order));
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Internal server error.' });
+    console.error('[Order POST error]:', err);
+    res.status(500).json({ error: 'Internal server error.', details: err.message });
   }
 });
 
@@ -182,16 +199,10 @@ router.get('/', authenticate, async (req, res) => {
       orderBy: { created_at: 'desc' },
     });
 
-    // Rename orderitems to items for frontend consistency
-    const formattedOrders = orders.map(order => ({
-      ...order,
-      items: order.orderitems
-    }));
-
-    res.json(formattedOrders);
+    res.json(orders.map(sanitizeOrder));
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Internal server error.' });
+    console.error('[Order GET error]:', err);
+    res.status(500).json({ error: 'Internal server error.', details: err.message });
   }
 });
 
