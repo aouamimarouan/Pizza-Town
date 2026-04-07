@@ -81,6 +81,16 @@ export const sendOrderToPrintNode = async (orderData) => {
         if (item.subItems && Array.isArray(item.subItems)) {
           item.subItems.forEach(sub => {
             printer.println(`   - ${sub.quantity || 1}x ${sub.name}`);
+            
+            // Sub-item customizations (Pizza details in a Deal)
+            const cust = sub.customizations;
+            if (cust) {
+              if (cust.size) printer.println(`     > Size: ${cust.size.id.toUpperCase()}`);
+              if (cust.crust) printer.println(`     > Crust: ${cust.crust.name}`);
+              if (cust.toppings && cust.toppings.length > 0) {
+                printer.println(`     > Toppings: ${cust.toppings.join(', ')}`);
+              }
+            }
           });
         }
 

@@ -82,12 +82,26 @@ router.post('/', authenticate, async (req, res) => {
         unit_price = PIZZA_SIZE_PRICES[customizations.size.id];
       }
 
-      // Add Crust and Topping prices
+      // Add Crust and Topping prices (Global or from Deal Sub-Items)
       if (customizations.crust && customizations.crust.price) {
         unit_price += parseFloat(customizations.crust.price);
       }
       if (customizations.toppings && Array.isArray(customizations.toppings)) {
         unit_price += customizations.toppings.length * 1.0; // TOPPING_PRICE = 1.0
+      }
+
+      // If it's a deal, also add prices for extras within sub-items
+      if (category === 'Menu Deals' && customizations.subItems) {
+        customizations.subItems.forEach(sub => {
+          if (sub.customizations) {
+            if (sub.customizations.crust && sub.customizations.crust.price) {
+              unit_price += parseFloat(sub.customizations.crust.price);
+            }
+            if (sub.customizations.toppings && Array.isArray(sub.customizations.toppings)) {
+              unit_price += sub.customizations.toppings.length * 1.0;
+            }
+          }
+        });
       }
 
       const subtotal = unit_price * quantity;
