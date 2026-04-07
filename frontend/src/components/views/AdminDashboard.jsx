@@ -407,12 +407,25 @@ const AdminDashboard = () => {
                                     ))}
 
                                     {/* Handle subItems (Deals/Combos Format) */}
-                                    {customizations?.subItems?.map((sub, sIdx) => (
-                                      <li key={`sub-${sIdx}`} className="text-[10px] text-stone-300 flex items-center gap-2">
-                                        <span className="w-1 h-1 rounded-full bg-stone-500"></span>
-                                        {sub.quantity > 1 ? `${sub.quantity}x ` : ''}{sub.name}
-                                      </li>
-                                    ))}
+                                    {customizations?.subItems?.map((sub, sIdx) => {
+                                      const subCust = sub.customizations;
+                                      return (
+                                        <li key={`sub-${sIdx}`} className="text-[10px] text-stone-300 flex flex-col gap-0.5 pb-1">
+                                          <div className="flex items-center gap-2">
+                                            <span className="w-1 h-1 rounded-full bg-stone-500"></span>
+                                            <span className="font-bold">{sub.quantity > 1 ? `${sub.quantity}x ` : ''}{sub.name}</span>
+                                          </div>
+                                          {subCust && (
+                                            <div className="ml-3 pl-2 border-l border-stone-800 space-y-0.5 opacity-70">
+                                              {subCust.crust && <div>- {subCust.crust.name}</div>}
+                                              {subCust.toppings && subCust.toppings.length > 0 && (
+                                                <div className="text-emerald-600">+ {subCust.toppings.join(', ')}</div>
+                                              )}
+                                            </div>
+                                          )}
+                                        </li>
+                                      );
+                                    })}
 
                                     {/* Handle extras (Generic Format) */}
                                     {customizations?.extras?.map((extra, eIdx) => (

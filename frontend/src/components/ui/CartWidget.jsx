@@ -129,10 +129,26 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user }
                     <h4 className="font-bold text-stone-900 dark:text-white">{item.name}</h4>
                     {item.customizations && (
                       <div className="text-xs text-stone-500 dark:text-stone-400 mt-1 space-y-0.5">
-                        <p>• {t('cart.crust', { crust: item.customizations.crust.name })}</p>
-                        {item.customizations.toppings.length > 0 && (
+                        {/* Pizza Details */}
+                        {item.customizations.crust && (
+                          <p>• {t('cart.crust', { crust: item.customizations.crust.name })}</p>
+                        )}
+                        {item.customizations.toppings && item.customizations.toppings.length > 0 && (
                           <p>• + {item.customizations.toppings.join(', ')}</p>
                         )}
+                        
+                        {/* Deal Sub-items */}
+                        {item.customizations.subItems && item.customizations.subItems.map((sub, idx) => (
+                          <div key={idx} className="pl-2 mt-1 border-l border-stone-200 dark:border-stone-800">
+                             <p className="font-semibold text-stone-600 dark:text-stone-300">• {sub.name}</p>
+                             {sub.customizations?.crust && (
+                               <p className="pl-2 opacity-80 text-[10px]">- {t('cart.crust', { crust: sub.customizations.crust.name })}</p>
+                             )}
+                             {sub.customizations?.toppings && sub.customizations.toppings.length > 0 && (
+                               <p className="pl-2 opacity-80 text-[10px]">- + {sub.customizations.toppings.join(', ')}</p>
+                             )}
+                          </div>
+                        ))}
                       </div>
                     )}
                     <span className="text-emerald-600 dark:text-emerald-400 font-medium text-sm mt-1 block">€{(item.totalPrice || item.price).toFixed(2)}</span>
