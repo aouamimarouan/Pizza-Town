@@ -26,9 +26,11 @@ export interface PizzaProduct extends BaseProduct {
 export interface DealStep {
   id: string;
   title: string; // e.g., "Choose 1 Large Pizza"
-  categoryConstraint: string; // e.g., "Pizzas"
+  category: string; // e.g., "Pizzas"
   requiredQuantity: number; // e.g., 1
   sizeConstraint?: string; // Optional: restrict to specific size, e.g., 'Large'
+  isFixed?: boolean;
+  fixedItems?: { name: string; quantity?: number; category?: string }[];
 }
 
 export interface DealConfiguration {

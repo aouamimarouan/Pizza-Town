@@ -382,54 +382,95 @@ const AdminDashboard = () => {
                               : item.customizations;
 
                             return (
-                              <div key={item.id || idx} className="flex flex-col">
-                                <span className="font-semibold text-stone-300">
-                                  {item.quantity}x {item.menuitems?.name} {customizations?.selectedVariant ? `(${customizations.selectedVariant.name})` : ''}
-                                </span>
+                              <div key={item.id || idx} className="flex flex-col mb-4 bg-stone-900/30 p-3 rounded-xl border border-stone-800/50">
+                                {/* Base Item Header */}
+                                <div className="font-semibold text-stone-200 flex items-center gap-2">
+                                  <span className="bg-stone-800 text-stone-300 px-2 py-0.5 rounded text-xs border border-stone-700">{item.quantity}x</span>
+                                  <span className="text-[13px] uppercase tracking-wide">{item.menuitems?.name}</span>
+                                  {customizations?.selectedVariant && (
+                                    <span className="text-emerald-400 text-[10px] uppercase font-bold tracking-wider bg-emerald-900/30 px-2 py-0.5 rounded border border-emerald-800/30">
+                                      {customizations.selectedVariant.name}
+                                    </span>
+                                  )}
+                                </div>
                                 
-                                {/* Render Nested Selections / Customizations (Robust Support) */}
-                                {(customizations?.crust || customizations?.toppings?.length > 0 || customizations?.subItems?.length > 0 || customizations?.extras?.length > 0 || customizations?.dealSelections?.length > 0) && (
-                                  <ul className="ml-4 mt-1 space-y-1 border-l border-stone-800 pl-3">
-                                    {/* Handle Crust */}
+                                {/* Standard Customizations (For Non-Deals) */}
+                                {(!customizations?.dealSelections || customizations.dealSelections.length === 0) && (
+                                  <ul className="ml-7 mt-2 space-y-1 border-l border-stone-700 pl-3">
                                     {customizations?.crust && (
-                                      <li className="text-[10px] text-stone-400 flex items-center gap-2">
-                                        <span className="w-1 h-1 rounded-full bg-stone-700"></span>
-                                        <span className="italic font-medium">{t('Crust') || 'Crust'}:</span> {customizations.crust.name}
+                                      <li className="text-[11px] text-stone-400 flex items-center gap-2">
+                                        <span className="w-1 h-1 rounded-full bg-stone-500"></span>
+                                        <span className="italic font-medium">Crust:</span> {customizations.crust.name}
                                       </li>
                                     )}
-                                    
-                                    {/* Handle Toppings (Standard Format) */}
                                     {customizations?.toppings?.map((topping, tIdx) => (
-                                      <li key={`top-${tIdx}`} className="text-[10px] text-emerald-500/80 flex items-center gap-2 font-medium">
-                                        <span className="w-1 h-1 rounded-full bg-emerald-900/50"></span>
+                                      <li key={`top-${tIdx}`} className="text-[11px] text-emerald-500/90 flex items-center gap-2 font-medium">
+                                        <span className="w-1 h-1 rounded-full bg-emerald-800"></span>
                                         + {topping}
                                       </li>
                                     ))}
-
-                                    {/* Handle subItems (Deals/Combos Format) */}
-                                    {customizations?.subItems?.map((sub, sIdx) => (
-                                      <li key={`sub-${sIdx}`} className="text-[10px] text-stone-300 flex items-center gap-2">
-                                        <span className="w-1 h-1 rounded-full bg-stone-500"></span>
-                                        {sub.quantity > 1 ? `${sub.quantity}x ` : ''}{sub.name}
-                                      </li>
-                                    ))}
-
-                                    {/* Handle extras (Generic Format) */}
                                     {customizations?.extras?.map((extra, eIdx) => (
-                                      <li key={`extra-${eIdx}`} className="text-[10px] text-emerald-600/60 flex items-center gap-2">
-                                        <span className="w-1 h-1 rounded-full bg-emerald-900/50"></span>
+                                      <li key={`extra-${eIdx}`} className="text-[11px] text-emerald-600/80 flex items-center gap-2">
+                                        <span className="w-1 h-1 rounded-full bg-emerald-800"></span>
                                         + {extra.name}
                                       </li>
                                     ))}
-
-                                    {/* Handle Deal Selections (New System) */}
-                                    {customizations?.dealSelections?.map((subItem, dsIdx) => (
-                                      <li key={`ds-${dsIdx}`} className="text-[10px] text-amber-500/80 flex items-center gap-2">
-                                        <span className="w-1 h-1 rounded-full bg-amber-900/50"></span>
-                                        ❖ {subItem.product?.name} {subItem.variant ? `(${subItem.variant.name})` : ''}
-                                      </li>
-                                    ))}
                                   </ul>
+                                )}
+
+                                {/* Deal Nested Selections */}
+                                {customizations?.dealSelections?.length > 0 && (
+                                  <div className="ml-7 mt-3 space-y-2.5 border-l-2 border-red-900/60 pl-4">
+                                    <div className="text-[10px] font-bold text-red-500/70 uppercase tracking-widest mb-1.5">Deal Contents</div>
+                                    {Object.values(
+                                      customizations.dealSelections.reduce((acc, current) => {
+                                        // Group selections if they are identical (same product + same variant)
+                                        const key = `${current.product?.id}-${current.variant?.id || 'no-var'}`;
+                                        if (!acc[key]) {
+                                          acc[key] = { ...current, mergedQuantity: 1 };
+                                        } else {
+                                          acc[key].mergedQuantity += 1;
+                                        }
+                                        return acc;
+                                      }, {})
+                                    ).map((subItem, dsIdx) => {
+                                      const isNestedPizza = subItem.product?.category === 'Pizzas' || subItem.product?.category === 'Half-Half Pizzas';
+                                      const subCust = subItem.customizations;
+
+                                      return (
+                                        <div key={`ds-${dsIdx}`} className="flex flex-col">
+                                          <div className="text-[11.5px] text-stone-300 font-medium flex items-center gap-2">
+                                            <span className="text-red-500/60 text-xs">●</span>
+                                            <span className="text-stone-400 font-mono">{subItem.mergedQuantity}x</span>
+                                            <span>{subItem.product?.name}</span>
+                                            {subItem.variant && (
+                                              <span className="text-emerald-400 text-[9px] uppercase font-bold tracking-wider bg-emerald-900/30 px-1.5 py-0.5 rounded border border-emerald-800/30 ml-1">
+                                                {subItem.variant.name}
+                                              </span>
+                                            )}
+                                          </div>
+
+                                          {/* Nested Crust/Toppings if it's a Pizza with customizations */}
+                                          {isNestedPizza && subCust && (
+                                            <ul className="ml-5 mt-1 space-y-1 border-l border-stone-700/50 pl-3">
+                                              {subCust.crust && (
+                                                <li className="text-[10px] text-stone-400 flex items-center gap-1.5">
+                                                  <span className="w-1 h-1 rounded-full bg-stone-600"></span>
+                                                  <span className="italic">Crust:</span> {subCust.crust.name}
+                                                </li>
+                                              )}
+                                              {subCust.toppings?.map((topping, tIdx) => (
+                                                <li key={`subtop-${tIdx}`} className="text-[10px] text-emerald-500/80 flex items-center gap-1.5 font-medium">
+                                                  <span className="w-1 h-1 rounded-full bg-emerald-800"></span>
+                                                  + {topping}
+                                                </li>
+                                              ))}
+                                            </ul>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
                                 )}
                               </div>
                             );

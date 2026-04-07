@@ -20,10 +20,10 @@ export const DealCustomizationModal: React.FC<DealCustomizationModalProps> = ({
   const { t } = useTranslation();
   const customizer = useDealCustomizer(deal);
 
-  // Filter products for the current step
-  const currentStepProducts = availableProducts.filter(
-    (p) => p.category === customizer.currentStep?.categoryConstraint
-  );
+  // Filter products for the current step (STRICT CATEGORY FILTERING)
+  const currentStepProducts = customizer.currentStep?.isFixed
+    ? []
+    : availableProducts.filter((p) => p.category === customizer.currentStep?.category);
 
   const handleConfirm = () => {
     const cartItem = customizer.generateCartItem();
@@ -77,12 +77,30 @@ export const DealCustomizationModal: React.FC<DealCustomizationModalProps> = ({
             <h3 className="text-2xl font-bold text-white tracking-tight">
               {customizer.currentStep.title}
             </h3>
-            <span className="text-sm text-stone-400">
-              {t('dealModal.selectX', 'Select {{req}}', { req: customizer.currentStep.requiredQuantity })}
-            </span>
+            {!customizer.currentStep.isFixed && (
+              <span className="text-sm text-stone-400">
+                {t('dealModal.selectX', 'Select {{req}}', { req: customizer.currentStep.requiredQuantity })}
+              </span>
+            )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          {customizer.currentStep.isFixed ? (
+            <div className="bg-stone-900 border border-stone-800 rounded-2xl p-6 text-center space-y-4">
+              <h4 className="text-lg font-bold text-white mb-4">Included in this Deal:</h4>
+              <ul className="space-y-3 inline-block text-left mx-auto">
+                {customizer.currentStep.fixedItems?.map((item, idx) => (
+                  <li key={idx} className="flex items-center text-stone-300 gap-3 text-lg">
+                    <Check className="w-5 h-5 text-emerald-500" />
+                    {item.name}
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-8 pt-6 border-t border-stone-800 text-stone-400 text-sm">
+                These items are grouped and pre-selected. Click Add to Cart to confirm.
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {currentStepProducts.map((product) => {
               const stepSelections = customizer.getStepSelections(customizer.currentStep!.id);
               const isSelected = stepSelections.some(s => s.product.id === product.id);
@@ -135,7 +153,8 @@ export const DealCustomizationModal: React.FC<DealCustomizationModalProps> = ({
                 </div>
               );
             })}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Footer / Action */}

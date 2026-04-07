@@ -50,12 +50,14 @@ export const useDealCustomizer = (deal: DealProduct) => {
 
   const isCurrentStepComplete = useMemo(() => {
     if (!currentStep) return false;
+    if (currentStep.isFixed) return true;
     const stepSelections = getStepSelections(currentStep.id);
     return stepSelections.length === currentStep.requiredQuantity;
   }, [currentStep, selections]);
 
   const isDealComplete = useMemo(() => {
     return steps.every((step) => {
+      if (step.isFixed) return true;
       const stepSelections = getStepSelections(step.id);
       return stepSelections.length === step.requiredQuantity;
     });
@@ -78,6 +80,25 @@ export const useDealCustomizer = (deal: DealProduct) => {
 
     // Flatten all selections
     const allSelections = Object.values(selections).flat();
+
+    // Auto-inject fixed items into the cart payload
+    steps.forEach(step => {
+      if (step.isFixed && step.fixedItems) {
+        step.fixedItems.forEach((fixedItem, idx) => {
+          allSelections.push({
+            stepId: step.id,
+            product: { 
+              id: `fixed-${step.id}-${idx}`, 
+              name: fixedItem.name, 
+              price: 0, 
+              category: step.category 
+            },
+            variant: undefined,
+            customizations: undefined
+          });
+        });
+      }
+    });
 
     return {
       cartItemId: `${deal.id}-${Date.now()}`,
