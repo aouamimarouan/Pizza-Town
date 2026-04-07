@@ -24,10 +24,13 @@ const ItemCustomizationModal = ({ item, onClose, handleAddToCart }) => {
   const [selectedToppings, setSelectedToppings] = useState([]);
 
   const totalPrice = useMemo(() => {
-    const basePrice = item.price || 0;
+    let basePrice = item.price || 0;
+    if (item.selectedVariant) {
+      basePrice += item.selectedVariant.priceModifier || 0;
+    }
     const toppingsPrice = selectedToppings.length * TOPPING_PRICE;
     return basePrice + selectedCrust.price + toppingsPrice;
-  }, [item.price, selectedCrust, selectedToppings]);
+  }, [item.price, item.selectedVariant, selectedCrust, selectedToppings]);
 
   const toggleTopping = (topping) => {
     setSelectedToppings((prev) =>
