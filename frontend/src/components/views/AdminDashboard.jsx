@@ -779,14 +779,13 @@ const AdminDashboard = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">{t('admin.lblDescription')}</label>
+                <label className="block text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">{t('admin.lblDesc')}</label>
                 <textarea 
-                  required
                   rows="3"
                   value={menuForm.description}
                   onChange={(e) => setMenuForm({...menuForm, description: e.target.value})}
                   className="w-full bg-[#0a0a0a] border border-stone-800 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:border-emerald-500 transition-colors resize-none"
-                  placeholder={t('admin.plhDescription')}
+                  placeholder={t('admin.plhDesc')}
                 ></textarea>
               </div>
 
