@@ -22,39 +22,17 @@ router.post('/', authenticate, async (req, res) => {
     const user_id = req.user.user_id;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ error: 'Order must contain at least one valid item.' });
-    }
-
-    // Step 1: Safely extract and validate item payload
-    const parsedItems = [];
-    for (const item of items) {
-      // Frontend sometimes uses "productId" or "id" instead of menu_item_id directly over the wire
-      const dbItemId = item.menu_item_id || item.productId || item.id;
-      
-      if (!dbItemId) {
-         return res.status(400).json({ error: 'Missing product ID in one or more order items.' });
-      }
-      
-      const quantity = parseInt(item.quantity) || 1;
-      if (quantity <= 0) {
-         return res.status(400).json({ error: `Invalid quantity for product ${dbItemId}` });
-      }
-
-      parsedItems.push({
-        menu_item_id: dbItemId,
-        quantity,
-        customizations: item.customizations || {}
-      });
+      return res.status(400).json({ error: 'Order must contain at least one item.' });
     }
 
     // Fetch prices for all requested items in one query
-    const menuItemIds = parsedItems.map((i) => i.menu_item_id);
+    const menuItemIds = items.map((i) => i.menu_item_id);
     const menuItems = await prisma.menuitems.findMany({
       where: { item_id: { in: menuItemIds }, is_available: true },
     });
 
-    if (menuItems.length !== Array.from(new Set(menuItemIds)).length) {
-      return res.status(400).json({ error: 'One or more items are unavailable or do not exist in standard menu.' });
+    if (menuItems.length !== menuItemIds.length) {
+      return res.status(400).json({ error: 'One or more items are unavailable or do not exist.' });
     }
 
     // Build a price map
@@ -63,27 +41,20 @@ router.post('/', authenticate, async (req, res) => {
     // Calculate totals
     const delivery_fee = (delivery_type === 'delivery') ? 3.50 : 0.00;
     let items_total = 0;
-    
-    const orderItemsData = parsedItems.map((item) => {
-      let unit_price = parseFloat(priceMap[item.menu_item_id]);
-      
-      // Calculate dynamic upcharges (e.g., Pizza Size Modifiers)
-      if (item.customizations?.selectedVariant?.priceModifier) {
-         unit_price += parseFloat(item.customizations.selectedVariant.priceModifier);
+    const orderItemsData = items.map((item) => {
+      const quantity = parseInt(item.quantity);
+      if (isNaN(quantity) || quantity <= 0) {
+        throw new Error(`Invalid quantity for item ${item.menu_item_id}`);
       }
-
-      // We do not add the price of Deal Selections because deals are strict bundles with a fixed top-level price.
-      // E.g., The deal itself provides the `unit_price`, and the sub-items inside `dealSelections` are included in that price.
-      
-      const subtotal = unit_price * item.quantity;
+      const unit_price = parseFloat(priceMap[item.menu_item_id]);
+      const subtotal = unit_price * quantity;
       items_total += subtotal;
-
       return {
         id: randomUUID(),
         menu_item_id: item.menu_item_id,
-        quantity: item.quantity,
+        quantity,
         subtotal,
-        customizations: item.customizations || null, // Safely dump dynamic JSON to DB
+        customizations: item.customizations || null,
       };
     });
 

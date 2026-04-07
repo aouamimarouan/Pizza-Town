@@ -3,9 +3,7 @@ import { Search, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import MenuCard from '../ui/MenuCard';
-import { PizzaCard } from '../ui/PizzaCard';
 import ItemCustomizationModal from '../ui/ItemCustomizationModal';
-import DealCustomizationModal from '../ui/DealCustomizationModal';
 import api from '../../services/api.js';
 
 // Define the categories in order for the sidebar
@@ -22,80 +20,16 @@ const categoryTranslationKeys = {
   'Drinks': 'catDrinks'
 };
 
-const getDealConfiguration = (dealName) => {
-  let steps = [];
-  if (dealName === 'Deal 1') {
-    steps = [
-      { id: 'step1', title: 'Choose 1 Large Pizza', category: 'Pizzas', requiredQuantity: 1, sizeConstraint: 'large' },
-      { id: 'step2', title: 'Choose 2 Drinks', category: 'Drinks', requiredQuantity: 2 },
-      { id: 'step3', title: 'Choose 1 Starter', category: 'Starters', requiredQuantity: 1 }
-    ];
-  } else if (dealName === 'Deal 2') {
-    steps = [
-      { id: 'step1', title: 'Choose 2 Small Pizzas', category: 'Pizzas', requiredQuantity: 2, sizeConstraint: 'small' },
-      { id: 'step2', title: 'Choose 2 Drinks', category: 'Drinks', requiredQuantity: 2 },
-      { id: 'step3', title: 'Choose 1 Starter', category: 'Starters', requiredQuantity: 1 }
-    ];
-  } else if (dealName === 'Deal 3') {
-    steps = [
-      { id: 'step1', title: 'Choose 1 Medium Pizza', category: 'Pizzas', requiredQuantity: 1, sizeConstraint: 'medium' },
-      { id: 'step2', title: 'Choose 2 Drinks', category: 'Drinks', requiredQuantity: 2 },
-      { id: 'step3', title: 'Choose 1 Starter', category: 'Starters', requiredQuantity: 1 }
-    ];
-  } else if (dealName === 'Deal 4') {
-    steps = [
-      { 
-        id: 'step1', 
-        title: 'Review Fixed Items', 
-        category: 'Fixed', 
-        requiredQuantity: 0,
-        isFixed: true,
-        fixedItems: [
-          { name: '4x Chicken Wings' },
-          { name: '4x Chicken Nuggets' },
-          { name: '1x American Potatoes' }
-        ]
-      }
-    ];
-  } else if (dealName === 'Deal 5') {
-    steps = [
-      { id: 'step1', title: 'Choose 1 Pasta', category: 'Pastas', requiredQuantity: 1 },
-      { id: 'step2', title: 'Choose 1 Drink', category: 'Drinks', requiredQuantity: 1 },
-      { id: 'step3', title: 'Choose 1 Starter', category: 'Starters', requiredQuantity: 1 }
-    ];
-  } else {
-    // Fallback
-    steps = [
-      { id: 'step1', title: 'Choose 1 Pizza', category: 'Pizzas', requiredQuantity: 1 },
-      { id: 'step2', title: 'Choose 1 Drink', category: 'Drinks', requiredQuantity: 1 }
-    ];
-  }
-  return { steps };
-};
-
 // Map DB item to Component format
-const mapDbItemToCard = (item) => {
-  const isPizza = item.category === 'Pizzas' || item.category === 'Half-Half Pizzas';
-  const isDeal = item.category === 'Menu Deals';
-
-  return {
-    id: item.item_id,
-    name: item.name,
-    description: item.description,
-    price: isPizza ? 11.95 : parseFloat(item.price),
-    category: item.category,
-    popular: false,
-    vegetarian: false,
-    // Add variants for pizzas
-    variants: isPizza ? [
-      { id: 'small', name: 'Small', priceModifier: 0 },
-      { id: 'medium', name: 'Medium ', priceModifier: 2.00 },
-      { id: 'large', name: 'Large', priceModifier: 7.00 },
-    ] : undefined,
-    // Deal specific configuration
-    configuration: isDeal ? getDealConfiguration(item.name) : undefined
-  };
-};
+const mapDbItemToCard = (item) => ({
+  id: item.item_id,
+  name: item.name,
+  description: item.description,
+  price: parseFloat(item.price),
+  category: item.category, // Crucial for conditional logic
+  popular: false, // Could add to DB later if needed
+  vegetarian: false, // Could add to DB later if needed
+});
 
 const MenuView = ({ handleAddToCart }) => {
   const { t } = useTranslation();
@@ -217,26 +151,15 @@ const MenuView = ({ handleAddToCart }) => {
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-12">
-              {displayedItems.map((item) => {
-                const isPizza = item.category === 'Pizzas' || item.category === 'Half-Half Pizzas';
-                return (
-                  <div key={item.id} className="h-full">
-                    {isPizza ? (
-                      <PizzaCard 
-                        item={item} 
-                        handleAddToCart={handleAddToCart}
-                        openModal={(itemToOpen) => setSelectedItemForModal(itemToOpen)}
-                      />
-                    ) : (
-                      <MenuCard 
-                        item={item} 
-                        handleAddToCart={handleAddToCart} 
-                        openModal={() => setSelectedItemForModal(item)}
-                      />
-                    )}
-                  </div>
-                );
-              })}
+              {displayedItems.map((item) => (
+                <div key={item.id} className="h-full">
+                  <MenuCard 
+                    item={item} 
+                    handleAddToCart={handleAddToCart} 
+                    openModal={() => setSelectedItemForModal(item)}
+                  />
+                </div>
+              ))}
               
               {/* Empty State when search finds nothing */}
               {displayedItems.length === 0 && (
@@ -257,22 +180,13 @@ const MenuView = ({ handleAddToCart }) => {
         
       </div>
 
-      {/* Modals Handling */}
+      {/* Item Customization Modal */}
       {selectedItemForModal && (
-        selectedItemForModal.category === 'Menu Deals' ? (
-          <DealCustomizationModal 
-            deal={selectedItemForModal}
-            availableProducts={menuItems.map(mapDbItemToCard)} // Pass flattened list for steps
-            onClose={() => setSelectedItemForModal(null)}
-            handleAddToCart={handleAddToCart}
-          />
-        ) : (
-          <ItemCustomizationModal 
-            item={selectedItemForModal}
-            onClose={() => setSelectedItemForModal(null)}
-            handleAddToCart={handleAddToCart}
-          />
-        )
+        <ItemCustomizationModal 
+          item={selectedItemForModal}
+          onClose={() => setSelectedItemForModal(null)}
+          handleAddToCart={handleAddToCart}
+        />
       )}
     </div>
   );
