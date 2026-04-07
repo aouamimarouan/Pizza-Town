@@ -8,6 +8,12 @@ const CRUST_OPTIONS = [
   { id: 'cheesy', name: 'Cheesy crust', price: 1.5 },
 ];
 
+const PIZZA_SIZES = [
+  { id: 'small', name: 'sizeSmall', price: 11.95 },
+  { id: 'medium', name: 'sizeMedium', price: 13.95 },
+  { id: 'large', name: 'sizeLarge', price: 18.95 },
+];
+
 const EXTRA_TOPPINGS = [
   { group: 'Cheese', items: ['Fetakaas', 'Gorgonzola', 'Mozzarella', 'Extra kaas'] },
   { group: 'Veggies', items: ['Champignons', 'Ui', 'Paprika', 'Look', 'Olijven', 'Ananas', 'Maïs', 'Jalapenos', 'Tomaat'] },
@@ -21,13 +27,16 @@ const TOPPING_PRICE = 1.0;
 const ItemCustomizationModal = ({ item, onClose, handleAddToCart }) => {
   const { t } = useTranslation();
   const [selectedCrust, setSelectedCrust] = useState(CRUST_OPTIONS[0]);
+  const [selectedSize, setSelectedSize] = useState(PIZZA_SIZES[0]);
   const [selectedToppings, setSelectedToppings] = useState([]);
 
+  const isPizza = item.category === 'Pizzas' || item.category === 'Half-Half Pizzas';
+
   const totalPrice = useMemo(() => {
-    const basePrice = item.price || 0;
+    const basePrice = isPizza ? selectedSize.price : (item.price || 0);
     const toppingsPrice = selectedToppings.length * TOPPING_PRICE;
     return basePrice + selectedCrust.price + toppingsPrice;
-  }, [item.price, selectedCrust, selectedToppings]);
+  }, [item.price, isPizza, selectedSize, selectedCrust, selectedToppings]);
 
   const toggleTopping = (topping) => {
     setSelectedToppings((prev) =>
@@ -43,6 +52,7 @@ const ItemCustomizationModal = ({ item, onClose, handleAddToCart }) => {
         ...item,
         cartItemId: `${item.id}-${Date.now()}`, // Unique ID for each customization
         customizations: {
+          size: isPizza ? selectedSize : null,
           crust: selectedCrust,
           toppings: selectedToppings,
         },
@@ -78,6 +88,36 @@ const ItemCustomizationModal = ({ item, onClose, handleAddToCart }) => {
 
         {/* Scrollable Content */}
         <div className="flex-grow overflow-y-auto p-6 space-y-8 custom-scrollbar">
+          
+          {/* Size Selection (Only for Pizzas) */}
+          {isPizza && (
+            <section>
+              <div className="flex items-center gap-2 mb-4">
+                <Plus className="w-5 h-5 text-red-500" />
+                <h3 className="text-lg font-bold text-stone-900 dark:text-white uppercase tracking-wider text-sm">{t('modal.lblSizeSelection')}</h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {PIZZA_SIZES.map((size) => (
+                  <button
+                    key={size.id}
+                    onClick={() => setSelectedSize(size)}
+                    className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all duration-200 ${
+                      selectedSize.id === size.id
+                        ? 'border-red-500 bg-red-50 dark:bg-red-900/10 ring-2 ring-red-500/20'
+                        : 'border-stone-100 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-stone-200 dark:hover:border-stone-700'
+                    }`}
+                  >
+                    <span className={`font-bold ${selectedSize.id === size.id ? 'text-red-600 dark:text-red-400' : 'text-stone-700 dark:text-stone-300'}`}>
+                      {t(`modal.${size.name}`)}
+                    </span>
+                    <span className="text-sm text-stone-500 dark:text-stone-500 mt-1">
+                      €{size.price.toFixed(2)}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
           
           {/* Crust Selection */}
           <section>

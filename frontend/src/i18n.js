@@ -203,7 +203,11 @@ const resources = {
         "free": "FREE",
         "extraToppings": "Extra toppings (+€{{price}} per item)",
         "confirmBtn": "Confirm & Add to Cart",
-        "deliveryNote": "Actual delivery price might vary based on your location"
+        "deliveryNote": "Actual delivery price might vary based on your location",
+        "lblSizeSelection": "Choose size (Required)",
+        "sizeSmall": "Small",
+        "sizeMedium": "Medium",
+        "sizeLarge": "Large"
       },
       "card": {
         "popular": "Popular",
@@ -493,7 +497,11 @@ const resources = {
         "free": "GRATUIT",
         "extraToppings": "Garnitures supplémentaires (+€{{price}} par article)",
         "confirmBtn": "Confirmer et ajouter",
-        "deliveryNote": "Le prix de livraison peut varier selon votre emplacement"
+        "deliveryNote": "Le prix de livraison peut varier selon votre emplacement",
+        "lblSizeSelection": "Choisissez la taille (Requis)",
+        "sizeSmall": "Petit",
+        "sizeMedium": "Moyen",
+        "sizeLarge": "Grand"
       },
       "card": {
         "popular": "Populaire",
@@ -783,7 +791,11 @@ const resources = {
         "free": "GRATIS",
         "extraToppings": "Extra toppings (+€{{price}} per item)",
         "confirmBtn": "Bevestigen & Aan winkelwagen toevoegen",
-        "deliveryNote": "Werkelijke bezorgkosten kunnen variëren afhankelijk van uw locatie"
+        "deliveryNote": "Werkelijke bezorgkosten kunnen variëren afhankelijk van uw locatie",
+        "lblSizeSelection": "Kies maat (Verplicht)",
+        "sizeSmall": "Klein",
+        "sizeMedium": "Medium",
+        "sizeLarge": "Groot"
       },
       "card": {
         "popular": "Populair",

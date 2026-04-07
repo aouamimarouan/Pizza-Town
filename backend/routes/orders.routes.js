@@ -42,18 +42,26 @@ router.post('/', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'Order must contain at least one item.' });
     }
 
-    // Fetch prices for all requested items in one query
+    // Fetch prices and categories for all requested items in one query
     const menuItemIds = items.map((i) => i.menu_item_id);
     const menuItems = await prisma.menuitems.findMany({
       where: { item_id: { in: menuItemIds }, is_available: true },
+      select: { item_id: true, price: true, category: true }
     });
 
     if (menuItems.length !== menuItemIds.length) {
       return res.status(400).json({ error: 'One or more items are unavailable or do not exist.' });
     }
 
-    // Build a price map
+    // Build maps for price and category
     const priceMap = Object.fromEntries(menuItems.map((m) => [m.item_id, m.price]));
+    const categoryMap = Object.fromEntries(menuItems.map((m) => [m.item_id, m.category]));
+
+    const PIZZA_SIZE_PRICES = {
+      'small': 11.95,
+      'medium': 13.95,
+      'large': 18.95
+    };
 
     // Calculate totals
     const delivery_fee = (delivery_type === 'delivery') ? 3.50 : 0.00;
@@ -63,7 +71,25 @@ router.post('/', authenticate, async (req, res) => {
       if (isNaN(quantity) || quantity <= 0) {
         throw new Error(`Invalid quantity for item ${item.menu_item_id}`);
       }
-      const unit_price = parseFloat(priceMap[item.menu_item_id]);
+      const customizations = item.customizations || {};
+      const category = categoryMap[item.menu_item_id];
+      const isPizza = category === 'Pizzas' || category === 'Half-Half Pizzas';
+      
+      let unit_price = parseFloat(priceMap[item.menu_item_id]);
+
+      // If it's a pizza with a size, the size price overrides the base price
+      if (isPizza && customizations.size && PIZZA_SIZE_PRICES[customizations.size.id]) {
+        unit_price = PIZZA_SIZE_PRICES[customizations.size.id];
+      }
+
+      // Add Crust and Topping prices
+      if (customizations.crust && customizations.crust.price) {
+        unit_price += parseFloat(customizations.crust.price);
+      }
+      if (customizations.toppings && Array.isArray(customizations.toppings)) {
+        unit_price += customizations.toppings.length * 1.0; // TOPPING_PRICE = 1.0
+      }
+
       const subtotal = unit_price * quantity;
       items_total += subtotal;
       return {
@@ -122,6 +148,11 @@ router.post('/', authenticate, async (req, res) => {
         // Add Crust to extras for the printer
         if (cust.crust) {
           extras.push({ name: `Crust: ${cust.crust.name}` });
+        }
+
+        // Add Size for the printer
+        if (cust.size) {
+           extras.push({ name: `Size: ${cust.size.id.toUpperCase()}` });
         }
 
         return {
