@@ -149,11 +149,11 @@ export const DealCustomizationModal: React.FC<DealCustomizationModalProps> = ({
                       </p>
                     )}
                   </div>
-                  {product.price > 0 && (
-                    <div className="mt-3 font-semibold text-sm text-amber-500">
-                      Standard: €{product.price.toFixed(2)}
-                    </div>
-                  )}
+                  {/* Price hidden in Deal context to avoid user confusion */}
+                  <div className="mt-3 font-semibold text-[11px] uppercase tracking-wider text-stone-500 flex items-center gap-1.5">
+                    <span className="w-1 h-1 rounded-full bg-stone-600"></span>
+                    Included in Deal
+                  </div>
                 </div>
               );
             })}
