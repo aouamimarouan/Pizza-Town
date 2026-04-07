@@ -100,13 +100,13 @@ const Navbar = ({ isDarkMode, toggleDarkMode, cartItemCount, openCart, user, onL
               <div className="relative" ref={dropdownRef}>
                 <button 
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="flex items-center gap-1 md:gap-3 rounded-full bg-stone-900 border border-stone-800 p-1 md:pr-4 hover:border-stone-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="flex items-center gap-1 md:gap-3 rounded-full bg-white dark:bg-stone-900 border border-stone-100 dark:border-stone-800 p-1 md:pr-4 hover:border-stone-200 dark:hover:border-stone-700 transition-all focus:outline-none focus:ring-2 focus:ring-red-500 shadow-sm"
                 >
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 md:w-8 md:h-8 rounded-full bg-stone-800 flex items-center justify-center shrink-0 border border-stone-700 text-stone-300">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 md:w-8 md:h-8 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center shrink-0 border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300">
                     <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-4 md:h-4" />
                   </div>
                   <div className="hidden md:flex flex-col items-start leading-tight">
-                    <span className="text-white font-bold text-sm">{user.full_name?.split(' ')[0] || 'User'}</span>
+                    <span className="text-stone-900 dark:text-white font-bold text-sm">{user.full_name?.split(' ')[0] || 'User'}</span>
                     {user.role === 'admin' || user.role === 'moderator' ? (
                       <span className="text-amber-500 font-bold text-[10px] tracking-wider uppercase">{user.role}</span>
                     ) : (
@@ -118,7 +118,7 @@ const Navbar = ({ isDarkMode, toggleDarkMode, cartItemCount, openCart, user, onL
 
                 {/* Dropdown Menu */}
                 {isDropdownOpen && (
-                  <div className="absolute right-0 mt-3 w-56 bg-[#1a1a1a] border border-stone-800 rounded-xl shadow-2xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200 text-stone-200">
+                  <div className="absolute right-0 mt-3 w-56 bg-white dark:bg-[#1a1a1a] border border-stone-100 dark:border-stone-800 rounded-xl shadow-2xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200 text-stone-800 dark:text-stone-200">
                     {(user.role === 'admin' || user.role === 'moderator') && (
                       <>
                         <button
@@ -126,12 +126,12 @@ const Navbar = ({ isDarkMode, toggleDarkMode, cartItemCount, openCart, user, onL
                             navigate('/admin');
                             setIsDropdownOpen(false);
                           }}
-                          className="w-full text-left px-4 py-3 flex items-center hover:bg-stone-800 hover:text-white transition-colors"
+                          className="w-full text-left px-4 py-3 flex items-center hover:bg-stone-50 dark:hover:bg-stone-800 hover:text-red-600 dark:hover:text-white transition-colors"
                         >
-                          <LayoutDashboard className="w-4 h-4 mr-3 text-stone-400" />
+                          <LayoutDashboard className="w-4 h-4 mr-3 text-stone-400 dark:text-stone-400" />
                           {t('navbar.admin')}
                         </button>
-                        <div className="h-px bg-stone-800 my-1 mx-2"></div>
+                        <div className="h-px bg-stone-100 dark:bg-stone-800 my-1 mx-2"></div>
                       </>
                     )}
 
@@ -144,10 +144,10 @@ const Navbar = ({ isDarkMode, toggleDarkMode, cartItemCount, openCart, user, onL
                           }}
                           className="w-full text-left px-4 py-3 flex items-center hover:bg-stone-800 hover:text-white transition-colors"
                         >
-                          <Package className="w-4 h-4 mr-3 text-stone-400" />
+                          <Package className="w-4 h-4 mr-3 text-stone-400 dark:text-stone-400" />
                           {t('navbar.myOrders')}
                         </button>
-                        <div className="h-px bg-stone-800 my-1 mx-2"></div>
+                        <div className="h-px bg-stone-100 dark:bg-stone-800 my-1 mx-2"></div>
                       </>
                     )}
                     

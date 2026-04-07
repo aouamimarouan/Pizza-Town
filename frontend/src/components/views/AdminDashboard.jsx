@@ -228,20 +228,20 @@ const AdminDashboard = () => {
   ];
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#0a0a0a] transition-colors font-sans text-stone-300 pb-20">
+    <div className="flex flex-col min-h-screen bg-stone-50 dark:bg-[#0a0a0a] transition-colors font-sans text-stone-600 dark:text-stone-300 pb-20">
       
       {/* COMMAND CENTER HEADER */}
-      <header className="border-b border-stone-800 bg-[#0a0a0a] pt-12 pb-6 px-8 sticky top-0 z-10">
+      <header className="border-b border-stone-200 dark:border-stone-800 bg-white dark:bg-[#0a0a0a] pt-12 pb-6 px-8 sticky top-0 z-10 transition-colors">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
-            <h1 className="text-4xl font-black text-white tracking-tighter uppercase font-heading flex items-center gap-3">
+            <h1 className="text-4xl font-black text-stone-900 dark:text-white tracking-tighter uppercase font-heading flex items-center gap-3">
               <Activity className="w-8 h-8 text-emerald-500" />
               {t('admin.headerTitle')}
             </h1>
-            <p>{t('admin.headerSubtitle')}</p>
+            <p className="text-stone-500 dark:text-stone-400">{t('admin.headerSubtitle')}</p>
           </div>
           
-          <div className="flex bg-[#151515] p-1 rounded-xl border border-stone-800 overflow-x-auto hide-scrollbar">
+          <div className="flex bg-white dark:bg-[#151515] p-1 rounded-xl border border-stone-200 dark:border-stone-800 overflow-x-auto hide-scrollbar shadow-sm">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
@@ -314,12 +314,12 @@ const AdminDashboard = () => {
         </div>
 
         {/* DATA TABLE WRAPPER */}
-        <div className="bg-[#151515] border border-stone-800 rounded-2xl overflow-hidden flex flex-col shadow-2xl">
+        <div className="bg-white dark:bg-[#151515] border border-stone-200 dark:border-stone-800 rounded-2xl overflow-hidden flex flex-col shadow-xl transition-colors">
           
-          <div className="p-6 border-b border-stone-800 flex flex-col sm:flex-row justify-between items-center gap-4 bg-[#111]">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+          <div className="p-6 border-b border-stone-100 dark:border-stone-800 flex flex-col sm:flex-row justify-between items-center gap-4 bg-stone-50/50 dark:bg-[#111]">
+            <h2 className="text-lg font-bold text-stone-900 dark:text-white flex items-center gap-2">
               <span className="w-1 h-5 bg-emerald-500 rounded-full"></span>
-              {t('admin.manageConsole')} <span className="text-stone-500 font-normal capitalize">/ {tabs.find(t => t.id === activeAdminTab)?.label}</span>
+              {t('admin.manageConsole')} <span className="text-stone-500 dark:text-stone-500 font-normal capitalize">/ {tabs.find(t => t.id === activeAdminTab)?.label}</span>
             </h2>
             
             <div className="flex items-center gap-4 w-full sm:w-auto">
@@ -350,7 +350,7 @@ const AdminDashboard = () => {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-sm">
                 <thead>
-                  <tr className="bg-[#0a0a0a] text-stone-500 border-b border-stone-800 font-mono text-xs uppercase tracking-wider">
+                  <tr className="bg-stone-50 dark:bg-[#0a0a0a] text-stone-500 border-b border-stone-200 dark:border-stone-800 font-mono text-xs uppercase tracking-wider">
                     <th className="p-4 font-semibold">{t('admin.colOrderId')}</th>
                     <th className="p-4 font-semibold">{t('admin.colCustomer')}</th>
                     <th className="p-4 font-semibold">{t('admin.colStatus')}</th>

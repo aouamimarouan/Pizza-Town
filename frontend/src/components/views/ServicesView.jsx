@@ -41,14 +41,14 @@ const ServicesView = () => {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 transition-colors font-sans text-stone-300">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 transition-colors font-sans">
       
       {/* Header Section */}
       <div className="text-center mb-20">
-        <h1 className="text-5xl font-black text-white tracking-tighter uppercase mb-4 font-heading">
+        <h1 className="text-5xl font-black text-stone-900 dark:text-white tracking-tighter uppercase mb-4 font-heading">
           {t('services.title')} <span className="text-red-600">{t('services.titleAccent')}</span>
         </h1>
-        <p className="text-stone-400 text-lg max-w-2xl mx-auto">
+        <p className="text-stone-500 dark:text-stone-400 text-lg max-w-2xl mx-auto">
           {t('services.description')}
         </p>
       </div>
@@ -60,14 +60,14 @@ const ServicesView = () => {
           return (
             <div 
               key={service.id}
-              className="group bg-stone-900 border border-stone-800 rounded-3xl p-8 hover:border-red-600/50 transition-all duration-300 hover:-translate-y-2 flex flex-col h-full shadow-2xl shadow-black/40"
+              className="group bg-white dark:bg-stone-900 border border-stone-100 dark:border-stone-800 rounded-3xl p-8 hover:border-red-600/50 transition-all duration-300 hover:-translate-y-2 flex flex-col h-full shadow-lg dark:shadow-2xl dark:shadow-black/40"
             >
               <div className={`w-14 h-14 rounded-2xl ${service.bgColor} ${service.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
                 <Icon className="w-7 h-7" />
               </div>
               
-              <h3 className="text-2xl font-bold text-white mb-3 tracking-tight">{service.title}</h3>
-              <p className="text-stone-500 mb-8 flex-grow leading-relaxed">
+              <h3 className="text-2xl font-bold text-stone-900 dark:text-white mb-3 tracking-tight">{service.title}</h3>
+              <p className="text-stone-500 dark:text-stone-400 mb-8 flex-grow leading-relaxed">
                 {service.description}
               </p>
               
@@ -79,7 +79,7 @@ const ServicesView = () => {
                     navigate(service.link);
                   }
                 }}
-                className="w-full inline-flex items-center justify-between px-6 py-4 rounded-xl bg-stone-800 hover:bg-red-600 text-white font-bold transition-all group-hover:shadow-lg group-hover:shadow-red-900/20"
+                className="w-full inline-flex items-center justify-between px-6 py-4 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-red-600 dark:hover:bg-red-600 text-stone-900 dark:text-white font-bold transition-all group-hover:shadow-lg group-hover:shadow-red-900/20"
               >
                 <span>{service.actionText}</span>
                 <ArrowRight className="w-5 h-5 opacity-50 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
@@ -96,8 +96,8 @@ const ServicesView = () => {
             <Info className="w-6 h-6" />
           </div>
           <div>
-            <h4 className="font-bold text-amber-500 uppercase tracking-widest text-xs mb-1">{t('services.paymentOptions')}</h4>
-            <p className="text-stone-400 text-sm">
+            <h4 className="font-bold text-amber-600 dark:text-amber-500 uppercase tracking-widest text-xs mb-1">{t('services.paymentOptions')}</h4>
+            <p className="text-stone-500 dark:text-stone-400 text-sm">
               {t('services.paymentDesc')}
             </p>
           </div>
