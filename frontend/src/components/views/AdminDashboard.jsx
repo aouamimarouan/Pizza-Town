@@ -384,11 +384,11 @@ const AdminDashboard = () => {
                             return (
                               <div key={item.id || idx} className="flex flex-col">
                                 <span className="font-semibold text-stone-300">
-                                  {item.quantity}x {item.menuitems?.name}
+                                  {item.quantity}x {item.menuitems?.name} {customizations?.selectedVariant ? `(${customizations.selectedVariant.name})` : ''}
                                 </span>
                                 
                                 {/* Render Nested Selections / Customizations (Robust Support) */}
-                                {(customizations?.crust || customizations?.toppings?.length > 0 || customizations?.subItems?.length > 0 || customizations?.extras?.length > 0) && (
+                                {(customizations?.crust || customizations?.toppings?.length > 0 || customizations?.subItems?.length > 0 || customizations?.extras?.length > 0 || customizations?.dealSelections?.length > 0) && (
                                   <ul className="ml-4 mt-1 space-y-1 border-l border-stone-800 pl-3">
                                     {/* Handle Crust */}
                                     {customizations?.crust && (
@@ -419,6 +419,14 @@ const AdminDashboard = () => {
                                       <li key={`extra-${eIdx}`} className="text-[10px] text-emerald-600/60 flex items-center gap-2">
                                         <span className="w-1 h-1 rounded-full bg-emerald-900/50"></span>
                                         + {extra.name}
+                                      </li>
+                                    ))}
+
+                                    {/* Handle Deal Selections (New System) */}
+                                    {customizations?.dealSelections?.map((subItem, dsIdx) => (
+                                      <li key={`ds-${dsIdx}`} className="text-[10px] text-amber-500/80 flex items-center gap-2">
+                                        <span className="w-1 h-1 rounded-full bg-amber-900/50"></span>
+                                        ❖ {subItem.product?.name} {subItem.variant ? `(${subItem.variant.name})` : ''}
                                       </li>
                                     ))}
                                   </ul>

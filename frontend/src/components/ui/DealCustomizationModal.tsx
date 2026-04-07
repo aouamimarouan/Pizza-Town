@@ -96,7 +96,12 @@ export const DealCustomizationModal: React.FC<DealCustomizationModalProps> = ({
                       const idx = stepSelections.findIndex(s => s.product.id === product.id);
                       if (idx !== -1) customizer.removeItem(idx);
                     } else if (canSelectMore) {
-                      customizer.selectItem(product);
+                      let variantToSelect = undefined;
+                      const pizzaProduct = product as any;
+                      if (customizer.currentStep?.sizeConstraint && pizzaProduct.variants) {
+                        variantToSelect = pizzaProduct.variants.find((v: any) => v.id === customizer.currentStep?.sizeConstraint);
+                      }
+                      customizer.selectItem(product, variantToSelect);
                     }
                   }}
                   className={`relative p-4 rounded-2xl border-2 transition-all duration-200 cursor-pointer flex flex-col justify-between min-h-[140px] ${
@@ -136,7 +141,7 @@ export const DealCustomizationModal: React.FC<DealCustomizationModalProps> = ({
         {/* Footer / Action */}
         <div className="p-6 border-t border-stone-800 bg-stone-900/50 flex items-center justify-between">
           <div className="font-bold text-lg text-white">
-            €{deal.price.toFixed(2)}
+            Total: €{deal.price.toFixed(2)}
           </div>
           
           <div className="flex gap-3">

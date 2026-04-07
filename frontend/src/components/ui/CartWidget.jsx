@@ -8,7 +8,7 @@ import socket from '../../services/socket.js';
 const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user }) => {
   const { t } = useTranslation();
   const [checkoutStep, setCheckoutStep] = useState(false);
-  const [orderMode, setOrderMode] = useState('delivery'); // 'delivery' or 'takeaway'
+  const [orderMode, setOrderMode] = useState(null); // 'delivery', 'takeaway', or null
   const [address, setAddress] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -27,6 +27,10 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user }
 
   const handleCheckout = async (e) => {
     e.preventDefault();
+    if (!orderMode) {
+      toast.error('Please select Delivery or Takeaway');
+      return;
+    }
     if (orderMode === 'delivery' && !address.trim()) {
       toast.error(t('cart.toastAddress'));
       return;
@@ -38,7 +42,11 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user }
       const items = cart.map(item => ({
         menu_item_id: item.id,
         quantity: item.quantity,
-        customizations: item.customizations // Send crust, toppings, etc.
+        customizations: {
+          ...(item.customizations || {}),
+          dealSelections: item.dealSelections,
+          selectedVariant: item.selectedVariant
+        }
       }));
 
       const res = await api.post('/orders', {
