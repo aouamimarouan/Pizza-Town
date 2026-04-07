@@ -82,12 +82,27 @@ router.post('/', authenticate, async (req, res) => {
         unit_price = PIZZA_SIZE_PRICES[customizations.size.id];
       }
 
-      // Add Crust and Topping prices
+      // Add Crust and Topping prices for the main item
       if (customizations.crust && customizations.crust.price) {
         unit_price += parseFloat(customizations.crust.price);
       }
       if (customizations.toppings && Array.isArray(customizations.toppings)) {
         unit_price += customizations.toppings.length * 1.0; // TOPPING_PRICE = 1.0
+      }
+
+      // If it's a Menu Deal, add surcharges from sub-items (e.g., extra toppings on deal pizzas)
+      if (category === 'Menu Deals' && Array.isArray(customizations.subItems)) {
+        customizations.subItems.forEach(subItem => {
+          if (subItem.customizations) {
+            const subCust = subItem.customizations;
+            if (subCust.crust && subCust.crust.price) {
+              unit_price += parseFloat(subCust.crust.price);
+            }
+            if (subCust.toppings && Array.isArray(subCust.toppings)) {
+              unit_price += subCust.toppings.length * 1.0;
+            }
+          }
+        });
       }
 
       const subtotal = unit_price * quantity;
