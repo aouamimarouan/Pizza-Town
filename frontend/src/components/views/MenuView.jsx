@@ -185,7 +185,6 @@ const MenuView = ({ handleAddToCart }) => {
       {selectedItemForModal && (
         <ItemCustomizationModal 
           item={selectedItemForModal}
-          allItems={menuItems}
           onClose={() => setSelectedItemForModal(null)}
           handleAddToCart={handleAddToCart}
         />

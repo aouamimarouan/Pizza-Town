@@ -207,13 +207,7 @@ const resources = {
         "lblSizeSelection": "Choose size (Required)",
         "sizeSmall": "Small",
         "sizeMedium": "Medium",
-        "sizeLarge": "Large",
-        "dealStepPizza": "Select & Customize Pizza",
-        "dealStepDrink": "Select {{count}} Drink(s)",
-        "dealStepStarter": "Select Starter",
-        "dealStepPasta": "Select Pasta",
-        "dealSelectPrompt": "Please select all required items.",
-        "dealIncluded": "Included in Deal"
+        "sizeLarge": "Large"
       },
       "card": {
         "popular": "Popular",
@@ -507,13 +501,7 @@ const resources = {
         "lblSizeSelection": "Choisissez la taille (Requis)",
         "sizeSmall": "Petit",
         "sizeMedium": "Moyen",
-        "sizeLarge": "Grand",
-        "dealStepPizza": "Choisir & Customiser la Pizza",
-        "dealStepDrink": "Choisir {{count}} Boisson(s)",
-        "dealStepStarter": "Choisir l'Entrée",
-        "dealStepPasta": "Choisir les Pâtes",
-        "dealSelectPrompt": "Veuillez sélectionner tous les articles requis.",
-        "dealIncluded": "Inclus dans le Deal"
+        "sizeLarge": "Grand"
       },
       "card": {
         "popular": "Populaire",
@@ -807,13 +795,7 @@ const resources = {
         "lblSizeSelection": "Kies maat (Verplicht)",
         "sizeSmall": "Klein",
         "sizeMedium": "Medium",
-        "sizeLarge": "Groot",
-        "dealStepPizza": "Pizza Kiezen & Aanpassen",
-        "dealStepDrink": "Kies {{count}} Drankje(s)",
-        "dealStepStarter": "Kies Voorgerecht",
-        "dealStepPasta": "Kies Pasta",
-        "dealSelectPrompt": "Selecteer alle vereiste items.",
-        "dealIncluded": "Inbegrepen in Deal"
+        "sizeLarge": "Groot"
       },
       "card": {
         "popular": "Populair",
