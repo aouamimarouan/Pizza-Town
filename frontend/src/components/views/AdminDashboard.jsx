@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   ShoppingBag, Pizza, Users, ConciergeBell, Activity, Search,
-  CheckCircle, Receipt, MapPin, AlertCircle, Plus, Edit2, Trash2, X, Loader2 
+  CheckCircle, Receipt, MapPin, AlertCircle, Plus, Edit2, Trash2, X, Loader2,
+  ChevronDown, ChevronUp, Printer, Clock
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +16,7 @@ const AdminDashboard = () => {
   // --- Orders State ---
   const [orders, setOrders] = useState([]);
   const [isOrdersLoading, setIsOrdersLoading] = useState(true);
+  const [expandedOrderId, setExpandedOrderId] = useState(null);
 
   const fetchOrders = async () => {
     setIsOrdersLoading(true);
@@ -359,156 +361,205 @@ const AdminDashboard = () => {
                 </thead>
                 <tbody className="divide-y divide-stone-800/50">
                   {orders.map((order) => {
-                    // STEP 1: Debugging the raw order structure
-                    console.log('DEBUG ORDER:', order);
-
+                    const isExpanded = expandedOrderId === order.order_id;
                     const statusFormatted = order.status?.replace(/_/g, ' ') || 'pending';
                     const isPending = order.status === 'pending';
                     const isCooking = order.status === 'cooking';
                     const isOut = order.status === 'out_for_delivery';
                     
                     return (
-                    <tr key={order.order_id} className="hover:bg-[#1a1a1a] transition-colors group">
-                      <td className="p-4 font-mono font-medium text-stone-300">#{order.order_id?.split('-')[0]}</td>
-                      <td className="p-4 text-stone-400">
-                        <div className="font-medium text-stone-300">{order.users?.full_name || t('admin.guestUser')}</div>
-                        
-                        {/* STEP 3: Robust Mapping for Order Items and Nested Selections */}
-                        <div className="text-xs text-stone-500 mt-1 space-y-2">
-                          {order.items?.map((item, idx) => {
-                            // Ensure customizations is an object if it comes as a string
-                            const customizations = typeof item.customizations === 'string' 
-                              ? JSON.parse(item.customizations) 
-                              : item.customizations;
+                      <React.Fragment key={order.order_id}>
+                        {/* MAIN ROW */}
+                        <tr 
+                          onClick={() => setExpandedOrderId(isExpanded ? null : order.order_id)}
+                          className={`cursor-pointer transition-all duration-200 border-b border-stone-200 dark:border-stone-800/50 ${
+                            isExpanded ? 'bg-stone-100 dark:bg-stone-800/30' : 'hover:bg-stone-50 dark:hover:bg-[#1a1a1a]'
+                          }`}
+                        >
+                          <td className="p-4">
+                            <div className="flex items-center gap-3">
+                              {isExpanded ? <ChevronUp className="w-4 h-4 text-emerald-500" /> : <ChevronDown className="w-4 h-4 text-stone-400 group-hover:text-stone-300" />}
+                              <span className="font-mono font-bold text-stone-900 dark:text-stone-300">#{order.order_id?.split('-')[0]}</span>
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <div className="font-bold text-stone-900 dark:text-stone-200">{order.users?.full_name || t('admin.guestUser')}</div>
+                            <div className="text-[11px] text-stone-500 flex items-center gap-1 mt-0.5 italic">
+                              {order.delivery_type === 'delivery' ? (
+                                <><MapPin className="w-3 h-3" /> {order.users?.address || 'No address'}</>
+                              ) : (
+                                <>🛍️ {t('Store Pickup')}</>
+                              )}
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <span className={`inline-flex items-center px-2 py-1 rounded bg-stone-100 dark:bg-[#0a0a0a] text-[10px] font-black uppercase tracking-widest border transition-colors ${
+                              isPending ? 'text-amber-600 border-amber-200 dark:text-amber-500 dark:border-amber-900/50' :
+                              isCooking ? 'text-blue-600 border-blue-200 dark:text-blue-500 dark:border-blue-900/50' :
+                              (isOut || order.status === 'ready_for_pickup') ? 'text-indigo-600 border-indigo-200 dark:text-indigo-500 dark:border-indigo-900/50' :
+                              'text-emerald-600 border-emerald-200 dark:text-emerald-500 dark:border-emerald-900/50'
+                            }`}>
+                              {statusFormatted}
+                            </span>
+                          </td>
+                          <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex justify-end gap-2">
+                              {isPending && (
+                                <button onClick={() => handleUpdateStatus(order.order_id, 'cooking')} className="p-1 px-3 bg-stone-900 dark:bg-stone-800 text-white dark:text-stone-300 rounded text-[10px] font-bold uppercase transition-colors hover:bg-black dark:hover:bg-stone-700">
+                                  {t('admin.btnAcceptCook')}
+                                </button>
+                              )}
+                              {isCooking && order.delivery_type === 'delivery' && (
+                                <button onClick={() => handleUpdateStatus(order.order_id, 'out_for_delivery')} className="p-1 px-3 bg-indigo-600 dark:bg-indigo-900/40 text-white dark:text-indigo-400 rounded text-[10px] font-bold uppercase hover:bg-indigo-700 transition-colors">
+                                  {t('admin.btnSendOut')}
+                                </button>
+                              )}
+                              {isOut && (
+                                <button onClick={() => handleUpdateStatus(order.order_id, 'delivered')} className="p-1 px-3 bg-emerald-600 dark:bg-emerald-900/40 text-white dark:text-emerald-400 rounded text-[10px] font-bold uppercase hover:bg-emerald-700 transition-colors">
+                                  {t('admin.btnMarkDelivered')}
+                                </button>
+                              )}
+                              {isCooking && order.delivery_type === 'takeaway' && (
+                                <button onClick={() => handleUpdateStatus(order.order_id, 'ready_for_pickup')} className="p-1 px-3 bg-indigo-600 dark:bg-indigo-900/40 text-white dark:text-indigo-400 rounded text-[10px] font-bold uppercase hover:bg-indigo-700 transition-colors">
+                                  {t('admin.btnReadyPickup')}
+                                </button>
+                              )}
+                              {order.status === 'ready_for_pickup' && (
+                                <button onClick={() => handleUpdateStatus(order.order_id, 'picked_up')} className="p-1 px-3 bg-emerald-600 dark:bg-emerald-900/40 text-white dark:text-emerald-400 rounded text-[10px] font-bold uppercase hover:bg-emerald-700 transition-colors">
+                                  {t('admin.btnMarkPickedUp')}
+                                </button>
+                              )}
+                              {(order.status === 'delivered' || order.status === 'picked_up') && (
+                                <CheckCircle className="w-5 h-5 text-emerald-500" />
+                              )}
+                            </div>
+                          </td>
+                        </tr>
 
-                            return (
-                              <div key={item.id || idx} className="flex flex-col">
-                                <span className="font-semibold text-stone-300">
-                                  {item.quantity}x {item.menuitems?.name}
-                                </span>
-                                
-                                {/* Render Nested Selections / Customizations (Robust Support) */}
-                                {(customizations?.crust || customizations?.toppings?.length > 0 || customizations?.subItems?.length > 0 || customizations?.extras?.length > 0) && (
-                                  <ul className="ml-4 mt-1 space-y-1 border-l border-stone-800 pl-3">
-                                    {/* Handle Crust */}
-                                    {customizations?.crust && (
-                                      <li className="text-[10px] text-stone-400 flex items-center gap-2">
-                                        <span className="w-1 h-1 rounded-full bg-stone-700"></span>
-                                        <span className="italic font-medium">{t('Crust') || 'Crust'}:</span> {customizations.crust.name}
-                                      </li>
+                        {/* EXPANDED TICKET VIEW */}
+                        {isExpanded && (
+                          <tr className="bg-stone-50 dark:bg-stone-900/50 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <td colSpan="4" className="p-8">
+                              <div className="max-w-3xl border border-stone-200 dark:border-stone-800 rounded-2xl bg-white dark:bg-[#0d0d0d] shadow-2xl relative overflow-hidden">
+                                {/* Ticket Header */}
+                                <div className="bg-stone-900 text-white p-4 flex justify-between items-center">
+                                  <div className="flex items-center gap-3">
+                                    <Printer className="w-5 h-5 text-emerald-500" />
+                                    <h3 className="font-mono font-bold uppercase tracking-tighter text-lg">Order Ticket #{order.order_id?.split('-')[0]}</h3>
+                                  </div>
+                                  <div className="flex items-center gap-4 text-[11px] font-mono text-stone-400">
+                                    <div className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(order.created_at).toLocaleTimeString()}</div>
+                                    <div className="bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded uppercase font-bold">{order.delivery_type}</div>
+                                  </div>
+                                </div>
+
+                                {/* Ticket Body */}
+                                <div className="p-8 font-mono text-sm space-y-8 text-stone-700 dark:text-stone-300">
+                                  <div>
+                                    <h4 className="text-[10px] uppercase font-bold text-stone-400 dark:text-stone-500 tracking-widest mb-4 border-b border-stone-100 dark:border-stone-800 pb-2">Customer Details</h4>
+                                    <div className="grid grid-cols-2 gap-8">
+                                      <div>
+                                        <p className="text-xs text-stone-500">Name</p>
+                                        <p className="font-bold text-stone-900 dark:text-white uppercase">{order.users?.full_name}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs text-stone-500">Phone</p>
+                                        <p className="font-bold text-stone-900 dark:text-white">{order.users?.phone_number || 'N/A'}</p>
+                                      </div>
+                                    </div>
+                                    {order.delivery_type === 'delivery' && (
+                                      <div className="mt-4">
+                                        <p className="text-xs text-stone-500">Address</p>
+                                        <p className="font-bold text-stone-900 dark:text-white uppercase border-l-4 border-red-500 pl-3 py-1 bg-stone-50 dark:bg-stone-900/50 mt-1">
+                                          {order.users?.address}
+                                        </p>
+                                      </div>
                                     )}
-                                    
-                                    {/* Handle Toppings (Standard Format) */}
-                                    {customizations?.toppings?.map((topping, tIdx) => (
-                                      <li key={`top-${tIdx}`} className="text-[10px] text-emerald-500/80 flex items-center gap-2 font-medium">
-                                        <span className="w-1 h-1 rounded-full bg-emerald-900/50"></span>
-                                        + {topping}
-                                      </li>
-                                    ))}
+                                  </div>
 
-                                    {/* Handle subItems (Deals/Combos Format) */}
-                                    {customizations?.subItems?.map((sub, sIdx) => {
-                                      const subCust = sub.customizations;
-                                      return (
-                                        <li key={`sub-${sIdx}`} className="text-[10px] text-stone-300 flex flex-col gap-0.5 pb-1">
-                                          <div className="flex items-center gap-2">
-                                            <span className="w-1 h-1 rounded-full bg-stone-500"></span>
-                                            <span className="font-bold">{sub.quantity > 1 ? `${sub.quantity}x ` : ''}{sub.name}</span>
-                                          </div>
-                                          {subCust && (
-                                            <div className="ml-3 pl-2 border-l border-stone-800 space-y-0.5 opacity-70">
-                                              {subCust.crust && <div>- {subCust.crust.name}</div>}
-                                              {subCust.toppings && subCust.toppings.length > 0 && (
-                                                <div className="text-emerald-600">+ {subCust.toppings.join(', ')}</div>
-                                              )}
+                                  <div>
+                                    <h4 className="text-[10px] uppercase font-bold text-stone-400 dark:text-stone-500 tracking-widest mb-4 border-b border-stone-100 dark:border-stone-800 pb-2">Order Items</h4>
+                                    <div className="space-y-6">
+                                      {order.items?.map((item, iIdx) => {
+                                        const cust = typeof item.customizations === 'string' ? JSON.parse(item.customizations) : item.customizations;
+                                        return (
+                                          <div key={iIdx} className="flex flex-col gap-2">
+                                            <div className="flex items-baseline justify-between gap-4">
+                                              <span className="font-black text-stone-900 dark:text-white text-base">
+                                                {item.quantity}x {item.menuitems?.name}
+                                              </span>
+                                              <span className="text-stone-400 font-bold">€{(item.price * item.quantity).toFixed(2)}</span>
                                             </div>
-                                          )}
-                                        </li>
-                                      );
-                                    })}
+                                            
+                                            {/* Item Customizations */}
+                                            <div className="ml-6 space-y-1.5 border-l-2 border-stone-200 dark:border-stone-800 pl-4">
+                                              {/* Pizza Size & Crust */}
+                                              {(cust?.size || cust?.crust) && (
+                                                <div className="text-xs font-bold text-stone-800 dark:text-stone-200">
+                                                  {cust.size && <span className="uppercase bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded mr-2">{t(`modal.${cust.size.name}`) || cust.size.name}</span>}
+                                                  {cust.crust && <span className="uppercase text-stone-500">[{cust.crust.name}]</span>}
+                                                </div>
+                                              )}
 
-                                    {/* Handle extras (Generic Format) */}
-                                    {customizations?.extras?.map((extra, eIdx) => (
-                                      <li key={`extra-${eIdx}`} className="text-[10px] text-emerald-600/60 flex items-center gap-2">
-                                        <span className="w-1 h-1 rounded-full bg-emerald-900/50"></span>
-                                        + {extra.name}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                )}
+                                              {/* Toppings / Extras */}
+                                              {cust?.toppings?.map((t, tIdx) => (
+                                                <div key={tIdx} className="text-[11px] text-emerald-600 dark:text-emerald-500 font-bold flex items-center gap-2">
+                                                  <div className="w-1 h-1 rounded-full bg-emerald-500"></div>
+                                                  + {t}
+                                                </div>
+                                              ))}
+
+                                              {/* DEALS - Sub Items */}
+                                              {cust?.subItems?.map((sub, sIdx) => (
+                                                <div key={sIdx} className="py-2 first:pt-0">
+                                                  <div className="flex items-center gap-2 font-black text-stone-900 dark:text-emerald-400 text-xs uppercase">
+                                                    <Activity className="w-3 h-3" />
+                                                    {sub.quantity > 1 ? `${sub.quantity}x ` : ''}{sub.name}
+                                                  </div>
+                                                  {sub.customizations && (
+                                                    <div className="ml-5 pl-3 border-l border-stone-300 dark:border-stone-800 mt-1 space-y-1">
+                                                      {sub.customizations.size && <div className="text-[10px] font-bold text-stone-500 uppercase">{t(`modal.${sub.customizations.size.name}`) || sub.customizations.size.name}</div>}
+                                                      {sub.customizations.crust && <div className="text-[10px] text-stone-400 italic">[{sub.customizations.crust.name}]</div>}
+                                                      {sub.customizations.toppings?.map((st, stIdx) => (
+                                                        <div key={stIdx} className="text-[10px] text-emerald-600 dark:text-emerald-500 font-bold">+ {st}</div>
+                                                      ))}
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              ))}
+
+                                              {cust?.extras?.map((e, eIdx) => (
+                                                <div key={eIdx} className="text-[11px] text-emerald-600 dark:text-emerald-500 font-bold flex items-center gap-2">
+                                                  <div className="w-1 h-1 rounded-full bg-emerald-500"></div>
+                                                  + {e.name}
+                                                </div>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+
+                                  <div className="pt-6 border-t-2 border-dashed border-stone-200 dark:border-stone-800 flex flex-col items-end">
+                                    <div className="flex gap-12 font-black text-xl text-stone-900 dark:text-white">
+                                      <span>TOTAL</span>
+                                      <span>€{parseFloat(order.total_price).toFixed(2)}</span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Ticket Footer */}
+                                <div className="bg-stone-50 dark:bg-stone-950 p-4 border-t border-stone-200 dark:border-stone-800 flex justify-center italic text-stone-400 text-[10px] uppercase tracking-[0.2em]">
+                                  *** End of Kitchen Ticket ***
+                                </div>
                               </div>
-                            );
-                          })}
-                        </div>
-                        
-                        {/* --- NEW: Conditional Address / Pickup Label --- */}
-                        <div className="mt-2 flex flex-col gap-0.5">
-                          {order.delivery_type === 'delivery' ? (
-                            <div className="text-[11px] text-stone-500 flex items-center gap-1.5 italic">
-                              <MapPin className="w-3 h-3 text-red-500/70" />
-                              <span className="truncate max-w-[180px]">{order.users?.address || 'No address provided'}</span>
-                              {order.users?.phone_number && <span className="text-stone-600">• {order.users.phone_number}</span>}
-                            </div>
-                          ) : (
-                            <div className="text-[11px] text-stone-600 flex items-center gap-1.5 italic">
-                              <span>🛍️ {t('Store Pickup') || 'Store Pickup'}</span>
-                            </div>
-                          )}
-                        </div>
-                        {/* ---------------------------------------------- */}
-                      </td>
-                      <td className="p-4">
-                        <span className={`inline-flex items-center px-2 py-1 rounded bg-[#0a0a0a] text-[11px] font-bold uppercase tracking-wider border ${
-                          isPending ? 'text-amber-500 border-amber-900/50' :
-                          isCooking ? 'text-blue-500 border-blue-900/50' :
-                          (isOut || order.status === 'ready_for_pickup') ? 'text-indigo-500 border-indigo-900/50' :
-                          'text-emerald-500 border-emerald-900/50'
-                        }`}>
-                          {(isPending || isCooking) && <ConciergeBell className="w-3 h-3 mr-1.5" />}
-                          {isOut && <MapPin className="w-3 h-3 mr-1.5" />}
-                          {order.status === 'ready_for_pickup' && <ShoppingBag className="w-3 h-3 mr-1.5" />}
-                          {statusFormatted}
-                        </span>
-                      </td>
-                      <td className="p-4 text-right">
-                        {/* 1. Common Next Step: Accept/Cook */}
-                        {isPending && (
-                          <button onClick={() => handleUpdateStatus(order.order_id, 'cooking')} className="text-xs bg-stone-800 text-stone-300 hover:text-white border border-stone-700 px-3 py-1.5 rounded hover:bg-stone-700 transition-colors font-semibold">
-                            {t('admin.btnAcceptCook')}
-                          </button>
+                            </td>
+                          </tr>
                         )}
-
-                        {/* 2. Branch: Delivery Flow */}
-                        {isCooking && order.delivery_type === 'delivery' && (
-                          <button onClick={() => handleUpdateStatus(order.order_id, 'out_for_delivery')} className="text-xs bg-indigo-900/40 text-indigo-400 border border-indigo-800/50 px-3 py-1.5 rounded hover:bg-indigo-900/60 transition-colors font-semibold">
-                            {t('admin.btnSendOut')}
-                          </button>
-                        )}
-                        {isOut && (
-                          <button onClick={() => handleUpdateStatus(order.order_id, 'delivered')} className="text-xs bg-emerald-900/40 text-emerald-400 border border-emerald-800/50 px-3 py-1.5 rounded hover:bg-emerald-900/60 transition-colors font-semibold">
-                            {t('admin.btnMarkDelivered')}
-                          </button>
-                        )}
-
-                        {/* 3. Branch: Takeaway Flow */}
-                        {isCooking && order.delivery_type === 'takeaway' && (
-                          <button onClick={() => handleUpdateStatus(order.order_id, 'ready_for_pickup')} className="text-xs bg-indigo-900/40 text-indigo-400 border border-indigo-800/50 px-3 py-1.5 rounded hover:bg-indigo-900/60 transition-colors font-semibold">
-                            {t('admin.btnReadyPickup')}
-                          </button>
-                        )}
-                        {order.status === 'ready_for_pickup' && (
-                          <button onClick={() => handleUpdateStatus(order.order_id, 'picked_up')} className="text-xs bg-emerald-900/40 text-emerald-400 border border-emerald-800/50 px-3 py-1.5 rounded hover:bg-emerald-900/60 transition-colors font-semibold">
-                            {t('admin.btnMarkPickedUp')}
-                          </button>
-                        )}
-
-                        {/* 4. Completion State */}
-                        {(order.status === 'delivered' || order.status === 'picked_up') && (
-                           <span className="text-xs text-stone-600 font-mono italic">{t('admin.lblCompleted')}</span>
-                        )}
-                      </td>
-                    </tr>
-                  )})}
+                      </React.Fragment>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
