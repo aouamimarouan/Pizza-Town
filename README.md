@@ -1,16 +1,55 @@
-# React + Vite
+# Pizza Town - Workspace
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Bienvenue dans le dépôt du projet Pizza Town. L'application est divisée en deux parties : un **Frontend** (React + Vite) et un **Backend** (Node.js, Express, Socket.io, Prisma, PostgreSQL).
 
-Currently, two official plugins are available:
+Ce guide s'adresse aux développeurs souhaitant lancer le projet en local sur leur machine.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🛠️ Prérequis
 
-## React Compiler
+Avant de commencer, assurez-vous d'avoir installé sur votre ordinateur :
+1. **Node.js** (version 18+ recommandée)
+2. **PostgreSQL** (version 14+ recommandée)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🚀 Installation & Lancement Rapide
 
-## Expanding the ESLint configuration
+### 1. Installation des dépendances
+À la racine du projet, exécutez la commande suivante pour installer toutes les dépendances du frontend et du backend en une seule fois :
+```bash
+npm run install:all
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 2. Variables d'environnement (.env)
+Le projet nécessite des variables d'environnement pour fonctionner localement.
+1. Allez dans le dossier `frontend` et copiez le fichier d'exemple :
+   - Renommez `.env.example` en `.env` (il contient l'URL du backend local).
+2. Allez dans le dossier `backend` et copiez le fichier d'exemple :
+   - Renommez `.env.example` en `.env`.
+   - Modifiez la variable `DATABASE_URL` pour qu'elle corresponde à vos identifiants PostgreSQL (ex: `postgresql://UTILISATEUR:MOTDEPASSE@localhost:5432/pizzatown`).
+
+### 3. Base de données (PostgreSQL)
+1. Ouvrez votre terminal PostgreSQL ou pgAdmin et créez une base de données nommée `pizzatown` (ou le nom défini dans votre `DATABASE_URL`).
+2. Pour initialiser les tables et le schéma Prisma, naviguez dans le dossier `backend` et exécutez :
+```bash
+cd backend
+npx prisma db push
+# Si vous avez un fichier seed, vous pouvez aussi le lancer, ex: npx prisma db seed
+cd ..
+```
+
+### 4. Démarrer l'application (Mode Développement)
+
+À la racine du projet, vous pouvez démarrer le frontend et le backend. Il est conseillé d'ouvrir deux terminaux :
+
+**Terminal 1 (Backend) :**
+```bash
+npm run backend
+```
+*Le serveur démarrera sur `http://localhost:5000`*
+
+**Terminal 2 (Frontend) :**
+```bash
+npm run frontend
+```
+*Le site React démarrera sur `http://localhost:5173`*
+
+🎉 **C'est tout !** Ouvrez votre navigateur sur `http://localhost:5173` pour accéder à Pizza Town en développement.

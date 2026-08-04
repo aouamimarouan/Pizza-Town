@@ -1,11 +1,11 @@
 import { PrismaClient } from '@prisma/client';
 
 const localPrisma = new PrismaClient({
-  datasources: { db: { url: 'postgresql://postgres:26072022@localhost:1937/pizzatown' } }
+  datasources: { db: { url: process.env.DATABASE_URL || 'postgresql://postgres:26072022@localhost:1937/pizzatown' } }
 });
 
 const remotePrisma = new PrismaClient({
-  datasources: { db: { url: 'postgresql://ukuphisdkslgdnr9hvb3:NMKGNfvnSlY7VnVUaytwxT58DVd5VU@bg72vzbbqgqpdugklegi-postgresql.services.clever-cloud.com:50013/bg72vzbbqgqpdugklegi' } }
+  datasources: { db: { url: process.env.REMOTE_DATABASE_URL } }
 });
 
 async function sync() {
