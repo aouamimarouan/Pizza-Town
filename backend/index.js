@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { createServer } from 'node:http';
 import { Server } from 'socket.io';
+import cookieParser from 'cookie-parser';
 
 
 import authRoutes from './routes/auth.routes.js';
@@ -12,13 +13,15 @@ import reservationRoutes from './routes/reservations.routes.js';
 import orderRoutes from './routes/orders.routes.js';
 import userRoutes from './routes/user.routes.js';
 import auditRoutes from './routes/audit.routes.js';
-
+import imagesRoutes from './routes/images.routes.js';
 dotenv.config();
 
 const app = express();
 
 // Security Headers
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
@@ -38,6 +41,7 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+app.use(cookieParser());
 
 // Attach Socket.io instance to req object
 app.use((req, res, next) => {
@@ -76,7 +80,7 @@ app.use('/api/reservations', reservationRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/audit-logs', auditRoutes);
-
+app.use('/api/images', imagesRoutes);
 // Global 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: `Route ${req.method} ${req.path} not found.` });

@@ -5,19 +5,21 @@ import api from '../../services/api.js';
 import socket from '../../services/socket.js';
 import toast from 'react-hot-toast';
 import { getStoredUser } from '../../services/authService.js';
+import SpecularButton from '../ui/SpecularButton';
 
 const ReservationView = () => {
   const { t } = useTranslation();
+  const user = getStoredUser();
   const [formData, setFormData] = useState({
-    full_name: '',
-    phone_number: '',
+    full_name: user?.full_name || '',
+    email: user?.email || '',
+    phone_number: user?.phone_number || '',
     res_date: '',
     res_time: '',
     guests: 2
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const user = getStoredUser();
 
   useEffect(() => {
     // Join a private room for this user to receive confirmation notifications
@@ -29,16 +31,7 @@ const ReservationView = () => {
       toast.success(t('reservation.toastConfirmed', { 
         count: reservation.guests, 
         date: new Date(reservation.res_date).toLocaleDateString() 
-      }), {
-        duration: 10000,
-        icon: '🍕',
-        style: {
-          borderRadius: '12px',
-          background: '#1c1917',
-          color: '#fff',
-          border: '1px solid #292524',
-        },
-      });
+      }));
     };
 
     socket.on('reservation_confirmed', handleConfirmed);
@@ -46,7 +39,7 @@ const ReservationView = () => {
     return () => {
       socket.off('reservation_confirmed', handleConfirmed);
     };
-  }, [user]);
+  }, [user, t]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -66,133 +59,150 @@ const ReservationView = () => {
 
   if (isSuccess) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-20 text-center">
-        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 mb-6">
-          <CheckCircle2 className="w-10 h-10" />
+      <div className="max-w-2xl mx-auto px-4 py-20 text-center animate-in fade-in duration-300">
+        <div className="bg-mist p-10 rounded-md border border-slate shadow-sm">
+          <h2 className="text-3xl font-bold font-display text-ink mb-4 tracking-tight">{t('reservation.successTitle')}</h2>
+          <p className="text-slate font-sans mb-8">
+            {t('reservation.successDesc', { 
+              count: formData.guests, 
+              date: new Date(formData.res_date).toLocaleDateString() 
+            })}
+          </p>
+          <button onClick={() => setIsSuccess(false)} className="bg-ink text-paper font-sans font-medium px-6 py-3 rounded-md hover:bg-slate transition-colors">
+            {t('reservation.bookAnother')}
+          </button>
         </div>
-        <h2 className="text-3xl font-black text-stone-900 dark:text-white mb-4 uppercase tracking-tighter">{t('reservation.successTitle')}</h2>
-        <p className="text-stone-500 dark:text-stone-400 mb-8 max-w-md mx-auto">
-          {t('reservation.successDesc', { 
-            count: formData.guests, 
-            date: new Date(formData.res_date).toLocaleDateString() 
-          })}
-        </p>
-        <button 
-          onClick={() => setIsSuccess(false)}
-          className="px-8 py-3 bg-stone-900 dark:bg-white text-white dark:text-stone-900 rounded-xl font-bold hover:scale-105 transition-transform"
-        >
-          {t('reservation.bookAnother')}
-        </button>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 transition-colors">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         
         {/* Left Side: Info */}
         <div className="space-y-6">
-          <div className="inline-block px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full text-xs font-bold uppercase tracking-widest mb-2">
+          <div className="inline-block px-3 py-1 bg-mist text-slate border border-slate rounded-sm text-xs font-bold uppercase tracking-widest mb-2 font-sans">
             {t('reservation.badge')}
           </div>
-          <h1 className="text-5xl font-black text-stone-900 dark:text-white leading-none uppercase tracking-tighter">
-            {t('reservation.title')} <span className="text-red-600">{t('reservation.titleAccent')}</span>
+          <h1 className="text-4xl sm:text-5xl font-bold font-display text-ink leading-none tracking-tight">
+            {t('reservation.title')} <span className="text-signal-red">{t('reservation.titleAccent')}</span>
           </h1>
-          <p className="text-stone-500 dark:text-stone-400 text-lg">
+          <p className="text-slate text-lg font-sans">
             {t('reservation.description')}
           </p>
           
           <div className="space-y-4 pt-4">
-            <div className="flex items-center gap-4 p-4 bg-white dark:bg-stone-900 border border-stone-100 dark:border-stone-800 rounded-2xl">
-              <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600">
+            <div className="flex items-center gap-4 p-4 bg-mist border border-slate rounded-md">
+              <div className="w-12 h-12 bg-paper border border-slate rounded-sm flex items-center justify-center text-ink shrink-0">
                 <ConciergeBell className="w-6 h-6" />
               </div>
               <div>
-                <h4 className="font-bold text-stone-900 dark:text-white">{t('reservation.quickConfirm')}</h4>
-                <p className="text-xs text-stone-500">{t('reservation.quickConfirmDesc')}</p>
+                <h4 className="font-bold text-ink font-sans">{t('reservation.quickConfirm')}</h4>
+                <p className="text-sm text-slate font-sans">{t('reservation.quickConfirmDesc')}</p>
               </div>
             </div>
-            <div className="flex items-center gap-4 p-4 bg-white dark:bg-stone-900 border border-stone-100 dark:border-stone-800 rounded-2xl">
-              <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
+            <div className="flex items-center gap-4 p-4 bg-mist border border-slate rounded-md">
+              <div className="w-12 h-12 bg-paper border border-slate rounded-sm flex items-center justify-center text-ink shrink-0">
                 <UtensilsCrossed className="w-6 h-6" />
               </div>
               <div>
-                <h4 className="font-bold text-stone-900 dark:text-white">{t('reservation.groupFriendly')}</h4>
-                <p className="text-xs text-stone-500">{t('reservation.groupFriendlyDesc')}</p>
+                <h4 className="font-bold text-ink font-sans">{t('reservation.groupFriendly')}</h4>
+                <p className="text-sm text-slate font-sans">{t('reservation.groupFriendlyDesc')}</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Right Side: Form */}
-        <div className="bg-white dark:bg-[#111] border border-stone-200 dark:border-stone-800 rounded-3xl p-8 shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-amber-500"></div>
-          
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="bg-paper border border-mist rounded-md p-8 shadow-sm">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 gap-6">
               <div>
-                <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                  <User className="w-3 h-3" /> {t('reservation.fullName')}
+                <label className="block text-sm font-bold text-ink mb-2">
+                   {t('reservation.fullName')}
                 </label>
                 <input 
                   type="text" 
                   required
                   placeholder="John Doe"
-                  className="w-full bg-stone-50 dark:bg-[#0a0a0a] border border-stone-200 dark:border-stone-800 text-stone-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:border-red-500 transition-colors"
+                  className="w-full bg-paper border border-slate text-ink rounded-md px-4 py-3 focus:outline-none focus:border-signal-red focus:ring-1 focus:ring-signal-red transition-colors"
                   value={formData.full_name}
                   onChange={(e) => setFormData({...formData, full_name: e.target.value})}
                 />
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                  <Phone className="w-3 h-3" /> {t('reservation.phone')}
+                <label className="block text-sm font-bold text-ink mb-2">
+                   Email
+                </label>
+                <input 
+                  type="email" 
+                  required
+                  placeholder="email@example.com"
+                  className="w-full bg-paper border border-slate text-ink rounded-md px-4 py-3 focus:outline-none focus:border-signal-red focus:ring-1 focus:ring-signal-red transition-colors font-mono"
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-ink mb-2">
+                   {t('reservation.phone')}
                 </label>
                 <input 
                   type="tel" 
                   required
-                  placeholder="+31 6 12345678"
-                  className="w-full bg-stone-50 dark:bg-[#0a0a0a] border border-stone-200 dark:border-stone-800 text-stone-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:border-red-500 transition-colors"
+                  placeholder="0412 345 678"
+                  className="w-full bg-paper border border-slate text-ink rounded-md px-4 py-3 focus:outline-none focus:border-signal-red focus:ring-1 focus:ring-signal-red transition-colors font-mono"
                   value={formData.phone_number}
                   onChange={(e) => setFormData({...formData, phone_number: e.target.value})}
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                  <Calendar className="w-3 h-3" /> {t('reservation.date')}
+                <label className="block text-sm font-bold text-ink mb-2">
+                   {t('reservation.date')}
                 </label>
-                <input 
-                  type="date" 
-                  required
-                  min={new Date().toISOString().split('T')[0]}
-                  className="w-full bg-stone-50 dark:bg-[#0a0a0a] border border-stone-200 dark:border-stone-800 text-stone-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:border-red-500 transition-colors"
-                  value={formData.res_date}
-                  onChange={(e) => setFormData({...formData, res_date: e.target.value})}
-                />
+                <div className="relative">
+                  <input 
+                    type="date" 
+                    required
+                    min={new Date().toISOString().split('T')[0]}
+                    max={new Date(new Date().setMonth(new Date().getMonth() + 3)).toISOString().split('T')[0]}
+                    className="w-full bg-paper border border-slate text-ink rounded-md px-4 py-3 focus:outline-none focus:border-signal-red focus:ring-1 focus:ring-signal-red transition-colors font-mono"
+                    value={formData.res_date}
+                    onChange={(e) => setFormData({...formData, res_date: e.target.value})}
+                  />
+                </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                  <ConciergeBell className="w-3 h-3" /> {t('reservation.time')}
+                <label className="block text-sm font-bold text-ink mb-2">
+                   {t('reservation.time')}
                 </label>
-                <input 
-                  type="time" 
-                  required
-                  className="w-full bg-stone-50 dark:bg-[#0a0a0a] border border-stone-200 dark:border-stone-800 text-stone-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:border-red-500 transition-colors"
-                  value={formData.res_time}
-                  onChange={(e) => setFormData({...formData, res_time: e.target.value})}
-                />
+                <div className="relative">
+                  <input 
+                    type="time" 
+                    required
+                    min="11:00"
+                    max="23:00"
+                    className="w-full bg-paper border border-slate text-ink rounded-md px-4 py-3 focus:outline-none focus:border-signal-red focus:ring-1 focus:ring-signal-red transition-colors font-mono"
+                    value={formData.res_time}
+                    onChange={(e) => setFormData({...formData, res_time: e.target.value})}
+                  />
+                </div>
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                <UtensilsCrossed className="w-3 h-3" /> {t('reservation.guests')}
+              <label className="block text-sm font-bold text-ink mb-2">
+                {t('reservation.guests')}
               </label>
               <select 
-                className="w-full bg-stone-50 dark:bg-[#0a0a0a] border border-stone-200 dark:border-stone-800 text-stone-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:border-red-500 transition-colors appearance-none"
+                className="w-full bg-paper border border-slate text-ink rounded-md px-4 py-3 focus:outline-none focus:border-signal-red focus:ring-1 focus:ring-signal-red transition-colors font-sans"
                 value={formData.guests}
                 onChange={(e) => setFormData({...formData, guests: parseInt(e.target.value)})}
               >
@@ -203,11 +213,11 @@ const ReservationView = () => {
             </div>
 
             <button 
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-red-600 hover:bg-red-500 text-white font-black uppercase tracking-tighter py-4 rounded-2xl shadow-lg shadow-red-900/20 flex items-center justify-center gap-2 transition-all hover:-translate-y-1 disabled:opacity-50 disabled:transform-none"
+              type="submit" 
+              disabled={isLoading} 
+              className="w-full bg-signal-red text-paper font-sans font-bold py-4 rounded-md hover:opacity-90 transition-opacity flex justify-center items-center"
             >
-              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Send className="w-5 h-5" /> {t('reservation.requestBtn')}</>}
+              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>{t('reservation.requestBtn')}</>}
             </button>
           </form>
         </div>

@@ -7,28 +7,15 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// ─── Request Interceptor ───────────────────────────────────────────────────
-// Automatically attach the JWT token to every outgoing request
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('pt_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
+// Request Interceptor no longer needs to attach JWT, HttpOnly cookie handles it.
 
 // ─── Response Interceptor ─────────────────────────────────────────────────
-// If the token is expired or invalid, clear storage and redirect to login
+// If the token is expired or invalid (401), clear storage and redirect to login
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      localStorage.removeItem('pt_token');
+    if (error.response?.status === 401) {
       localStorage.removeItem('pt_user');
-      // Dispatch a custom event so App.jsx can react
       window.dispatchEvent(new Event('auth:logout'));
     }
     return Promise.reject(error);

@@ -1,24 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Clock, ShoppingBag, Loader2, RefreshCw, Calendar, Users, CheckCircle, XCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import api from '../../services/api.js';
 import socket from '../../services/socket.js';
 import toast from 'react-hot-toast';
+import { Check } from 'lucide-react';
 
-// Professional currency formatter
 const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('fr-BE', {
+  return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'EUR',
   }).format(amount);
 };
 
-const MyOrders = () => {
+const formatDateMono = (isoString) => {
+  const d = new Date(isoString);
+  const pad = (n) => n.toString().padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
+export default function AccountView() {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('orders');
-  const [orders, setOrders] = useState([]);
+  
+  // Data state
+  const [profile, setProfile] = useState(null);
   const [reservations, setReservations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Selected Order for Detail View
+  const [selectedOrder, setSelectedOrder] = useState(null);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -27,11 +37,11 @@ const MyOrders = () => {
         api.get('/users/profile'),
         api.get('/reservations/my-reservations')
       ]);
-      setOrders(profileRes.data.orders);
+      setProfile(profileRes.data);
       setReservations(reservationsRes.data);
     } catch (err) {
       console.error(err);
-      toast.error(t('orders.toastError'));
+      toast.error('Failed to load account data');
     } finally {
       setIsLoading(false);
     }
@@ -40,215 +50,284 @@ const MyOrders = () => {
   useEffect(() => {
     fetchData();
 
-    const handleReservationUpdate = (updatedRes) => {
-      setReservations(prev => prev.map(res => 
-        res.res_id === updatedRes.res_id ? { ...res, status: updatedRes.status } : res
-      ));
-      
-      if (updatedRes.status === 'confirmed') {
-        toast.success(t('orders.toastConfirmed', { count: updatedRes.guests }), {
-          icon: '🎉',
-          duration: 5000,
-          style: {
-            borderRadius: '16px',
-            background: '#1c1917',
-            color: '#fff',
-            border: '1px solid #292524',
-          },
-        });
-      }
-    };
-
-    socket.on('reservation_confirmed', handleReservationUpdate);
-    socket.on('reservation_status_updated', handleReservationUpdate);
+    const handleOrderUpdate = () => fetchData();
+    socket.on('order_status_updated', handleOrderUpdate);
+    socket.on('reservation_status_updated', handleOrderUpdate);
 
     return () => {
-      socket.off('reservation_confirmed', handleReservationUpdate);
-      socket.off('reservation_status_updated', handleReservationUpdate);
+      socket.off('order_status_updated', handleOrderUpdate);
+      socket.off('reservation_status_updated', handleOrderUpdate);
     };
   }, []);
 
-  const getOrderStatusColor = (status) => {
+  const getStatusDisplay = (status) => {
     switch (status) {
-      case 'pending': return 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800';
-      case 'cooking': return 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800';
-      case 'out_for_delivery': return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800';
-      case 'delivered': return 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800';
-      case 'cancelled': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800';
-      default: return 'bg-stone-100 text-stone-800 border-stone-200 dark:bg-stone-800 dark:text-stone-400 dark:border-stone-700';
+      case 'pending': return { label: 'Order Placed', color: 'bg-ink', text: 'text-ink' };
+      case 'cooking': return { label: 'Preparing', color: 'bg-ink', text: 'text-ink' };
+      case 'out_for_delivery': return { label: 'Out for Delivery', color: 'bg-ink', text: 'text-ink' };
+      case 'delivered': return { label: 'Delivered', color: 'bg-slate', text: 'text-slate' };
+      case 'ready_for_pickup': return { label: 'Ready for Pickup', color: 'bg-ink', text: 'text-ink' };
+      case 'picked_up': return { label: 'Picked Up', color: 'bg-slate', text: 'text-slate' };
+      case 'cancelled': return { label: 'Cancelled', color: 'bg-signal-red', text: 'text-signal-red' };
+      default: return { label: status, color: 'bg-slate', text: 'text-slate' };
     }
   };
 
-  const getResStatusColor = (status) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800';
-      case 'confirmed': return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800';
-      case 'cancelled': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800';
-      default: return 'bg-stone-100 text-stone-800 border-stone-200 dark:bg-stone-800 dark:text-stone-400';
+  if (isLoading || !profile) {
+    return <div className="min-h-screen bg-paper flex items-center justify-center font-mono text-slate">Loading...</div>;
+  }
+
+  const activeOrders = profile.orders.filter(o => ['pending', 'cooking', 'out_for_delivery', 'ready_for_pickup'].includes(o.status));
+  const orderHistory = profile.orders;
+
+  const renderActiveTracker = () => {
+    if (activeOrders.length === 0) return null;
+    const order = activeOrders[0]; // Show first active order
+    const steps = ['pending', 'cooking', 'out_for_delivery', 'delivered'];
+    const currentIdx = steps.indexOf(order.status);
+    
+    return (
+      <div className="bg-mist border border-slate rounded-md p-6 mb-8 shadow-sm">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="font-display font-bold text-ink">Active Order</h3>
+          <span className="font-mono text-ink font-medium">{formatDateMono(order.created_at)}</span>
+        </div>
+        
+        <div className="relative flex items-center justify-between w-full">
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-[1px] bg-slate/30 z-0" />
+          
+          {steps.map((step, idx) => {
+            const isCompleted = currentIdx >= idx;
+            const isCurrent = currentIdx === idx;
+            return (
+              <div key={step} className="relative z-10 flex flex-col items-center gap-2 bg-mist px-2">
+                <div className={`w-3 h-3 rounded-full transition-colors duration-200 ${isCompleted ? 'bg-ink' : 'bg-paper border border-slate'}`} />
+                <span className={`text-sm ${isCurrent ? 'font-bold text-ink' : 'text-slate'}`}>
+                  {step === 'pending' ? 'Placed' : step === 'out_for_delivery' ? 'Delivering' : step.charAt(0).toUpperCase() + step.slice(1)}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const renderOrders = () => {
+    if (orderHistory.length === 0) {
+      return (
+        <div className="py-12 border border-slate rounded-md text-center">
+          <p className="font-sans text-ink">You haven't placed an order yet.</p>
+        </div>
+      );
     }
+
+    if (selectedOrder) return renderOrderDetail(selectedOrder);
+
+    return (
+      <div className="space-y-4">
+        {orderHistory.map(order => {
+          const display = getStatusDisplay(order.status);
+          const itemCount = order.orderitems.reduce((acc, i) => acc + i.quantity, 0);
+          const previewText = order.orderitems.slice(0, 2).map(i => `${i.menuitems.name} (×${i.quantity})`).join(', ') + (order.orderitems.length > 2 ? '...' : '');
+
+          return (
+            <div key={order.order_id} className="bg-paper border border-slate rounded-md p-5 hover:bg-mist transition-colors duration-150 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="font-mono text-ink text-sm font-bold">#{order.order_id.split('-')[0].toUpperCase()}</span>
+                  <span className="font-mono text-slate text-sm">{formatDateMono(order.created_at)}</span>
+                </div>
+                <p className="font-sans text-ink text-sm mb-3">{previewText}</p>
+                <div className="flex items-center gap-2">
+                  <div className={`w-1.5 h-1.5 rounded-full ${display.color}`} />
+                  <span className={`text-sm font-sans font-medium ${display.text}`}>{display.label}</span>
+                </div>
+              </div>
+
+              <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-4 border-t border-slate sm:border-none pt-4 sm:pt-0">
+                <div className="text-right">
+                  <div className="font-mono text-ink font-bold">{formatCurrency(order.total_price)}</div>
+                  <div className="font-mono text-slate text-xs">{itemCount} items</div>
+                </div>
+                <button 
+                  onClick={() => setSelectedOrder(order)}
+                  className="px-4 py-2 border border-slate rounded-md font-sans text-sm font-medium hover:bg-paper hover:text-ink text-slate transition-colors"
+                >
+                  View details
+                </button>
+              </div>
+
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const renderOrderDetail = (order) => {
+    const display = getStatusDisplay(order.status);
+    return (
+      <div className="animate-in fade-in slide-in-from-bottom-4 duration-200">
+        <button 
+          onClick={() => setSelectedOrder(null)}
+          className="text-sm font-sans font-medium text-slate hover:text-ink mb-6"
+        >
+          ← Back to Orders
+        </button>
+
+        <div className="border border-slate rounded-md p-6 bg-paper">
+          <div className="border-b border-slate pb-6 mb-6">
+            <div className="flex flex-wrap justify-between items-start gap-4 mb-2">
+              <h2 className="font-display font-bold text-2xl text-ink">Order #{order.order_id.split('-')[0].toUpperCase()}</h2>
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${display.color}`} />
+                <span className={`text-sm font-sans font-bold ${display.text}`}>{display.label}</span>
+              </div>
+            </div>
+            <p className="font-mono text-slate text-sm">{formatDateMono(order.created_at)}</p>
+          </div>
+
+          <div className="space-y-4 mb-8">
+            {order.orderitems.map(item => (
+              <div key={item.id} className="flex justify-between items-start font-sans">
+                <div>
+                  <div className="font-medium text-ink">
+                    <span className="font-mono mr-2">{item.quantity}×</span> 
+                    {item.menuitems.name}
+                  </div>
+                  {item.customizations && (
+                    <div className="text-slate text-sm ml-6 mt-1 whitespace-pre-line">
+                      {item.customizations}
+                    </div>
+                  )}
+                </div>
+                <div className="font-mono text-ink">{formatCurrency(item.subtotal)}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="border-t border-slate pt-6 space-y-2 font-mono text-sm">
+            <div className="flex justify-between text-slate">
+              <span>Subtotal</span>
+              <span>{formatCurrency(order.total_price)}</span>
+            </div>
+            <div className="flex justify-between font-bold text-ink text-base pt-2">
+              <span>Total</span>
+              <span>{formatCurrency(order.total_price)}</span>
+            </div>
+          </div>
+
+          <div className="border-t border-slate mt-8 pt-6 font-sans text-sm text-slate">
+            <p className="mb-1"><span className="text-ink font-medium">Delivery Address:</span> {order.delivery_address || profile.address}</p>
+            <p><span className="text-ink font-medium">Payment:</span> Cash on Delivery</p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderReservations = () => {
+    if (reservations.length === 0) {
+      return (
+        <div className="py-12 border border-slate rounded-md text-center">
+          <p className="font-sans text-ink">You have no upcoming reservations.</p>
+        </div>
+      );
+    }
+
+    const handleCancelReservation = async (id) => {
+      try {
+        await api.patch(`/reservations/${id}/cancel`);
+        toast.success('Reservation cancelled.');
+        setReservations(prev => prev.map(r => r.res_id === id ? { ...r, status: 'cancelled' } : r));
+      } catch (err) {
+        toast.error(err.response?.data?.error || 'Failed to cancel reservation.');
+      }
+    };
+
+    return (
+      <div className="space-y-4">
+        {reservations.map(res => {
+          let statusText = 'Requested';
+          let textColor = 'text-ink';
+          let showCheck = false;
+
+          if (res.status === 'confirmed') {
+            statusText = 'Confirmed';
+            showCheck = true;
+          } else if (res.status === 'declined' || res.status === 'cancelled') {
+            statusText = 'Declined';
+            textColor = 'text-signal-red';
+          }
+
+          return (
+            <div key={res.res_id} className="bg-paper border border-slate rounded-md p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div className="font-mono text-ink font-bold mb-2">
+                  {new Date(res.res_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} at {new Date(res.res_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </div>
+                <div className="font-sans text-slate text-sm">{res.guests} Guests</div>
+              </div>
+              <div className="flex flex-col sm:items-end gap-2">
+                <div className="flex items-center gap-2">
+                  {showCheck && <Check className="w-4 h-4 text-ink" />}
+                  <span className={`text-sm font-sans font-medium ${textColor}`}>
+                    {statusText}
+                  </span>
+                </div>
+                {(res.status === 'pending' || res.status === 'confirmed') && (
+                  <button 
+                    onClick={() => handleCancelReservation(res.res_id)}
+                    className="text-xs font-medium font-sans text-slate underline hover:text-signal-red transition-colors"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12 min-h-[60vh]">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6 border-b border-stone-200 dark:border-stone-800 pb-8">
-        <div>
-          <h2 className="text-4xl font-black text-stone-900 dark:text-white font-heading flex items-center gap-4 tracking-tighter uppercase">
-            <ShoppingBag className="w-10 h-10 text-red-600" />
-            {t('orders.title')}
-          </h2>
-          <p className="text-stone-500 mt-1 font-medium">{t('orders.subtitle')}</p>
+    <div className="min-h-screen bg-paper">
+      <div className="max-w-4xl mx-auto px-4 py-12 md:py-16">
+        
+        <h1 className="font-display font-bold text-3xl text-ink tracking-tight mb-8">My Orders & Reservations</h1>
+
+        {/* Navigation Tabs */}
+        <div className="flex border-b border-mist mb-8 overflow-x-auto hide-scrollbar">
+          {['orders', 'reservations'].map((tab) => (
+            <button 
+              key={tab}
+              onClick={() => { setActiveTab(tab); setSelectedOrder(null); }}
+              className={`px-6 py-3 font-sans font-medium text-sm transition-colors relative
+                ${activeTab === tab ? 'text-ink' : 'text-slate hover:text-ink'}`}
+            >
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {activeTab === tab && (
+                <div className="absolute bottom-0 left-0 w-full h-0.5 bg-signal-red" />
+              )}
+            </button>
+          ))}
         </div>
-        <div className="flex bg-stone-100 dark:bg-stone-900 p-1.5 rounded-2xl items-center shadow-inner">
-          <button 
-            onClick={() => setActiveTab('orders')}
-            className={`px-8 py-3 rounded-xl font-bold transition-all text-sm uppercase tracking-tighter ${activeTab === 'orders' ? 'bg-white dark:bg-stone-800 text-red-600 shadow-lg' : 'text-stone-500 hover:text-stone-700 dark:hover:text-stone-300'}`}
-          >
-            {t('orders.tabOrders')}
-          </button>
-          <button 
-            onClick={() => setActiveTab('reservations')}
-            className={`px-8 py-3 rounded-xl font-bold transition-all text-sm uppercase tracking-tighter ${activeTab === 'reservations' ? 'bg-white dark:bg-stone-800 text-red-600 shadow-lg' : 'text-stone-500 hover:text-stone-700 dark:hover:text-stone-300'}`}
-          >
-            {t('orders.tabReservations')}
-          </button>
-        </div>
-      </div>
 
-      {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-20 text-stone-500">
-          <Loader2 className="w-12 h-12 animate-spin text-red-600 mb-6" />
-          <p className="font-bold uppercase tracking-widest text-xs">{t('orders.loading')}</p>
-        </div>
-      ) : (
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-          {activeTab === 'orders' ? (
-            orders.length === 0 ? (
-              <div className="text-center py-20 bg-stone-50 dark:bg-[#0f0f0f] rounded-[2.5rem] border border-stone-200 dark:border-stone-800 shadow-sm">
-                <Package className="w-20 h-20 text-stone-300 dark:text-stone-800 mx-auto mb-6" />
-                <h3 className="text-2xl font-black text-stone-900 dark:text-white mb-2 uppercase tracking-tighter">{t('orders.noOrdersTitle')}</h3>
-                <p className="text-stone-500 max-w-xs mx-auto">{t('orders.noOrdersDesc')}</p>
-              </div>
-            ) : (
-              <div className="space-y-8">
-                {orders.map((order) => (
-                  <div key={order.order_id} className="bg-white dark:bg-[#151515] border border-stone-200 dark:border-stone-800 rounded-[2rem] overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300">
-                    {/* Order Header */}
-                    <div className="bg-stone-50 dark:bg-[#1a1a1a] px-8 py-5 border-b border-stone-100 dark:border-stone-800 flex flex-wrap justify-between items-center gap-6">
-                      <div className="flex items-center gap-5">
-                        <div className="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-3 rounded-2xl shadow-sm">
-                          <Package className="w-6 h-6" />
-                        </div>
-                        <div>
-                          <h3 className="font-black text-stone-900 dark:text-white uppercase tracking-tighter text-xl leading-none">{t('orders.orderNumber', { id: order.order_id.split('-')[0].toUpperCase() })}</h3>
-                          <p className="text-sm text-stone-400 flex items-center gap-1.5 mt-2 font-medium">
-                            <Clock className="w-3.5 h-3.5" />
-                            {new Date(order.created_at).toLocaleString('en-US', {
-                              month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
-                            })}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-8">
-                        <div className="text-right">
-                          <p className="text-[10px] text-stone-400 uppercase font-black tracking-[0.2em] mb-1">{t('orders.totalAmount')}</p>
-                          <p className="font-black text-stone-900 dark:text-white text-2xl leading-none">{formatCurrency(order.total_price)}</p>
-                        </div>
-                        <span className={`px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.15em] border-2 shadow-sm ${getOrderStatusColor(order.status)}`}>
-                          {t(`orders.status_${order.status}`)}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Order Items */}
-                    <div className="px-8 py-6">
-                      <p className="text-[10px] font-black text-stone-400 uppercase tracking-[0.2em] mb-5 border-l-2 border-red-600 pl-3">{t('orders.composition')}</p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
-                        {order.orderitems.map((item) => (
-                          <div key={item.id} className="flex justify-between items-center group">
-                            <div className="flex items-center gap-4">
-                              <span className="w-8 h-8 rounded-xl bg-stone-100 dark:bg-stone-800 flex items-center justify-center text-xs font-black text-red-600 ring-2 ring-stone-200 dark:ring-stone-700 shadow-sm group-hover:scale-110 transition-transform">
-                                {item.quantity}×
-                              </span>
-                              <span className="text-stone-800 dark:text-stone-200 font-bold group-hover:text-red-500 transition-colors">{item.menuitems.name}</span>
-                            </div>
-                            <div className="h-px flex-grow mx-4 bg-stone-100 dark:bg-stone-800 hidden lg:block"></div>
-                            <span className="text-stone-500 font-bold text-sm leading-none">{formatCurrency(item.subtotal)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )
-          ) : (
-            reservations.length === 0 ? (
-              <div className="text-center py-20 bg-stone-50 dark:bg-[#0f0f0f] rounded-[2.5rem] border border-stone-200 dark:border-stone-800 shadow-sm">
-                <Calendar className="w-20 h-20 text-stone-300 dark:text-stone-800 mx-auto mb-6" />
-                <h3 className="text-2xl font-black text-stone-900 dark:text-white mb-2 uppercase tracking-tighter">{t('orders.noResTitle')}</h3>
-                <p className="text-stone-500 max-w-xs mx-auto">{t('orders.noResDesc')}</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {reservations.map((res) => (
-                  <div key={res.res_id} className="bg-white dark:bg-[#151515] border border-stone-200 dark:border-stone-800 rounded-[2.5rem] p-8 shadow-sm hover:shadow-2xl transition-all duration-500 relative overflow-hidden group">
-                    <div className="absolute top-0 left-0 w-1.5 h-full bg-red-600 transition-all group-hover:w-3"></div>
-                    
-                    <div className="flex justify-between items-start mb-8">
-                      <div>
-                        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-stone-50 dark:bg-stone-800/50 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] text-red-600 mb-4 border border-stone-100 dark:border-stone-700">
-                          <Calendar className="w-3.5 h-3.5" />
-                          {t('orders.resDate')}
-                        </div>
-                        <h3 className="text-3xl font-black text-stone-900 dark:text-white tracking-tighter uppercase leading-none">
-                        {new Date(res.res_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                        </h3>
-                      </div>
-                      <span className={`px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.15em] border-2 shadow-sm ${getResStatusColor(res.status)}`}>
-                        {t(`orders.status_${res.status}`)}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="flex items-center gap-4 p-4 bg-stone-50 dark:bg-[#0a0a0a] rounded-[1.5rem] border border-stone-100 dark:border-stone-800/50 group-hover:bg-white dark:group-hover:bg-[#1a1a1a] transition-colors">
-                        <div className="w-12 h-12 rounded-2xl bg-white dark:bg-stone-800 flex items-center justify-center text-red-600 shadow-md group-hover:rotate-12 transition-transform">
-                          <Clock className="w-6 h-6" />
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-black text-stone-400 uppercase tracking-[0.2em] mb-1">{t('orders.resTime')}</p>
-                          <p className="font-black text-stone-900 dark:text-white text-lg">
-                            {new Date(res.res_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-4 p-4 bg-stone-50 dark:bg-[#0a0a0a] rounded-[1.5rem] border border-stone-100 dark:border-stone-800/50 group-hover:bg-white dark:group-hover:bg-[#1a1a1a] transition-colors">
-                        <div className="w-12 h-12 rounded-2xl bg-white dark:bg-stone-800 flex items-center justify-center text-amber-500 shadow-md group-hover:-rotate-12 transition-transform">
-                          <Users className="w-6 h-6" />
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-black text-stone-400 uppercase tracking-[0.2em] mb-1">{t('orders.resGuests')}</p>
-                          <p className="font-black text-stone-900 dark:text-white text-lg">{t('orders.guestsCount', { count: res.guests })}</p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {res.status === 'confirmed' && (
-                      <div className="mt-6 flex items-center gap-2 text-emerald-500 font-bold text-xs uppercase tracking-widest bg-emerald-500/5 p-3 rounded-2xl border border-emerald-500/20">
-                        <CheckCircle className="w-4 h-4" />
-                        {t('orders.tableReady')}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )
+        {/* Content Area */}
+        <div className="pb-24">
+          {activeTab === 'orders' && (
+            <>
+              {!selectedOrder && renderActiveTracker()}
+              {renderOrders()}
+            </>
           )}
+          {activeTab === 'reservations' && renderReservations()}
         </div>
-      )}
+
+      </div>
     </div>
   );
-};
-
-export default MyOrders;
+}

@@ -1,16 +1,13 @@
 import api from './api.js';
 
-const TOKEN_KEY = 'pt_token';
 const USER_KEY  = 'pt_user';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
-const saveSession = ({ token, user }) => {
-  localStorage.setItem(TOKEN_KEY, token);
+const saveSession = ({ user }) => {
   localStorage.setItem(USER_KEY, JSON.stringify(user));
 };
 
 export const clearSession = () => {
-  localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
 };
 
@@ -28,7 +25,7 @@ export const getStoredUser = () => {
 /**
  * Register a new user.
  * @param {{ full_name, email, password, phone_number?, address? }} data
- * @returns {{ token, user }}
+ * @returns {{ user }}
  */
 export const register = async (data) => {
   const res = await api.post('/auth/register', data);
@@ -39,7 +36,7 @@ export const register = async (data) => {
 /**
  * Login an existing user.
  * @param {{ email, password }} data
- * @returns {{ token, user }}
+ * @returns {{ user }}
  */
 export const login = async (data) => {
   const res = await api.post('/auth/login', data);
@@ -48,17 +45,43 @@ export const login = async (data) => {
 };
 
 /**
- * Logout: clear all storage, return to caller for state reset.
+ * Logout: clear cookie on backend and clear storage.
  */
-export const logout = () => {
+export const logout = async () => {
+  try {
+    await api.post('/auth/logout');
+  } catch (err) {
+    console.error('Failed to logout from server', err);
+  }
   clearSession();
 };
 
 /**
- * Fetch the current user profile (requires valid JWT).
+ * Fetch the current user profile (requires valid cookie).
  * @returns {User}
  */
 export const getMe = async () => {
   const res = await api.get('/auth/me');
+  return res.data;
+};
+
+/**
+ * Request a password reset link.
+ * @param {string} email
+ * @returns {Promise<{message: string}>}
+ */
+export const forgotPassword = async (email) => {
+  const res = await api.post('/auth/forgot-password', { email });
+  return res.data;
+};
+
+/**
+ * Reset password using the token.
+ * @param {string} token
+ * @param {string} newPassword
+ * @returns {Promise<{message: string}>}
+ */
+export const resetPassword = async (token, newPassword) => {
+  const res = await api.post('/auth/reset-password', { token, newPassword });
   return res.data;
 };

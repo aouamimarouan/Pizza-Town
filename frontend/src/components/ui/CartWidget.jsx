@@ -1,287 +1,505 @@
-import React, { useState } from 'react';
-import { X, Minus, Plus, ShoppingBag, CreditCard, MapPin, Store, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Minus, Plus, ShoppingBag, MapPin, Store, Phone, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 import api from '../../services/api.js';
-import socket from '../../services/socket.js';
+import ItemCustomizationModal, { DEAL_CONFIGS } from './ItemCustomizationModal';
+import Stepper, { Step } from './Stepper';
 
-const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user }) => {
+const isCustomizable = (item) => {
+  if (item.category === 'Pizzas') return true;
+  if (item.category === 'Menu Deals') {
+    const config = DEAL_CONFIGS[item.name];
+    return config && config.components && config.components.length > 0;
+  }
+  return false;
+};
+
+const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, handleAddToCart }) => {
   const { t } = useTranslation();
-  const [checkoutStep, setCheckoutStep] = useState(false);
+  const navigate = useNavigate();
+
   const [orderMode, setOrderMode] = useState('delivery'); // 'delivery' or 'takeaway'
   const [address, setAddress] = useState('');
+  const [phone, setPhone] = useState('');
+  
+  const [editingAddress, setEditingAddress] = useState(false);
+  const [editingPhone, setEditingPhone] = useState(false);
+
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   
-  // Pre-fill address from user profile when entering checkout step
-  React.useEffect(() => {
-    if (checkoutStep && user?.address && !address) {
-      setAddress(user.address);
-    }
-  }, [checkoutStep, user?.address]);
+  const [allMenuItems, setAllMenuItems] = useState([]);
+  const [editingCartItem, setEditingCartItem] = useState(null);
+  
+  const [activeStep, setActiveStep] = useState(1);
 
+  // Pre-fill user data
+  useEffect(() => {
+    if (user) {
+      if (!address) setAddress(user.address || '');
+      if (!phone) setPhone(user.phone_number || '');
+    }
+  }, [user, isOpen]);
+
+  // Fetch menu items for the edit modal
+  useEffect(() => {
+    if (isOpen && allMenuItems.length === 0) {
+      api.get('/menu').then(res => {
+        const mappedItems = res.data.map(item => ({
+          ...item,
+          id: item.item_id || item.id,
+          price: parseFloat(item.price)
+        }));
+        setAllMenuItems(mappedItems);
+      }).catch(console.error);
+    }
+  }, [isOpen, allMenuItems.length]);
+
+  const hasDrink = cart.some(item => item.category === 'Drinks');
+  const hasDessert = cart.some(item => item.category === 'Desserts');
+  const hasSauce = cart.some(item => item.category === 'Sauces');
+
+  const missingCategories = [];
+  if (!hasDrink) missingCategories.push('Drinks');
+  if (!hasDessert) missingCategories.push('Desserts');
+  if (!hasSauce) missingCategories.push('Sauces');
+
+  const suggestionsGroups = allMenuItems
+    .filter(item => missingCategories.includes(item.category))
+    .reduce((acc, item) => {
+      if (!acc[item.category]) acc[item.category] = [];
+      if (acc[item.category].length < 4) acc[item.category].push(item);
+      return acc;
+    }, {});
+    
+  const suggestions = Object.values(suggestionsGroups).flat();
 
   const subtotal = cart.reduce((sum, item) => sum + ((item.totalPrice || item.price) * item.quantity), 0);
   const deliveryFee = orderMode === 'delivery' ? 3.50 : 0;
   const total = subtotal + deliveryFee;
 
-  const handleCheckout = async (e) => {
-    e.preventDefault();
+  const handlePlaceOrder = async () => {
     if (orderMode === 'delivery' && !address.trim()) {
-      toast.error(t('cart.toastAddress'));
+      toast.error('Please provide a delivery address.');
+      return;
+    }
+    if (!phone.trim()) {
+      toast.error('Please provide a contact number.');
       return;
     }
     
     setIsLoading(true);
     try {
-      // Map frontend cart structure to backend expected structure
       const items = cart.map(item => ({
         menu_item_id: item.id,
         quantity: item.quantity,
-        customizations: item.customizations // Send crust, toppings, etc.
+        customizations: item.customizations
       }));
 
-      const res = await api.post('/orders', {
+      await api.post('/orders', {
         items,
         delivery_address: orderMode === 'delivery' ? address : null,
         delivery_type: orderMode
       });
 
-      // Redundant socket emit removed (backend already notifies admins via 'new_order')
-
       setIsSuccess(true);
-      toast.success(t('cart.toastSuccess'));
       
       setTimeout(() => {
         setIsSuccess(false);
-        setCheckoutStep(false);
         setIsOpen(false);
         clearCart();
       }, 3000);
     } catch (err) {
       console.error(err);
-      // Specifically handle the 403 "Store Closed" error
       if (err.response?.status === 403) {
-        toast.error(err.response.data.error || "Le magasin est fermé");
+        toast.error(err.response.data.error || "The store is currently closed.");
       } else {
-        toast.error(err.response?.data?.error || t('cart.toastError'));
+        toast.error(err.response?.data?.error || 'Failed to place order.');
       }
     } finally {
       setIsLoading(false);
     }
   };
 
+  const hasMainItem = cart.some(item => !['Drinks', 'Sauces'].includes(item.category));
+
+  const isFormValid = () => {
+    if (orderMode === 'delivery' && !address.trim()) return false;
+    if (!phone.trim()) return false;
+    if (editingAddress || editingPhone) return false;
+    if (!hasMainItem) return false;
+    return true;
+  };
+
+  const handleEditItemAddToCart = (customizedItem) => {
+    handleAddToCart(customizedItem);
+    setEditingCartItem(null);
+  };
+
   return (
     <>
       {/* Overlay backdrop */}
       <div 
-        className={`fixed inset-0 bg-stone-900/40 dark:bg-black/60 backdrop-blur-sm z-[60] transition-opacity duration-300 ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
+        className={`fixed inset-0 bg-ink/40 backdrop-blur-sm z-60 transition-opacity duration-200 ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
         onClick={() => setIsOpen(false)}
       ></div>
 
       {/* Slide-out Drawer */}
       <div 
-        className={`fixed top-0 right-0 h-full w-full sm:w-[450px] bg-white dark:bg-[#151515] border-l border-stone-200 dark:border-stone-800 z-[70] shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`fixed top-0 right-0 h-full w-full sm:w-[480px] bg-paper border-l border-mist z-70 shadow-2xl transform transition-transform duration-200 ease-out flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-stone-200 dark:border-stone-800">
-          <h2 className="text-2xl font-bold font-heading text-stone-900 dark:text-white flex items-center">
-            <ShoppingBag className="w-6 h-6 mr-3 text-red-600 dark:text-red-500" />
-            {t('cart.title')}
+        <div className="flex items-center justify-between p-6 border-b border-slate bg-paper shrink-0">
+          <h2 className="text-2xl font-bold font-display text-ink flex items-center">
+            <ShoppingBag className="w-6 h-6 mr-3 text-ink" />
+            Your Order
           </h2>
           <button 
             onClick={() => setIsOpen(false)}
-            className="p-2 text-stone-400 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-800 rounded-full transition-colors"
+            className="p-2 text-slate hover:text-ink hover:bg-mist rounded-md transition-colors"
           >
             <X className="w-6 h-6" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
           {isSuccess ? (
-            <div className="flex flex-col items-center justify-center h-full text-center space-y-4 animate-in fade-in zoom-in duration-500">
-              <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mb-4">
-                <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="flex flex-col items-center justify-center h-full text-center space-y-4 p-8 animate-in fade-in duration-200">
+              <div className="w-16 h-16 bg-mist text-ink rounded-md flex items-center justify-center mb-4 border border-slate">
+                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-stone-900 dark:text-white">{t('cart.confirmedTitle')}</h3>
-              <p className="text-stone-500 dark:text-stone-400">{t('cart.confirmedDesc')}</p>
+              <h3 className="text-2xl font-bold font-display text-ink">Order Confirmed</h3>
+              <p className="text-slate font-sans">Your order has been sent to the kitchen.</p>
             </div>
           ) : cart.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center space-y-4 opacity-50">
-              <ShoppingBag className="w-16 h-16 text-stone-300 dark:text-stone-600 mb-2" />
-              <p className="text-lg text-stone-500 dark:text-stone-400 font-medium">{t('cart.emptyDesc')}</p>
+            <div className="flex flex-col items-center justify-center h-full text-center p-8">
+              <ShoppingBag className="w-12 h-12 text-slate mb-4" strokeWidth={1.5} />
+              <p className="text-base text-slate font-sans font-medium mb-4">Your cart is empty.</p>
               <button 
-                onClick={() => setIsOpen(false)}
-                className="mt-4 text-red-600 dark:text-red-400 font-semibold hover:underline"
+                onClick={() => {
+                  setIsOpen(false);
+                  navigate('/menu');
+                }}
+                className="text-signal-red font-sans font-bold hover:underline"
               >
-                {t('cart.browseMenu')}
+                Browse Menu
               </button>
-            </div>
-          ) : !checkoutStep ? (
-            // Cart Items List
-            <div className="space-y-4">
-              {cart.map((item) => (
-                <div key={item.cartItemId || item.id} className="flex flex-col sm:flex-row items-center sm:items-start justify-between bg-stone-50 dark:bg-stone-900/50 p-4 rounded-2xl border border-stone-200 dark:border-stone-800/50 gap-4">
-                  <div className="flex-1 text-center sm:text-left">
-                    <h4 className="font-bold text-stone-900 dark:text-white">{item.name}</h4>
-                    {item.customizations && (
-                      <div className="text-xs text-stone-500 dark:text-stone-400 mt-1 space-y-0.5">
-                        {/* Pizza Details */}
-                        {item.customizations.crust && (
-                          <p>• {t('cart.crust', { crust: item.customizations.crust.name })}</p>
-                        )}
-                        {item.customizations.toppings && item.customizations.toppings.length > 0 && (
-                          <p>• + {item.customizations.toppings.join(', ')}</p>
-                        )}
-                        
-                        {/* Deal Sub-items */}
-                        {item.customizations.subItems && item.customizations.subItems.map((sub, idx) => (
-                          <div key={idx} className="pl-2 mt-1 border-l border-stone-200 dark:border-stone-800">
-                             <p className="font-semibold text-stone-600 dark:text-stone-300">• {sub.name}</p>
-                             {sub.customizations?.crust && (
-                               <p className="pl-2 opacity-80 text-[10px]">- {t('cart.crust', { crust: sub.customizations.crust.name })}</p>
-                             )}
-                             {sub.customizations?.toppings && sub.customizations.toppings.length > 0 && (
-                               <p className="pl-2 opacity-80 text-[10px]">- + {sub.customizations.toppings.join(', ')}</p>
-                             )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <span className="text-emerald-600 dark:text-emerald-400 font-medium text-sm mt-1 block">€{(item.totalPrice || item.price).toFixed(2)}</span>
-                  </div>
-                  
-                  <div className="flex items-center space-x-3 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg p-1">
-                    <button 
-                      onClick={() => updateQuantity(item.cartItemId || item.id, -1)}
-                      className="p-1.5 text-stone-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 dark:hover:text-red-400 rounded-md transition-colors"
-                    >
-                      <Minus className="w-4 h-4" />
-                    </button>
-                    <span className="font-semibold text-stone-900 dark:text-white w-6 text-center">{item.quantity}</span>
-                    <button 
-                      onClick={() => updateQuantity(item.cartItemId || item.id, 1)}
-                      className="p-1.5 text-stone-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-400 rounded-md transition-colors"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
             </div>
           ) : (
-            // Checkout Form Step
-            <form id="checkout-form" onSubmit={handleCheckout} className="space-y-6 animate-in slide-in-from-right-4">
-              <div>
-                <h3 className="text-lg font-bold text-stone-900 dark:text-white mb-4">{t('cart.orderDetails')}</h3>
-                
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <button
-                    type="button"
-                    onClick={() => setOrderMode('delivery')}
-                    className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${
-                      orderMode === 'delivery' 
-                        ? 'border-red-600 bg-red-50 dark:bg-red-900/10 text-red-700 dark:text-red-400' 
-                        : 'border-stone-200 dark:border-stone-800 text-stone-500 hover:border-stone-300 dark:hover:border-stone-700'
-                    }`}
-                  >
-                    <MapPin className="w-6 h-6 mb-2" />
-                    <span className="font-medium">{t('cart.delivery')}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setOrderMode('takeaway')}
-                    className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${
-                      orderMode === 'takeaway' 
-                        ? 'border-red-600 bg-red-50 dark:bg-red-900/10 text-red-700 dark:text-red-400' 
-                        : 'border-stone-200 dark:border-stone-800 text-stone-500 hover:border-stone-300 dark:hover:border-stone-700'
-                    }`}
-                  >
-                    <Store className="w-6 h-6 mb-2" />
-                    <span className="font-medium">{t('cart.takeaway')}</span>
-                  </button>
-                </div>
+            <Stepper
+              initialStep={1}
+              onStepChange={(step) => setActiveStep(step)}
+              onFinalStepCompleted={handlePlaceOrder}
+              backButtonText="Back"
+              nextButtonText={activeStep === 3 ? (isLoading ? 'Processing...' : 'Place Order') : 'Continue'}
+              nextButtonProps={{
+                disabled: (activeStep === 1 && !hasMainItem) || (activeStep === 2 && !isFormValid()) || isLoading
+              }}
+              className="flex-1 flex flex-col h-full overflow-hidden"
+            >
+              <Step>
+                <div className="px-6 pb-6 space-y-8 h-full overflow-y-auto custom-scrollbar">
+                  
+                  {/* Cart Items List */}
+                  <div className="space-y-0">
+                {cart.map((item, index) => (
+                  <div key={item.cartSignature || item.id} className={`py-5 ${index !== 0 ? 'border-t border-slate/30' : ''}`}>
+                    <div className="flex items-start justify-between gap-4">
+                      
+                      <div className="flex-1">
+                        <h4 className="font-bold text-ink font-sans">{item.name}</h4>
+                        
+                        {item.category === 'Menu Deals' && item.description && (!item.customizations || !item.customizations.subItems) && (
+                           <p className="text-sm text-slate mt-1 leading-snug">{item.description}</p>
+                        )}
+                        
+                        {item.customizations && (
+                          <div className="text-sm text-slate mt-1 space-y-0.5 ml-2 border-l-2 border-mist pl-2">
+                            {item.customizations.size && (
+                              <p>Size: {item.customizations.size.name.replace('size', '')}</p>
+                            )}
+                            {item.customizations.crust && (
+                              <p>Crust: {item.customizations.crust.name}</p>
+                            )}
+                            {item.customizations.toppings && item.customizations.toppings.length > 0 && (
+                              <p>+ {item.customizations.toppings.join(', ')}</p>
+                            )}
+                            
+                            {/* Half-Half */}
+                            {item.customizations.halfHalf && (
+                              <>
+                                {item.customizations.halfHalf.left.length > 0 && (
+                                  <p>Left: {item.customizations.halfHalf.left.join(', ')}</p>
+                                )}
+                                {item.customizations.halfHalf.right.length > 0 && (
+                                  <p>Right: {item.customizations.halfHalf.right.join(', ')}</p>
+                                )}
+                              </>
+                            )}
 
-                {orderMode === 'delivery' && (
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-stone-700 dark:text-stone-300">{t('cart.deliveryAddress')}</label>
-                    <input
-                      type="text"
-                      required
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      placeholder={t('cart.addressPlaceholder')}
-                      className="w-full bg-stone-900 border border-stone-800 rounded-md p-3 text-white focus:outline-none focus:border-red-500 transition-colors"
-                    />
-                  </div>
-                )}
-                
-                {orderMode === 'takeaway' && (
-                  <div className="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-900/30 text-emerald-800 dark:text-emerald-400 p-4 rounded-xl flex items-start">
-                    <Store className="w-5 h-5 mr-3 shrink-0 mt-0.5" />
-                    <p className="text-sm">{t('cart.pickupInfo')}</p>
-                  </div>
-                )}
-              </div>
-            </form>
-          )}
-        </div>
+                            {/* Deal Sub-items */}
+                            {item.customizations.subItems && item.customizations.subItems.map((sub, idx) => (
+                              <div key={idx} className="mt-1">
+                                 <p className="font-medium text-slate">• {sub.name}</p>
+                                 {sub.customizations?.crust && (
+                                   <p className="pl-3 text-xs">- {sub.customizations.crust.name}</p>
+                                 )}
+                                 {sub.customizations?.toppings && sub.customizations.toppings.length > 0 && (
+                                   <p className="pl-3 text-xs">- + {sub.customizations.toppings.join(', ')}</p>
+                                 )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center gap-4 mt-3">
+                          {isCustomizable(item) && (
+                            <button 
+                              onClick={() => setEditingCartItem(item)}
+                              className="text-xs font-sans font-bold text-slate hover:text-ink transition-colors"
+                            >
+                              Edit
+                            </button>
+                          )}
+                          <button 
+                            onClick={() => updateQuantity(item.cartSignature || item.id, -999)}
+                            className="text-xs font-sans font-bold text-slate hover:text-signal-red transition-colors"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col items-end gap-3 shrink-0">
+                        <span className="text-ink font-mono font-medium block">
+                          €{((item.totalPrice || item.price) * item.quantity).toFixed(2)}
+                        </span>
 
-        {/* Footer / Total */}
-        {!isSuccess && cart.length > 0 && (
-          <div className="p-6 border-t border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-900/20">
-            <div className="space-y-3 mb-6">
-              <div className="flex justify-between text-stone-500 dark:text-stone-400">
-                <span>{t('cart.subtotal')}</span>
-                <span>€{subtotal.toFixed(2)}</span>
+                        <div className="flex items-center bg-paper border border-slate rounded-md overflow-hidden">
+                          <button 
+                            onClick={() => updateQuantity(item.cartSignature || item.id, -1)}
+                            className="px-2.5 py-1.5 text-ink hover:bg-mist transition-colors border-r border-slate"
+                          >
+                            <Minus className="w-3.5 h-3.5" />
+                          </button>
+                          <span className="font-medium font-mono text-ink w-8 text-center text-sm">{item.quantity}</span>
+                          <button 
+                            onClick={() => updateQuantity(item.cartSignature || item.id, 1)}
+                            className="px-2.5 py-1.5 text-ink hover:bg-mist transition-colors border-l border-slate"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                ))}
               </div>
-              {orderMode === 'delivery' && (
-                <div className="flex justify-between text-stone-500 dark:text-stone-400">
-                  <span>{t('cart.deliveryFee')}</span>
-                  <span>€{deliveryFee.toFixed(2)}</span>
+
+              <div className="h-px bg-slate w-full"></div>
+
+              {/* Order Completion Suggestions */}
+              {suggestions.length > 0 && (
+                <div className="bg-mist border border-slate rounded-md p-4 animate-in fade-in duration-300">
+                  <h3 className="text-ink font-bold font-sans text-sm mb-3">Complete your order</h3>
+                  <div className="flex gap-4 overflow-x-auto custom-scrollbar snap-x pb-2">
+                    {suggestions.map(item => (
+                      <div 
+                        key={item.id} 
+                        className="snap-start shrink-0 w-32 bg-paper border border-slate rounded-md overflow-hidden flex flex-col shadow-sm"
+                      >
+                        <img 
+                          src={item.image_url} 
+                          alt={item.name} 
+                          className="w-full h-20 object-cover border-b border-slate" 
+                          onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1628840042765-356cda07504e?q=80&w=200&auto=format&fit=crop'; }}
+                        />
+                        <div className="p-2 flex flex-col flex-1">
+                          <span className="font-sans font-medium text-ink text-xs line-clamp-2 leading-tight flex-1">{item.name}</span>
+                          <div className="flex items-center justify-between mt-2">
+                            <span className="font-mono font-medium text-slate text-xs">€{item.price.toFixed(2)}</span>
+                            <button 
+                              onClick={() => {
+                                if (isCustomizable(item)) {
+                                  setEditingCartItem(item);
+                                } else {
+                                  handleAddToCart(item);
+                                }
+                              }}
+                              className="w-6 h-6 rounded-full bg-ink text-paper flex items-center justify-center hover:bg-slate transition-colors"
+                              aria-label={`Add ${item.name}`}
+                            >
+                              <Plus className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
-              <div className="flex justify-between text-xl font-bold text-stone-900 dark:text-white pt-3 border-t border-stone-200 dark:border-stone-800">
-                <span>{t('cart.total')}</span>
-                <span className="text-red-600 dark:text-red-500">€{total.toFixed(2)}</span>
+                </div>
+              </Step>
+              
+              <Step>
+                <div className="px-6 pb-6 space-y-8 h-full overflow-y-auto custom-scrollbar">
+              {/* Fulfillment Method */}
+              <div>
+                <div className="flex p-1 bg-paper border border-slate rounded-md mb-2">
+                  <button
+                    onClick={() => setOrderMode('delivery')}
+                    className={`flex-1 py-2 text-sm font-bold font-sans rounded-sm transition-colors duration-100 ${
+                      orderMode === 'delivery' ? 'bg-ink text-paper' : 'text-slate hover:text-ink'
+                    }`}
+                  >
+                    Delivery
+                  </button>
+                  <button
+                    onClick={() => setOrderMode('takeaway')}
+                    className={`flex-1 py-2 text-sm font-bold font-sans rounded-sm transition-colors duration-100 ${
+                      orderMode === 'takeaway' ? 'bg-ink text-paper' : 'text-slate hover:text-ink'
+                    }`}
+                  >
+                    Takeaway
+                  </button>
+                </div>
+                <p className="text-xs text-slate font-sans text-center">
+                  {orderMode === 'delivery' 
+                    ? `Estimated delivery time: 30-45 mins • Fee: €${deliveryFee.toFixed(2)}` 
+                    : 'Estimated pickup time: 15-20 mins'}
+                </p>
               </div>
-            </div>
 
-            {!checkoutStep ? (
-              <button 
-                onClick={() => setCheckoutStep(true)}
-                className="w-full flex items-center justify-center px-6 py-4 rounded-xl bg-red-600 text-white font-semibold transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-red-900/20 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-[#151515] outline-none text-lg"
-              >
-                {t('cart.proceedCheckout')}
-              </button>
-            ) : (
-              <div className="flex gap-3">
-                <button 
-                  onClick={() => setCheckoutStep(false)}
-                  className="px-6 py-4 rounded-xl bg-stone-200 dark:bg-stone-800 text-stone-900 dark:text-white font-semibold hover:bg-stone-300 dark:hover:bg-stone-700 transition-colors"
-                >
-                  {t('cart.btnBack')}
-                </button>
-                <button 
-                  form="checkout-form"
-                  type="submit"
-                  disabled={isLoading}
-                  className="flex-1 flex items-center justify-center px-6 py-4 rounded-xl bg-red-600 text-white font-semibold transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-red-900/20 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-[#151515] outline-none text-lg disabled:bg-stone-400 disabled:cursor-not-allowed disabled:transform-none"
-                >
-                  {isLoading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
+              {/* Contact & Address Confirmation */}
+              <div className="space-y-3">
+                
+                {/* Address Card */}
+                {orderMode === 'delivery' ? (
+                  <div className="bg-mist border border-slate rounded-md p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex items-center text-ink font-bold font-sans text-sm">
+                        <MapPin className="w-4 h-4 mr-2" />
+                        Delivering to
+                      </div>
+                      {!editingAddress && (
+                        <button onClick={() => setEditingAddress(true)} className="text-xs font-bold text-slate hover:text-ink underline">
+                          Change
+                        </button>
+                      )}
+                    </div>
+                    {editingAddress ? (
+                      <div className="mt-3 flex gap-2">
+                        <input 
+                          type="text" 
+                          value={address} 
+                          onChange={(e) => setAddress(e.target.value)} 
+                          placeholder="Enter delivery address"
+                          className="flex-1 bg-paper border border-slate rounded-md px-3 py-2 text-sm font-sans text-ink focus:outline-none focus:border-ink"
+                          autoFocus
+                        />
+                        <button 
+                          onClick={() => setEditingAddress(false)}
+                          disabled={!address.trim()}
+                          className="px-4 py-2 bg-ink text-paper rounded-md text-sm font-bold disabled:opacity-50"
+                        >
+                          Save
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-sm font-sans text-ink">{address || <span className="text-signal-red">No address provided</span>}</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="bg-mist border border-slate rounded-md p-4">
+                    <div className="flex items-center text-ink font-bold font-sans text-sm mb-1">
+                      <Store className="w-4 h-4 mr-2" />
+                      Picking up from
+                    </div>
+                    <p className="text-sm font-sans text-ink">Pizza Town, 123 Main Street<br/>Open until 23:00</p>
+                  </div>
+                )}
+
+                {/* Contact Card */}
+                <div className="bg-mist border border-slate rounded-md p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex items-center text-ink font-bold font-sans text-sm">
+                      <Phone className="w-4 h-4 mr-2" />
+                      Contact number
+                    </div>
+                    {!editingPhone && (
+                      <button onClick={() => setEditingPhone(true)} className="text-xs font-bold text-slate hover:text-ink underline">
+                        Change
+                      </button>
+                    )}
+                  </div>
+                  {editingPhone ? (
+                    <div className="mt-3 flex gap-2">
+                      <input 
+                        type="tel" 
+                        value={phone} 
+                        onChange={(e) => setPhone(e.target.value.replace(/[^\d+()\s-]/g, ''))} 
+                        placeholder="Enter phone number"
+                        className="flex-1 bg-paper border border-slate rounded-md px-3 py-2 text-sm font-sans text-ink focus:outline-none focus:border-ink"
+                        autoFocus
+                      />
+                      <button 
+                        onClick={() => setEditingPhone(false)}
+                        disabled={!phone.trim()}
+                        className="px-4 py-2 bg-ink text-paper rounded-md text-sm font-bold disabled:opacity-50"
+                      >
+                        Save
+                      </button>
+                    </div>
                   ) : (
-                    <><CreditCard className="w-5 h-5 mr-2" /> {t('cart.btnConfirm')}</>
+                    <p className="text-sm font-sans text-ink">{phone || <span className="text-signal-red">No phone provided</span>}</p>
                   )}
-                </button>
+                </div>
+
               </div>
-            )}
-          </div>
-        )}
+                </div>
+              </Step>
+
+              <Step>
+                <div className="px-6 pb-6 space-y-8 h-full overflow-y-auto custom-scrollbar">
+              {/* Order Summary */}
+              <div className="pt-6 space-y-3">
+                <div className="flex justify-between text-slate font-sans text-sm">
+                  <span>Subtotal</span>
+                  <span className="font-mono text-ink">€{subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-slate font-sans text-sm">
+                  <span>Delivery Fee</span>
+                  <span className="font-mono text-ink">{orderMode === 'delivery' ? `€${deliveryFee.toFixed(2)}` : '—'}</span>
+                </div>
+                <div className="h-px bg-slate w-full my-2"></div>
+                <div className="flex justify-between font-bold text-ink text-lg">
+                  <span className="font-display">Total</span>
+                  <span className="font-mono">€{total.toFixed(2)}</span>
+                </div>
+              </div>
+
+                </div>
+              </Step>
+            </Stepper>
+          )}
+        </div>
       </div>
+
+      {/* Render Edit Modal if editing */}
+      {editingCartItem && (
+        <ItemCustomizationModal
+          item={editingCartItem}
+          allMenuItems={allMenuItems}
+          onClose={() => setEditingCartItem(null)}
+          handleAddToCart={handleEditItemAddToCart}
+        />
+      )}
     </>
   );
 };

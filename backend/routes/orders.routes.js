@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { randomUUID } from 'node:crypto';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
-import { sendOrderToPrintNode } from '../services/printerService.js';
+import { sendOrderToPrintRelay } from '../services/printerService.js';
 
 const router = Router();
 
@@ -20,6 +20,48 @@ const sanitizeOrder = (order) => {
         price: oi.menuitems.price ? parseFloat(oi.menuitems.price.toString()) : 0
       } : null
     }))
+  };
+};
+
+const generatePrintPayload = (order) => {
+  const subtotal = parseFloat(order.total_price.toString()) - parseFloat(order.delivery_fee.toString());
+  
+  return {
+    orderId: order.order_id,
+    date: order.created_at ? order.created_at.toLocaleString('fr-FR') : new Date().toLocaleString('fr-FR'),
+    deliveryType: order.delivery_type.toUpperCase(),
+    customer: {
+      name: order.users.full_name,
+      phone: order.users.phone_number || 'N/A', 
+      address: order.delivery_address || order.users.address || 'N/A'
+    },
+    items: order.orderitems.map(item => {
+      const cust = item.customizations || {};
+      const extras = [...(cust.extras || [])];
+      
+      if (cust.toppings && Array.isArray(cust.toppings)) {
+        cust.toppings.forEach(t => extras.push({ name: t }));
+      }
+      
+      if (cust.crust) {
+        extras.push({ name: `Crust: ${cust.crust.name}` });
+      }
+
+      if (cust.size) {
+         extras.push({ name: `Size: ${cust.size.id.toUpperCase()}` });
+      }
+
+      return {
+        name: item.menuitems.name,
+        quantity: item.quantity,
+        price: parseFloat(item.subtotal.toString()) / item.quantity,
+        subItems: cust.subItems || [], 
+        extras: extras
+      };
+    }),
+    subtotal: subtotal,
+    deliveryFee: parseFloat(order.delivery_fee.toString()),
+    total: parseFloat(order.total_price.toString())
   };
 };
 
@@ -140,54 +182,7 @@ router.post('/', authenticate, async (req, res) => {
       return newOrder;
     });
 
-    // Format the payload for PrintNode
-    const printPayload = {
-      orderId: order.order_id,
-      date: order.created_at ? order.created_at.toLocaleString('fr-FR') : new Date().toLocaleString('fr-FR'),
-      deliveryType: order.delivery_type.toUpperCase(),
-      customer: {
-        name: order.users.full_name,
-        phone: order.users.phone_number || 'N/A', 
-        address: order.delivery_address || order.users.address || 'N/A'
-      },
-      items: order.orderitems.map(item => {
-        const cust = item.customizations || {};
-        const extras = [...(cust.extras || [])];
-        
-        // Add Toppings to extras for the printer
-        if (cust.toppings && Array.isArray(cust.toppings)) {
-          cust.toppings.forEach(t => extras.push({ name: t }));
-        }
-        
-        // Add Crust to extras for the printer
-        if (cust.crust) {
-          extras.push({ name: `Crust: ${cust.crust.name}` });
-        }
-
-        // Add Size for the printer
-        if (cust.size) {
-           extras.push({ name: `Size: ${cust.size.id.toUpperCase()}` });
-        }
-
-        return {
-          name: item.menuitems.name,
-          quantity: item.quantity,
-          price: parseFloat(item.menuitems.price),
-          subItems: cust.subItems || [], 
-          extras: extras
-        };
-      }),
-      subtotal: items_total,
-      deliveryFee: delivery_fee,
-      total: total_price
-    };
-
-    // 1. Cloud-based Printing (PrintNode)
-    try {
-      await sendOrderToPrintNode(printPayload);
-    } catch (printErr) {
-      console.error("⚠️ Print job failed, but order was saved successfully.");
-    }
+    // 1. (Printing has been moved to PATCH /api/orders/:id/status when accepted)
 
     // PREPARE FOR FRONTEND: Rename orderitems to items
     const formattedOrder = {
@@ -272,7 +267,20 @@ router.patch('/:id/status', authenticate, requireAdmin, async (req, res) => {
     const order = await prisma.orders.update({
       where: { order_id: req.params.id },
       data: { status },
+      include: {
+        orderitems: { include: { menuitems: { select: { name: true, price: true } } } },
+        users: { select: { full_name: true, email: true, phone_number: true, address: true } },
+      }
     });
+
+    if (status === 'cooking') {
+      try {
+        const printPayload = generatePrintPayload(order);
+        await sendOrderToPrintRelay(printPayload);
+      } catch (printErr) {
+        console.error("⚠️ Print job generation failed:", printErr);
+      }
+    }
 
     res.json(order);
   } catch (err) {

@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import jwt from 'jsonwebtoken';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
+import { sendReservationConfirmedEmail, sendReservationDeclinedEmail } from '../lib/mailer.js';
 
 const router = Router();
 
@@ -17,9 +18,9 @@ router.post('/', async (req, res) => {
     }
     // -------------------------------------------------------------
 
-    const { full_name, phone_number, res_date, res_time, guests } = req.body;
+    const { full_name, email, phone_number, res_date, res_time, guests } = req.body;
 
-    if (!full_name || !phone_number || !res_date || !res_time || !guests) {
+    if (!full_name || !email || !phone_number || !res_date || !res_time || !guests) {
       return res.status(400).json({ error: 'Tous les champs sont requis.' });
     }
 
@@ -31,10 +32,9 @@ router.post('/', async (req, res) => {
     // Security: Only link to a user if authenticated, otherwise use null
     // We expect the frontend to NOT send user_id anymore, but we ignore it anyway
     let user_id = null;
-    const authHeader = req.headers['authorization'];
-    if (authHeader) {
+    const token = req.cookies?.token;
+    if (token) {
       try {
-        const token = authHeader.split(' ')[1];
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         user_id = decoded.user_id;
       } catch (err) { /* Not logged in or invalid token, proceed as guest */ }
@@ -43,6 +43,7 @@ router.post('/', async (req, res) => {
     const data = {
       res_id: randomUUID(),
       full_name,
+      email,
       phone_number,
       res_date: new Date(res_date + "T00:00:00Z"), // Force UTC midnight for the date
       res_time: new Date(`1970-01-01T${res_time}:00Z`), // Store time part consistently
@@ -114,6 +115,45 @@ router.get('/', authenticate, requireAdmin, async (req, res) => {
   }
 });
 
+// PATCH /api/reservations/:id/cancel — User only
+router.patch('/:id/cancel', authenticate, async (req, res) => {
+  try {
+    const resId = req.params.id;
+    const userId = req.user.user_id;
+
+    const reservation = await prisma.reservations.findUnique({
+      where: { res_id: resId }
+    });
+
+    if (!reservation) {
+      return res.status(404).json({ error: 'Reservation not found.' });
+    }
+
+    if (reservation.user_id !== userId) {
+      return res.status(403).json({ error: 'Access denied.' });
+    }
+
+    if (reservation.status === 'cancelled' || reservation.status === 'declined') {
+      return res.status(400).json({ error: 'Reservation is already cancelled.' });
+    }
+
+    const updatedRes = await prisma.reservations.update({
+      where: { res_id: resId },
+      data: { status: 'cancelled' }
+    });
+
+    // Notify admins
+    if (req.io) {
+      req.io.to('admin_room').emit('reservation_cancelled', updatedRes);
+    }
+
+    res.json(updatedRes);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // PATCH /api/reservations/:id/status — Admin only
 router.patch('/:id/status', authenticate, requireAdmin, async (req, res) => {
   try {
@@ -129,6 +169,15 @@ router.patch('/:id/status', authenticate, requireAdmin, async (req, res) => {
       const room = reservation.user_id ? `user_${reservation.user_id}` : null;
       if (room) {
         req.io.to(room).emit('reservation_confirmed', reservation);
+      }
+    }
+
+    // Send emails based on status
+    if (reservation.email) {
+      if (status === 'confirmed') {
+        sendReservationConfirmedEmail(reservation.email, reservation);
+      } else if (status === 'declined' || status === 'cancelled') {
+        sendReservationDeclinedEmail(reservation.email, { full_name: reservation.full_name, reason: req.body.reason });
       }
     }
 

@@ -1,3 +1,4 @@
+import SpecularButton from '../ui/SpecularButton';
 import React, { useState, useEffect } from 'react';
 import { Search, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -6,30 +7,29 @@ import MenuCard from '../ui/MenuCard';
 import ItemCustomizationModal from '../ui/ItemCustomizationModal';
 import api from '../../services/api.js';
 
-// Define the categories in order for the sidebar
-const categories = ['Menu Deals', 'Starters', 'Pizzas', 'Pastas', 'Half-Half Pizzas', 'Salads', 'Desserts', 'Drinks', 'Sauces'];
+// Define the categories in order
+const categories = ['Menu Deals', 'Starters', 'Pizzas', 'Pastas', 'Salads', 'Desserts', 'Drinks', 'Sauces'];
 
 const categoryTranslationKeys = {
   'Menu Deals': 'catMenuDeals',
   'Starters': 'catStarters',
   'Pizzas': 'catPizzas',
   'Pastas': 'catPastas',
-  'Half-Half Pizzas': 'catHalfHalf',
   'Salads': 'catSalads',
   'Desserts': 'catDesserts',
   'Drinks': 'catDrinks',
   'Sauces': 'catSauces'
 };
 
-// Map DB item to Component format
 const mapDbItemToCard = (item) => ({
   id: item.item_id,
   name: item.name,
   description: item.description,
   price: parseFloat(item.price),
-  category: item.category, // Crucial for conditional logic
-  popular: false, // Could add to DB later if needed
-  vegetarian: false, // Could add to DB later if needed
+  category: item.category,
+  popular: false,
+  vegetarian: false,
+  image_url: item.image_url || null, // Will handle empty image in MenuCard
 });
 
 const MenuView = ({ handleAddToCart }) => {
@@ -40,7 +40,6 @@ const MenuView = ({ handleAddToCart }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedItemForModal, setSelectedItemForModal] = useState(null);
 
-  // Fetch Menu from Backend
   useEffect(() => {
     const fetchMenu = async () => {
       setIsLoading(true);
@@ -55,19 +54,16 @@ const MenuView = ({ handleAddToCart }) => {
       }
     };
     fetchMenu();
-  }, []);
+  }, [t]);
 
-  // 3. Global Search & Categorization Logic
   let displayedItems = [];
   let displayTitle = activeCategory;
 
   if (searchQuery.trim() === '') {
-    // If no search, show the active category
     displayedItems = menuItems
       .filter(item => item.category === activeCategory)
       .map(mapDbItemToCard);
   } else {
-    // If searching, show "Search Results" and flatten all categories
     displayTitle = t('menu.searchResults');
     displayedItems = menuItems
       .filter((item) => 
@@ -78,118 +74,113 @@ const MenuView = ({ handleAddToCart }) => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 transition-colors">
-      
-      <div className="mb-10 text-center md:text-left">
-        <h2 className="text-3xl font-extrabold text-stone-900 dark:text-white tracking-tight">{t('menu.title')}</h2>
-        <p className="text-stone-500 dark:text-stone-400 mt-2 text-lg">{t('menu.subtitle')}</p>
-      </div>
-
-      <div className="flex flex-col md:flex-row gap-8">
+    <div className="w-full bg-paper min-h-screen">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 transition-colors">
         
-        {/* Sidebar Categories */}
-        <aside className="w-full md:w-1/4">
-          <div 
-            className="md:sticky md:top-28 flex overflow-x-auto md:flex-col gap-3 md:gap-0 md:space-y-2 pb-2 md:pb-0"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-          >
-            <style>{`
-              aside div::-webkit-scrollbar { display: none; }
-            `}</style>
-            {categories.map((category) => (
-              <button
-                key={category}
-                onClick={() => {
-                  setActiveCategory(category);
-                  setSearchQuery(''); // Clear search when clicking a new category
-                }}
-                className={`flex-shrink-0 whitespace-nowrap w-auto md:w-full text-left px-5 py-3.5 rounded-xl transition-all duration-200 font-semibold ${
-                  activeCategory === category && searchQuery === ''
-                    ? 'bg-red-600 text-white shadow-md shadow-red-900/20'
-                    : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-white border border-transparent dark:border-stone-800'
-                }`}
-              >
-                {t(`menu.${categoryTranslationKeys[category]}`)}
-              </button>
-            ))}
+        {/* Header */}
+        <div className="mb-10 text-center md:text-left max-w-2xl">
+          <h2 className="text-4xl font-bold font-display text-ink tracking-tight mb-2">{t('menu.title')}</h2>
+          <p className="text-slate text-lg">{t('menu.subtitle')}</p>
+        </div>
+
+        {/* Global Search Bar */}
+        <div className="mb-8 w-full max-w-md">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-slate" />
+            </div>
+            <input
+              type="text"
+              placeholder={t('menu.searchPlaceholder')}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 rounded-md border border-slate bg-paper text-ink focus:border-signal-red focus:ring-1 focus:ring-signal-red transition-colors outline-none font-sans"
+            />
           </div>
-        </aside>
+        </div>
 
-        {/* Menu Items Grid */}
-        <main className="w-full md:w-3/4">
-
-          {/* Global Search Bar */}
-          <div className="mb-8 w-full">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-stone-400 dark:text-stone-500" />
-              </div>
-              <input
-                type="text"
-                placeholder={t('menu.searchPlaceholder')}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 text-stone-900 dark:text-white focus:bg-white dark:focus:bg-stone-900 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors shadow-sm outline-none"
-              />
+        {/* Horizontal Tab Bar Navigation (replacing vertical sidebar) */}
+        {searchQuery.trim() === '' && (
+          <div className="w-full mb-8 border-b border-mist overflow-x-auto custom-scrollbar sticky top-0 z-10 bg-paper/95 backdrop-blur-sm">
+            <div className="flex space-x-8 min-w-max pb-px">
+              {categories.map((category) => (
+                <button
+                  key={category}
+                  onClick={() => setActiveCategory(category)}
+                  className={`py-4 text-sm font-bold tracking-wide uppercase transition-colors relative whitespace-nowrap ${
+                    activeCategory === category
+                      ? 'text-ink'
+                      : 'text-slate hover:text-ink'
+                  }`}
+                >
+                  {t(`menu.${categoryTranslationKeys[category]}`)}
+                  {/* Signal Red Underline for active tab */}
+                  {activeCategory === category && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-signal-red"></div>
+                  )}
+                </button>
+              ))}
             </div>
           </div>
+        )}
 
-          <div className="mb-6 pb-4 border-b border-stone-200 dark:border-stone-800 flex justify-between items-end">
-            <h3 className="text-2xl font-bold text-stone-900 dark:text-white capitalize">
-              {Object.keys(categoryTranslationKeys).includes(displayTitle) ? t(`menu.${categoryTranslationKeys[displayTitle]}`) : displayTitle}
-            </h3>
-            {!isLoading && searchQuery && (
-              <span className="text-sm font-medium text-stone-500 dark:text-stone-400">
-                {t('menu.foundResults', { count: displayedItems.length })}
-              </span>
+        <div className="mb-6 flex justify-between items-end">
+          <h3 className="text-2xl font-bold font-display text-ink capitalize">
+            {Object.keys(categoryTranslationKeys).includes(displayTitle) ? t(`menu.${categoryTranslationKeys[displayTitle]}`) : displayTitle}
+          </h3>
+          {!isLoading && searchQuery && (
+            <span className="text-sm font-medium font-mono text-slate">
+              {t('menu.foundResults', { count: displayedItems.length })}
+            </span>
+          )}
+        </div>
+        
+        {/* Menu Grid */}
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 text-slate">
+            <Loader2 className="w-10 h-10 animate-spin text-signal-red mb-4" />
+            <p className="font-mono">{t('menu.loading')}</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-12">
+            {displayedItems.map((item, index) => (
+              <div key={item.id} className="h-full">
+                <MenuCard 
+                  item={item} 
+                  handleAddToCart={handleAddToCart} 
+                  openModal={() => setSelectedItemForModal(item)}
+                  searchQuery={searchQuery}
+                  priority={index < 4}
+                />
+              </div>
+            ))}
+            
+            {/* Empty State when search finds nothing */}
+            {displayedItems.length === 0 && (
+              <div className="col-span-full py-16 text-center bg-mist rounded-md border border-slate">
+                <Search className="h-8 w-8 text-slate mx-auto mb-4 opacity-50" />
+                <p className="text-slate font-bold">{t('menu.noItems', { query: searchQuery })}</p>
+                <button 
+                  onClick={() => setSearchQuery('')}
+                  className="mt-4 text-signal-red hover:underline text-sm font-bold"
+                >
+                  {t('menu.clearSearch')}
+                </button>
+              </div>
             )}
           </div>
-          
-          {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-20 text-stone-500">
-              <Loader2 className="w-10 h-10 animate-spin text-red-500 mb-4" />
-              <p>{t('menu.loading')}</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-12">
-              {displayedItems.map((item) => (
-                <div key={item.id} className="h-full">
-                  <MenuCard 
-                    item={item} 
-                    handleAddToCart={handleAddToCart} 
-                    openModal={() => setSelectedItemForModal(item)}
-                  />
-                </div>
-              ))}
-              
-              {/* Empty State when search finds nothing */}
-              {displayedItems.length === 0 && (
-                <div className="col-span-1 lg:col-span-2 py-12 text-center bg-stone-50 dark:bg-stone-900/50 rounded-2xl border border-dashed border-stone-200 dark:border-stone-800">
-                  <Search className="h-8 w-8 text-stone-300 dark:text-stone-600 mx-auto mb-3" />
-                  <p className="text-stone-500 dark:text-stone-400 font-medium">{t('menu.noItems', { query: searchQuery })}</p>
-                  <button 
-                    onClick={() => setSearchQuery('')}
-                    className="mt-4 text-red-600 dark:text-red-400 hover:underline text-sm font-medium"
-                  >
-                    {t('menu.clearSearch')}
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-        </main>
-        
-      </div>
+        )}
 
-      {/* Item Customization Modal */}
-      {selectedItemForModal && (
-        <ItemCustomizationModal 
-          item={selectedItemForModal}
-          allMenuItems={menuItems} // Pass all items for deals
-          onClose={() => setSelectedItemForModal(null)}
-          handleAddToCart={handleAddToCart}
-        />
-      )}
+        {/* Item Customization Modal */}
+        {selectedItemForModal && (
+          <ItemCustomizationModal 
+            item={selectedItemForModal}
+            allMenuItems={menuItems} // Pass all items for deals
+            onClose={() => setSelectedItemForModal(null)}
+            handleAddToCart={handleAddToCart}
+          />
+        )}
+      </div>
     </div>
   );
 };

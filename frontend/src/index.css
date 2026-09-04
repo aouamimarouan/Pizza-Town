@@ -3,43 +3,86 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-stone-50: #fafaf9;
-  --color-stone-100: #f5f5f4;
-  --color-stone-200: #e7e5e4;
-  --color-stone-300: #d6d3d1;
-  --color-stone-600: #57534e;
-  --color-stone-900: #1c1917;
+  /* Core Palette */
+  --color-ink: var(--theme-ink);
+  --color-paper: var(--theme-paper);
+  --color-signal-red: var(--theme-signal-red);
+  --color-slate: var(--theme-slate);
+  --color-mist: var(--theme-mist);
+  
+  /* Fallbacks for Tailwind components using standard colors (if any remain) */
+  --color-stone-950: var(--theme-ink);
+  --color-stone-900: var(--theme-ink);
+  --color-stone-800: var(--theme-ink);
+  --color-stone-700: var(--theme-slate);
+  --color-stone-600: var(--theme-slate);
+  --color-stone-500: var(--theme-slate);
+  --color-stone-400: var(--theme-slate);
+  --color-stone-300: var(--theme-mist);
+  --color-stone-200: var(--theme-mist);
+  --color-stone-100: var(--theme-paper);
+  --color-stone-50: var(--theme-paper);
+  
+  --color-red-500: #D62828; /* Signal Red */
+  --color-red-600: #D62828;
+  --color-red-700: #a31c1c;
 
-  --color-red-500: #ef4444;
-  --color-red-600: #dc2626;
-  --color-red-900: #7f1d1d;
-
-  --color-emerald-700: #047857;
-
-  --color-amber-50: #fffbeb;
-  --color-amber-200: #fde68a;
-  --color-amber-600: #d97706;
-
-  --font-sans: "Inter", "Roboto", "Outfit", system-ui, sans-serif;
-  --font-heading: "Outfit", "Inter", system-ui, sans-serif;
+  /* Typography */
+  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+  --font-display: "Archivo", system-ui, sans-serif;
+  --font-heading: "Archivo", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
 }
 
 @layer base {
+  :root {
+    --theme-paper: #FAF9F7;
+    --theme-ink: #14120F;
+    --theme-signal-red: #D62828;
+    --theme-slate: #6B6862;
+    --theme-mist: #F0EEEA;
+  }
+  
+  .dark {
+    --theme-paper: #111111;
+    --theme-ink: #F5F5F5;
+    --theme-signal-red: #E63946; /* Slightly brighter red for dark mode */
+    --theme-slate: #888888;
+    --theme-mist: #1A1A1A;
+  }
+
   html {
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    background-color: var(--theme-paper);
+    color: var(--theme-ink);
+  }
+  
+  /* No smooth scrolling for those who prefer reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  body {
+    background-color: var(--theme-paper);
+    color: var(--theme-ink);
+    font-family: var(--font-sans);
   }
 }
 
 @layer utilities {
-  .text-shadow-sm {
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-  }
-  .text-shadow-md {
-    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
-  }
-  .text-shadow-lg {
-    text-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+  .text-shadow-sm, .text-shadow-md, .text-shadow-lg {
+    text-shadow: none !important; /* Force remove text shadows as per brief */
   }
 }

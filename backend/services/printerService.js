@@ -1,26 +1,16 @@
-import axios from 'axios';
 import { ThermalPrinter, PrinterTypes } from 'node-thermal-printer';
 
 /**
- * Generates a receipt buffer and sends it to PrintNode API.
+ * Generates an ESC/POS receipt buffer and sends it to the PrintRelay server.
  * 
  * @param {Object} orderData - The formatted order data payload.
- * @returns {Promise<Object>} - PrintNode API response.
+ * @returns {Promise<boolean>} - Success status.
  */
-export const sendOrderToPrintNode = async (orderData) => {
+export const sendOrderToPrintRelay = async (orderData) => {
   try {
-    const printerId = process.env.PRINTNODE_PRINTER_ID;
-    const apiKey = process.env.PRINTNODE_API_KEY;
-
-    if (!printerId || !apiKey) {
-      console.warn("⚠️ PrintNode configuration missing. Skipping print job.");
-      return;
-    }
-
-    // 1. Initialize Thermal Printer (Epson)
+    // 1. Initialize Thermal Printer (Epson) without a specific interface
     const printer = new ThermalPrinter({
       type: PrinterTypes.EPSON,
-      // No interface needed for buffer generation
       characterSet: 'PC858_EURO',
       removeSpecialCharacters: false,
       lineCharacter: '=',
@@ -129,39 +119,51 @@ export const sendOrderToPrintNode = async (orderData) => {
     printer.println('Merci de votre commande !');
     printer.println('Bon appetit !');
     printer.cut();
-
+    
     // 3. Extract Buffer & Convert to Base64
     const buffer = await printer.getBuffer();
     const base64Data = buffer.toString('base64');
+    
+    // Clear buffer just in case
+    printer.clear();
 
-    // 4. Send to PrintNode API via Axios
-    // Basic Auth Construction (API_KEY:)
-    const authHeader = `Basic ${Buffer.from(apiKey + ':').toString('base64')}`;
+    // 4. Send to PrintRelay Server
+    const serverUrl = process.env.PRINTRELAY_SERVER_URL;
+    const apiKey = process.env.PRINTRELAY_API_KEY;
+    const printerId = process.env.PRINTRELAY_PRINTER_ID;
 
-    console.log(`[Printer] Sending print job for Order #${orderData.orderId} to PrintNode...`);
+    if (!serverUrl || !apiKey || !printerId) {
+      console.warn("⚠️ PrintRelay credentials missing in .env. Skipping print job.");
+      return false;
+    }
 
-    const response = await axios.post(
-      'https://api.printnode.com/printjobs',
-      {
-        printerId: parseInt(printerId),
-        title: `Order #${orderData.orderId.split('-')[0].toUpperCase()}`,
+    console.log(`[Printer] Sending job for Order #${orderData.orderId} to PrintRelay at ${serverUrl}...`);
+
+    const response = await fetch(`${serverUrl}/printjobs`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Basic ' + Buffer.from(apiKey + ':').toString('base64')
+      },
+      body: JSON.stringify({
+        printerId: parseInt(printerId, 10),
+        title: `Order #${orderData.orderId}`,
         contentType: 'raw_base64',
         content: base64Data,
-        source: 'Pizza Town Cloud Service'
-      },
-      {
-        headers: {
-          'Authorization': authHeader,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
+        source: 'PizzaTown Backend'
+      })
+    });
 
-    console.log(`[Printer] ✅ PrintNode Success! Job ID: ${response.data}`);
-    return response.data;
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`PrintRelay API Error: ${response.status} - ${errorText}`);
+    }
+
+    console.log(`[Printer] ✅ PrintRelay Job Success!`);
+    return true;
 
   } catch (error) {
-    console.error(`[Printer] ❌ PrintNode Error:`, error.response?.data || error.message);
+    console.error(`[Printer Service] ❌ PrintRelay Error:`, error.message);
     throw error;
   }
 };

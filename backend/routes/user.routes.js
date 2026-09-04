@@ -61,4 +61,33 @@ router.get('/profile', authenticate, async (req, res) => {
   }
 });
 
+// PUT /api/users/profile
+router.put('/profile', authenticate, async (req, res) => {
+  try {
+    const { full_name, phone_number, address } = req.body;
+    
+    const user = await prisma.users.update({
+      where: { user_id: req.user.user_id },
+      data: { 
+        full_name: full_name !== undefined ? full_name : undefined,
+        phone_number: phone_number !== undefined ? phone_number : undefined,
+        address: address !== undefined ? address : undefined
+      },
+      select: {
+        user_id: true,
+        email: true,
+        full_name: true,
+        phone_number: true,
+        address: true,
+        role: true
+      }
+    });
+
+    res.json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;

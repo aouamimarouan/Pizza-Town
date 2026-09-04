@@ -54,6 +54,7 @@ model reservations {
   res_id       String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   user_id      String?  @db.Uuid
   full_name    String   @db.VarChar(255)
+  email        String?  @db.VarChar(255)
   phone_number String   @db.VarChar(20)
   res_date     DateTime @db.Date
   res_time     DateTime @db.Time(6)
