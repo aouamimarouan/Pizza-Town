@@ -17,6 +17,7 @@ import ReservationView from './components/views/ReservationView';
 import AdminDashboard from './components/views/AdminDashboard';
 import MyOrders from './components/views/MyOrders';
 import AccountSettingsView from './components/views/AccountSettingsView';
+import ReviewSubmissionView from './components/views/ReviewSubmissionView';
 import CartWidget from './components/ui/CartWidget';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { logout as authLogout, getStoredUser } from './services/authService.js';
@@ -212,6 +213,12 @@ function AppContent() {
           <Route path="/login" element={user.isLoggedIn ? <Navigate to="/" /> : <LoginView onAuthSuccess={handleAuthSuccess} />} />
           <Route path="/forgot-password" element={user.isLoggedIn ? <Navigate to="/" /> : <ForgotPasswordView />} />
           <Route path="/reset-password" element={<ResetPasswordView />} />
+          
+          <Route path="/review/:orderId" element={
+            <ProtectedRoute user={user} allowedRoles={['customer']}>
+              <ReviewSubmissionView />
+            </ProtectedRoute>
+          } />
           
           {/* Protected Routes */}
           <Route path="/orders" element={

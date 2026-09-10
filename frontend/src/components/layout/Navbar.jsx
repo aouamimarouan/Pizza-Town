@@ -12,6 +12,8 @@ const Navbar = ({ isDarkMode, toggleDarkMode, cartItemCount, openCart, user, onL
   const [isPulsing, setIsPulsing] = useState(false);
   const dropdownRef = useRef(null);
   
+  const initials = user?.full_name ? user.full_name.substring(0, 2).toUpperCase() : 'US';
+  
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -113,8 +115,8 @@ const Navbar = ({ isDarkMode, toggleDarkMode, cartItemCount, openCart, user, onL
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className="flex items-center gap-1 md:gap-3 rounded-md bg-paper border border-mist p-1 md:pr-4 hover:border-slate transition-all focus:outline-none focus:ring-1 focus:ring-signal-red"
                 >
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 md:w-8 md:h-8 rounded-md bg-mist flex items-center justify-center shrink-0 border border-mist text-ink">
-                    <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-4 md:h-4" />
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 md:w-8 md:h-8 rounded-md bg-ink flex items-center justify-center shrink-0 border border-mist text-paper font-display font-bold text-xs sm:text-sm">
+                    {initials}
                   </div>
                   <div className="hidden md:flex flex-col items-start leading-tight">
                     <span className="text-ink font-bold text-sm">{user.full_name?.split(' ')[0] || 'User'}</span>

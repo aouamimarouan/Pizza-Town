@@ -16,6 +16,12 @@ const isCustomizable = (item) => {
   return false;
 };
 
+const SUGGESTION_CATEGORIES = [
+  { id: 'Desserts', labelKey: 'catDesserts', fallback: 'Desserts' },
+  { id: 'Sauces', labelKey: 'catSauces', fallback: 'Sauzen' },
+  { id: 'Drinks', labelKey: 'catDrinks', fallback: 'Dranken' }
+];
+
 const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, handleAddToCart }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -32,6 +38,7 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
   
   const [allMenuItems, setAllMenuItems] = useState([]);
   const [editingCartItem, setEditingCartItem] = useState(null);
+  const [activeSuggestionCategory, setActiveSuggestionCategory] = useState('Desserts');
   
   const [activeStep, setActiveStep] = useState(1);
 
@@ -57,24 +64,7 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
     }
   }, [isOpen, allMenuItems.length]);
 
-  const hasDrink = cart.some(item => item.category === 'Drinks');
-  const hasDessert = cart.some(item => item.category === 'Desserts');
-  const hasSauce = cart.some(item => item.category === 'Sauces');
-
-  const missingCategories = [];
-  if (!hasDrink) missingCategories.push('Drinks');
-  if (!hasDessert) missingCategories.push('Desserts');
-  if (!hasSauce) missingCategories.push('Sauces');
-
-  const suggestionsGroups = allMenuItems
-    .filter(item => missingCategories.includes(item.category))
-    .reduce((acc, item) => {
-      if (!acc[item.category]) acc[item.category] = [];
-      if (acc[item.category].length < 4) acc[item.category].push(item);
-      return acc;
-    }, {});
-    
-  const suggestions = Object.values(suggestionsGroups).flat();
+  const activeSuggestions = allMenuItems.filter(item => item.category === activeSuggestionCategory);
 
   const subtotal = cart.reduce((sum, item) => sum + ((item.totalPrice || item.price) * item.quantity), 0);
   const deliveryFee = orderMode === 'delivery' ? 3.50 : 0;
@@ -304,43 +294,111 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
 
               <div className="h-px bg-slate w-full"></div>
 
-              {/* Order Completion Suggestions */}
-              {suggestions.length > 0 && (
-                <div className="bg-mist border border-slate rounded-md p-4 animate-in fade-in duration-300">
-                  <h3 className="text-ink font-bold font-sans text-sm mb-3">Complete your order</h3>
-                  <div className="flex gap-4 overflow-x-auto custom-scrollbar snap-x pb-2">
-                    {suggestions.map(item => (
-                      <div 
-                        key={item.id} 
-                        className="snap-start shrink-0 w-32 bg-paper border border-slate rounded-md overflow-hidden flex flex-col shadow-sm"
-                      >
-                        <img 
-                          src={item.image_url} 
-                          alt={item.name} 
-                          className="w-full h-20 object-cover border-b border-slate" 
-                          onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1628840042765-356cda07504e?q=80&w=200&auto=format&fit=crop'; }}
-                        />
-                        <div className="p-2 flex flex-col flex-1">
-                          <span className="font-sans font-medium text-ink text-xs line-clamp-2 leading-tight flex-1">{item.name}</span>
-                          <div className="flex items-center justify-between mt-2">
-                            <span className="font-mono font-medium text-slate text-xs">€{item.price.toFixed(2)}</span>
-                            <button 
-                              onClick={() => {
-                                if (isCustomizable(item)) {
-                                  setEditingCartItem(item);
-                                } else {
-                                  handleAddToCart(item);
-                                }
-                              }}
-                              className="w-6 h-6 rounded-full bg-ink text-paper flex items-center justify-center hover:bg-slate transition-colors"
-                              aria-label={`Add ${item.name}`}
+              {/* Order Completion Suggestions with Category Tabs */}
+              {allMenuItems.length > 0 && (
+                <div className="bg-mist/50 border border-slate rounded-lg p-3.5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-ink font-bold font-sans text-xs uppercase tracking-wider">
+                        {t('cart.completeOrder', 'Maak je bestelling compleet')}
+                      </h4>
+                      <p className="text-[11px] text-slate mt-0.5">
+                        {t('cart.suggestionsSubtitle', 'Kies desserts, sauzen of drankjes')}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Category Pill Tabs */}
+                  <div className="grid grid-cols-3 gap-1.5 p-1 bg-paper border border-slate rounded-lg">
+                    {SUGGESTION_CATEGORIES.map(cat => {
+                      const isActive = activeSuggestionCategory === cat.id;
+                      const countInCart = cart
+                        .filter(ci => ci.category === cat.id)
+                        .reduce((sum, ci) => sum + (ci.quantity || 1), 0);
+
+                      return (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => setActiveSuggestionCategory(cat.id)}
+                          className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md text-xs transition-all duration-150 ${
+                            isActive
+                              ? 'bg-ink text-paper font-bold shadow-sm'
+                              : 'text-slate hover:text-ink hover:bg-mist font-medium'
+                          }`}
+                        >
+                          <span className="truncate">{t(`menu.${cat.labelKey}`, cat.fallback)}</span>
+                          {countInCart > 0 && (
+                            <span
+                              className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono font-bold leading-none ${
+                                isActive ? 'bg-paper text-ink' : 'bg-ink/10 text-ink'
+                              }`}
                             >
-                              <Plus className="w-4 h-4" />
-                            </button>
+                              {countInCart}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Suggested Items for the Active Category */}
+                  <div className="flex gap-2.5 overflow-x-auto custom-scrollbar snap-x pb-1 pt-0.5">
+                    {activeSuggestions.length > 0 ? (
+                      activeSuggestions.map(item => {
+                        const inCartItem = cart.find(ci => ci.id === item.id);
+                        const inCartQty = inCartItem ? inCartItem.quantity : 0;
+
+                        return (
+                          <div 
+                            key={item.id} 
+                            className="snap-start shrink-0 w-28 bg-paper border border-slate rounded-lg overflow-hidden flex flex-col shadow-sm group transition-colors hover:border-ink/40"
+                          >
+                            <div className="relative w-full h-20 bg-mist overflow-hidden border-b border-slate">
+                              <img 
+                                src={item.image_url} 
+                                alt={item.name} 
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" 
+                                onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1628840042765-356cda07504e?q=80&w=200&auto=format&fit=crop'; }}
+                              />
+                              {inCartQty > 0 && (
+                                <span className="absolute top-1 right-1 bg-ink text-paper text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full shadow-sm">
+                                  x{inCartQty}
+                                </span>
+                              )}
+                            </div>
+                            <div className="p-2 flex flex-col flex-1 justify-between gap-1.5">
+                              <span className="font-sans font-medium text-ink text-xs line-clamp-2 leading-tight min-h-7">
+                                {item.name}
+                              </span>
+                              <div className="flex items-center justify-between pt-1 border-t border-slate/30">
+                                <span className="font-mono font-bold text-ink text-xs">
+                                  €{Number(item.price).toFixed(2)}
+                                </span>
+                                <button 
+                                  type="button"
+                                  onClick={() => {
+                                    if (isCustomizable(item)) {
+                                      setEditingCartItem(item);
+                                    } else {
+                                      handleAddToCart(item);
+                                    }
+                                  }}
+                                  className="w-6 h-6 rounded-full bg-ink text-paper flex items-center justify-center hover:bg-slate active:scale-95 transition-all shadow-xs"
+                                  aria-label={`Add ${item.name}`}
+                                >
+                                  <Plus className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
                           </div>
-                        </div>
+                        );
+                      })
+                    ) : (
+                      <div className="w-full py-4 text-center text-xs text-slate">
+                        Geen items beschikbaar
                       </div>
-                    ))}
+                    )}
                   </div>
                 </div>
               )}
@@ -466,23 +524,39 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
               </Step>
 
               <Step>
-                <div className="px-6 pb-6 space-y-8 h-full overflow-y-auto custom-scrollbar">
-              {/* Order Summary */}
-              <div className="pt-6 space-y-3">
-                <div className="flex justify-between text-slate font-sans text-sm">
-                  <span>Subtotal</span>
-                  <span className="font-mono text-ink">€{subtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-slate font-sans text-sm">
-                  <span>Delivery Fee</span>
-                  <span className="font-mono text-ink">{orderMode === 'delivery' ? `€${deliveryFee.toFixed(2)}` : '—'}</span>
-                </div>
-                <div className="h-px bg-slate w-full my-2"></div>
-                <div className="flex justify-between font-bold text-ink text-lg">
-                  <span className="font-display">Total</span>
-                  <span className="font-mono">€{total.toFixed(2)}</span>
-                </div>
-              </div>
+                <div className="px-6 pb-6 space-y-6 h-full overflow-y-auto custom-scrollbar">
+                  {/* Order Summary */}
+                  <div className="pt-6 space-y-3">
+                    <div className="flex justify-between text-slate font-sans text-sm">
+                      <span>{t('cart.subtotal', 'Subtotal')}</span>
+                      <span className="font-mono text-ink">€{subtotal.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-slate font-sans text-sm">
+                      <span>{t('cart.deliveryFee', 'Delivery Fee')}</span>
+                      <span className="font-mono text-ink">{orderMode === 'delivery' ? `€${deliveryFee.toFixed(2)}` : '—'}</span>
+                    </div>
+                    <div className="h-px bg-slate w-full my-2"></div>
+                    <div className="flex justify-between font-bold text-ink text-lg">
+                      <span className="font-display">{t('cart.total', 'Total')}</span>
+                      <span className="font-mono">€{total.toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  {/* Customer Cancellation Notice */}
+                  <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3.5 flex items-start gap-3 mt-4">
+                    <Phone className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <div className="text-xs space-y-1">
+                      <p className="font-bold text-ink font-sans">
+                        {t('cart.cancellationNoticeTitle', 'Wil je je bestelling annuleren?')}
+                      </p>
+                      <p className="text-slate font-sans leading-relaxed">
+                        {t('cart.cancellationNoticeDesc', 'Zodra je bestelling geplaatst is, kan deze alleen telefonisch geannuleerd worden door direct contact op te nemen met het restaurant:')}{' '}
+                        <a href="tel:022697176" className="font-bold text-ink underline inline-flex items-center gap-1 hover:text-signal-red transition-colors">
+                          02 269 71 76
+                        </a>
+                      </p>
+                    </div>
+                  </div>
 
                 </div>
               </Step>

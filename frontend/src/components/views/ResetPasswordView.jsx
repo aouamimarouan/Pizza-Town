@@ -3,8 +3,10 @@ import { ArrowRight, Loader2, CheckCircle2, AlertCircle, Eye, EyeOff } from 'luc
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { resetPassword } from '../../services/authService.js';
 import SpecularButton from '../ui/SpecularButton';
+import { useTranslation } from 'react-i18next';
 
 const ResetPasswordView = () => {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
   const navigate = useNavigate();
@@ -18,19 +20,19 @@ const ResetPasswordView = () => {
 
   useEffect(() => {
     if (!token) {
-      setError('Lien de réinitialisation invalide ou manquant.');
+      setError(t('resetPassword.errorInvalidLink', 'Lien de réinitialisation invalide ou manquant.'));
     }
-  }, [token]);
+  }, [token, t]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (password !== confirmPassword) {
-      setError('Les mots de passe ne correspondent pas.');
+      setError(t('login.errorPasswordMismatch', 'Les mots de passe ne correspondent pas.'));
       return;
     }
     
     if (password.length < 6) {
-      setError('Le mot de passe doit contenir au moins 6 caractères.');
+      setError(t('resetPassword.errorLength', 'Le mot de passe doit contenir au moins 6 caractères.'));
       return;
     }
 
@@ -44,7 +46,7 @@ const ResetPasswordView = () => {
         navigate('/login');
       }, 3000);
     } catch (err) {
-      setError(err.response?.data?.error || 'Une erreur est survenue. Le lien a peut-être expiré.');
+      setError(err.response?.data?.error || t('resetPassword.errorGeneric', 'Une erreur est survenue. Le lien a peut-être expiré.'));
     } finally {
       setIsLoading(false);
     }
@@ -60,20 +62,20 @@ const ResetPasswordView = () => {
               <div className="w-16 h-16 bg-mist text-ink rounded-md flex items-center justify-center mx-auto mb-6 border border-slate">
                 <CheckCircle2 className="w-8 h-8" />
               </div>
-              <h2 className="text-2xl font-bold font-display text-ink mb-2 tracking-tight">Mot de passe modifié !</h2>
+              <h2 className="text-2xl font-bold font-display text-ink mb-2 tracking-tight">{t('resetPassword.successTitle', 'Mot de passe modifié !')}</h2>
               <p className="text-slate font-sans mb-8">
-                Ton mot de passe a été réinitialisé avec succès. Tu vas être redirigé vers la page de connexion...
+                {t('resetPassword.successDesc', 'Ton mot de passe a été réinitialisé avec succès. Tu vas être redirigé vers la page de connexion...')}
               </p>
               <SpecularButton onClick={() => navigate('/login')} size="lg" radius={6} tint="var(--theme-ink)" tintOpacity={1} textColor="var(--theme-paper)" lineColor="var(--theme-paper)" baseColor="var(--theme-slate)" intensity={1} className="w-full">
-Se connecter maintenant <ArrowRight className="ml-2 w-5 h-5" />
+{t('login.signInTab', 'Se connecter')} <ArrowRight className="ml-2 w-5 h-5" />
 </SpecularButton>
             </div>
           ) : (
             <div className="animate-in fade-in duration-300">
               <div className="mb-8">
-                <h2 className="text-3xl font-bold font-display text-ink tracking-tight">Nouveau mot de passe</h2>
+                <h2 className="text-3xl font-bold font-display text-ink tracking-tight">{t('resetPassword.title', 'Nouveau mot de passe')}</h2>
                 <p className="text-slate mt-2 font-sans">
-                  Choisis un nouveau mot de passe sécurisé pour ton compte.
+                  {t('resetPassword.desc', 'Choisis un nouveau mot de passe sécurisé pour ton compte.')}
                 </p>
               </div>
 
@@ -96,7 +98,7 @@ Demander un nouveau lien
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div>
                     <label className="block text-sm font-bold text-ink mb-2">
-                      Nouveau mot de passe
+                      {t('resetPassword.passwordLabel', 'Nouveau mot de passe')}
                     </label>
                     <div className="relative">
                       <input
@@ -105,7 +107,7 @@ Demander un nouveau lien
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         className="appearance-none block w-full px-4 py-3 border border-slate rounded-md shadow-sm bg-paper text-ink focus:outline-none focus:ring-1 focus:ring-signal-red focus:border-signal-red transition-colors"
-                        placeholder="Min. 6 caractères"
+                        placeholder={t('resetPassword.passwordPlaceholder', 'Min. 6 caractères')}
                       />
                       <button
                         type="button"
@@ -119,7 +121,7 @@ Demander un nouveau lien
 
                   <div>
                     <label className="block text-sm font-bold text-ink mb-2">
-                      Confirmer le mot de passe
+                      {t('resetPassword.confirmLabel', 'Confirmer le mot de passe')}
                     </label>
                     <div className="relative">
                       <input
@@ -128,13 +130,13 @@ Demander un nouveau lien
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         className="appearance-none block w-full px-4 py-3 border border-slate rounded-md shadow-sm bg-paper text-ink focus:outline-none focus:ring-1 focus:ring-signal-red focus:border-signal-red transition-colors"
-                        placeholder="Confirmer le mot de passe"
+                        placeholder={t('resetPassword.confirmPlaceholder', 'Confirmer le mot de passe')}
                       />
                     </div>
                   </div>
 
                   <SpecularButton type="submit" disabled={isLoading} size="lg" radius={6} tint="var(--theme-ink)" tintOpacity={1} textColor="var(--theme-paper)" lineColor="var(--theme-paper)" baseColor="var(--theme-slate)" intensity={1} className="w-full">
-{isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Enregistrer'}
+{isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : t('resetPassword.submitBtn', 'Réinitialiser le mot de passe')}
 </SpecularButton>
                 </form>
               )}

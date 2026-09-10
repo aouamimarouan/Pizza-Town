@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import api from '../../services/api.js';
 import socket from '../../services/socket.js';
 import toast from 'react-hot-toast';
-import { Check } from 'lucide-react';
+import { Check, Receipt, CalendarDays, Phone } from 'lucide-react';
 
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat('en-US', {
@@ -109,6 +109,16 @@ export default function AccountView() {
             );
           })}
         </div>
+
+        <div className="mt-5 pt-3 border-t border-slate/30 flex items-center justify-between gap-3 text-xs text-slate">
+          <div className="flex items-center gap-2">
+            <Phone className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+            <span>{t('cart.cancellationNoticeDesc', 'Zodra je bestelling geplaatst is, kan deze alleen telefonisch geannuleerd worden door direct contact op te nemen met het restaurant:')}</span>
+          </div>
+          <a href="tel:022697176" className="font-bold text-ink hover:text-signal-red underline shrink-0 font-mono">
+            02 269 71 76
+          </a>
+        </div>
       </div>
     );
   };
@@ -146,8 +156,8 @@ export default function AccountView() {
                 </div>
               </div>
 
-              <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-4 border-t border-slate sm:border-none pt-4 sm:pt-0">
-                <div className="text-right">
+              <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-4 border-t border-slate sm:border-none pt-4 sm:pt-0 mt-2 sm:mt-0">
+                <div className="text-left sm:text-right">
                   <div className="font-mono text-ink font-bold">{formatCurrency(order.total_price)}</div>
                   <div className="font-mono text-slate text-xs">{itemCount} items</div>
                 </div>
@@ -301,19 +311,26 @@ export default function AccountView() {
 
         {/* Navigation Tabs */}
         <div className="flex border-b border-mist mb-8 overflow-x-auto hide-scrollbar">
-          {['orders', 'reservations'].map((tab) => (
-            <button 
-              key={tab}
-              onClick={() => { setActiveTab(tab); setSelectedOrder(null); }}
-              className={`px-6 py-3 font-sans font-medium text-sm transition-colors relative
-                ${activeTab === tab ? 'text-ink' : 'text-slate hover:text-ink'}`}
-            >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              {activeTab === tab && (
-                <div className="absolute bottom-0 left-0 w-full h-0.5 bg-signal-red" />
-              )}
-            </button>
-          ))}
+          {[
+            { id: 'orders', label: 'Orders', icon: Receipt },
+            { id: 'reservations', label: 'Reservations', icon: CalendarDays }
+          ].map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button 
+                key={tab.id}
+                onClick={() => { setActiveTab(tab.id); setSelectedOrder(null); }}
+                className={`flex items-center gap-2 px-6 py-3 font-sans font-medium text-sm transition-colors relative
+                  ${activeTab === tab.id ? 'text-ink' : 'text-slate hover:text-ink'}`}
+              >
+                <Icon className="w-4 h-4" />
+                {tab.label}
+                {activeTab === tab.id && (
+                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-signal-red" />
+                )}
+              </button>
+            );
+          })}
         </div>
 
         {/* Content Area */}

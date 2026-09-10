@@ -14,6 +14,7 @@ import orderRoutes from './routes/orders.routes.js';
 import userRoutes from './routes/user.routes.js';
 import auditRoutes from './routes/audit.routes.js';
 import imagesRoutes from './routes/images.routes.js';
+import reviewsRoutes from './routes/reviews.routes.js';
 dotenv.config();
 
 const app = express();
@@ -81,6 +82,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/audit-logs', auditRoutes);
 app.use('/api/images', imagesRoutes);
+app.use('/api/reviews', reviewsRoutes);
 // Global 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: `Route ${req.method} ${req.path} not found.` });

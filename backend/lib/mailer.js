@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import nodemailer from 'nodemailer';
 
 const transporter = nodemailer.createTransport({
@@ -5,8 +6,8 @@ const transporter = nodemailer.createTransport({
   port: parseInt(process.env.EMAIL_PORT || '587'),
   secure: process.env.EMAIL_SECURE === 'true', // true for 465, false for other ports
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    user: (process.env.EMAIL_USER || '').trim(),
+    pass: (process.env.EMAIL_PASS || '').trim(),
   },
 });
 
@@ -136,3 +137,122 @@ export const sendReservationDeclinedEmail = async (toEmail, details) => {
     console.error('Error sending reservation declined email:', error);
   }
 };
+
+export const sendPostOrderReviewEmail = async (toEmail, details) => {
+  const { full_name, order_id } = details;
+  const reviewUrl = `http://localhost:5173/review/${order_id}`;
+  
+  const mailOptions = {
+    from: `"${process.env.EMAIL_FROM_NAME || 'Pizza Town'}" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+    to: toEmail,
+    subject: 'Comment s\'est passée votre commande ? 🍕',
+    html: `
+      <div style="font-family: Arial, sans-serif; color: #14120F; background-color: #FAF9F7; padding: 40px 20px; max-width: 600px; margin: 0 auto; border-radius: 8px;">
+        <h2 style="margin-top: 0; color: #D62828;">Pizza Town</h2>
+        <hr style="border: none; border-top: 1px solid #6B6862; margin: 20px 0;" />
+        
+        <p style="font-size: 16px; margin-bottom: 16px;">Bonjour ${full_name},</p>
+        <p style="font-size: 16px; margin-bottom: 24px;">Merci d'avoir commandé chez Pizza Town ! Nous espérons que vous vous êtes régalé.</p>
+        
+        <p style="font-size: 16px; margin-bottom: 24px;">Votre avis est très important pour nous aider à toujours nous améliorer. Pourriez-vous prendre une minute pour évaluer votre expérience ?</p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${reviewUrl}" style="display: inline-block; background-color: #D62828; color: #FAF9F7; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
+            Laisser un avis
+          </a>
+        </div>
+        
+        <p style="font-size: 14px; color: #6B6862; margin-top: 30px;">À très bientôt !<br>L'équipe Pizza Town</p>
+      </div>
+    `,
+  };
+
+  const maxRetries = 3;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const info = await transporter.sendMail(mailOptions);
+      console.log('Post-order review email sent: %s', info.messageId);
+      return; // Success, exit the loop
+    } catch (error) {
+      console.error(`Error sending review email (Attempt ${attempt}/${maxRetries}):`, error.message);
+      if (attempt === maxRetries) {
+        console.error('Failed to send review email after maximum retries.');
+      } else {
+        // Wait for 2 seconds before retrying
+        await new Promise(res => setTimeout(res, 2000));
+      }
+    }
+  }
+};
+
+export const sendOrderCancelledEmail = async (toEmail, details) => {
+  try {
+    const { order_id, full_name, reason, total_price, delivery_type } = details;
+    const shortId = order_id ? (order_id.includes('-') ? order_id.split('-')[0].toUpperCase() : order_id) : '';
+    const formattedTotal = total_price ? `€${parseFloat(total_price).toFixed(2)}` : null;
+
+    const mailOptions = {
+      from: `"${process.env.EMAIL_FROM_NAME || 'Pizza Town'}" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+      to: toEmail,
+      subject: `Pizza Town - Bestelling #${shortId} Geannuleerd / Order Cancelled`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #14120F; background-color: #FAF9F7; padding: 40px 20px; max-width: 600px; margin: 0 auto; border-radius: 10px; border: 1px solid #E5E2DC;">
+          <div style="text-align: center; margin-bottom: 24px;">
+            <h1 style="margin: 0; color: #D62828; font-size: 26px; font-weight: 800; letter-spacing: 1px;">PIZZA TOWN</h1>
+            <p style="margin: 4px 0 0 0; color: #6B6862; font-size: 13px;">Stationsstraat 14, 1861 Meise • Tel: 02 269 71 76</p>
+          </div>
+
+          <div style="background-color: #FFFFFF; border-radius: 8px; padding: 24px; border: 1px solid #E5E2DC; box-shadow: 0 2px 4px rgba(0,0,0,0.03);">
+            <div style="display: inline-block; background-color: #FEE2E2; color: #DC2626; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 9999px; text-transform: uppercase; margin-bottom: 16px;">
+              Bestelling Geannuleerd / Order Cancelled
+            </div>
+
+            <h2 style="font-size: 18px; margin: 0 0 12px 0; color: #14120F;">
+              Beste ${full_name || 'Klant'},
+            </h2>
+
+            <p style="font-size: 14px; line-height: 1.6; color: #44403C; margin: 0 0 18px 0;">
+              Helaas moeten wij u mededelen dat uw bestelling <strong>#${shortId}</strong> ${delivery_type ? `(${delivery_type})` : ''} niet verwerkt kan worden en is geannuleerd.
+            </p>
+
+            <div style="background-color: #FEF2F2; border-left: 4px solid #EF4444; padding: 16px; border-radius: 4px; margin-bottom: 20px;">
+              <p style="margin: 0 0 4px 0; font-size: 12px; font-weight: 700; text-transform: uppercase; color: #991B1B; letter-spacing: 0.5px;">
+                Reden van annulering / Reason for cancellation:
+              </p>
+              <p style="margin: 0; font-size: 15px; color: #7F1D1D; font-weight: 600;">
+                ${reason || 'Onvoorziene omstandigheden in het restaurant / Unforeseen circumstances.'}
+              </p>
+            </div>
+
+            ${formattedTotal ? `
+            <div style="background-color: #F9F8F6; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; font-size: 13px; color: #57534E;">
+              <strong>Totaalbedrag:</strong> ${formattedTotal}
+            </div>` : ''}
+
+            <p style="font-size: 13px; line-height: 1.5; color: #78716C; margin: 0 0 16px 0;">
+              Mocht u reeds online betaald hebben, dan wordt het bedrag zo spoedig mogelijk teruggestort op uw rekening. Heeft u vragen over uw bestelling? Neem gerust telefonisch contact met ons op via <a href="tel:022697176" style="color: #D62828; text-decoration: none; font-weight: bold;">02 269 71 76</a>.
+            </p>
+
+            <p style="font-size: 13px; line-height: 1.5; color: #78716C; margin: 0;">
+              Onze oprechte excuses voor het ongemak.<br>
+              <strong>Het Pizza Town Team</strong>
+            </p>
+          </div>
+
+          <div style="text-align: center; margin-top: 24px; font-size: 12px; color: #A8A29E;">
+            Pizza Town Meise • Stationsstraat 14, 1861 Meise • Tel: 02 269 71 76
+          </div>
+        </div>
+      `,
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Order cancellation email successfully sent: %s to %s', info.messageId, toEmail);
+    return true;
+  } catch (error) {
+    console.error('Error sending order cancellation email:', error);
+    return false;
+  }
+};
+
+

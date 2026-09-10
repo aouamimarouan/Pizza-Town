@@ -5,16 +5,17 @@ import SpecularButton from '../ui/SpecularButton';
 import FlowingMenu from '../ui/FlowingMenu';
 import LineSidebar from '../ui/LineSidebar';
 
-const demoItems = [
-  { link: '/menu', text: 'Nos Pizzas', image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=600&auto=format&fit=crop' },
-  { link: '/menu', text: 'Entrées', image: 'https://images.unsplash.com/photo-1574484284002-952d92456975?q=80&w=600&auto=format&fit=crop' },
-  { link: '/menu', text: 'Pâtes', image: 'https://images.unsplash.com/photo-1473093295043-cdd812d0e601?q=80&w=600&auto=format&fit=crop' },
-  { link: '/menu', text: 'Desserts', image: 'https://images.unsplash.com/photo-1551024506-0bccd828d307?q=80&w=600&auto=format&fit=crop' }
-];
-
 const HomeView = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
+
+  const demoItems = [
+    { link: '/menu', text: t('menu.catPizzas', 'Nos Pizzas'), image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=600&auto=format&fit=crop' },
+    { link: '/menu', text: t('home.catStarters', 'Entrées'), image: 'https://images.unsplash.com/photo-1574484284002-952d92456975?q=80&w=600&auto=format&fit=crop' },
+    { link: '/menu', text: t('home.catPastas', 'Pâtes'), image: 'https://images.unsplash.com/photo-1473093295043-cdd812d0e601?q=80&w=600&auto=format&fit=crop' },
+    { link: '/menu', text: t('menu.catDesserts', 'Desserts'), image: 'https://images.unsplash.com/photo-1551024506-0bccd828d307?q=80&w=600&auto=format&fit=crop' }
+  ];
+
   return (
     <div className="w-full bg-paper min-h-screen">
       {/* 1. Hero Section - Asymmetric Grid with Framed Image */}
@@ -97,7 +98,7 @@ const HomeView = () => {
           {/* Details column */}
           <div className="order-2 lg:order-1">
             <span className="inline-block px-3 py-1 bg-mist border border-slate text-xs font-bold text-ink uppercase tracking-widest rounded-full mb-6">
-              À propos de nous
+              {t('home.aboutUsBadge', 'À propos de nous')}
             </span>
             <h2 className="text-3xl md:text-5xl font-bold font-display text-ink tracking-tight mb-6">
               {t('home.storyTitle1', 'Une passion locale,')} <br/>
@@ -141,7 +142,7 @@ const HomeView = () => {
             
             {/* Decorative element to tie them together */}
             <div className="absolute top-[65%] left-[65%] w-24 h-24 rounded-full border border-dashed border-slate bg-paper/50 backdrop-blur-sm -translate-x-1/2 -translate-y-1/2 z-20 flex items-center justify-center">
-               <span className="text-xs font-mono font-bold text-signal-red uppercase tracking-widest text-center">Meise<br/>Local</span>
+               <span className="text-xs font-mono font-bold text-signal-red uppercase tracking-widest text-center">{t('home.localBadge1', 'Meise')}<br/>{t('home.localBadge2', 'Local')}</span>
             </div>
           </div>
 
@@ -153,7 +154,7 @@ const HomeView = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-16">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
             <div>
-              <span className="inline-block px-3 py-1 bg-mist border border-slate text-xs font-bold text-ink uppercase tracking-widest rounded-full mb-4">Notre Menu</span>
+              <span className="inline-block px-3 py-1 bg-mist border border-slate text-xs font-bold text-ink uppercase tracking-widest rounded-full mb-4">{t('home.menuBadge', 'Notre Menu')}</span>
               <h2 className="text-3xl md:text-4xl font-bold font-display text-ink tracking-tight">
                 {t('home.exploreMenu', 'Découvrez notre carte')}
               </h2>
@@ -248,11 +249,11 @@ const HomeView = () => {
              </h2>
              <LineSidebar
                 items={[
-                  'Ingrédients Premium', 
-                  'Livraison Express (<30m)', 
-                  'Four Traditionnel 450°C', 
-                  'Service Exceptionnel', 
-                  'Recettes Authentiques'
+                  t('home.quality1', 'Ingrédients Premium'), 
+                  t('home.delivery', 'Livraison Express (<30m)'), 
+                  t('home.quality2', 'Four Traditionnel 450°C'), 
+                  t('home.quality3', 'Service Exceptionnel'), 
+                  t('home.quality4', 'Recettes Authentiques')
                 ]}
                 accentColor="var(--theme-signal-red)"
                 textColor="var(--theme-slate)"

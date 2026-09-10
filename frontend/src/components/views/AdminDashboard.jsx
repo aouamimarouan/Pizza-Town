@@ -3,13 +3,14 @@ import {
  ShoppingBag, Pizza, Users, ConciergeBell, Activity, Search,
  CheckCircle, Receipt, MapPin, AlertCircle, Plus, Edit2, Trash2, X, Loader2,
   ChevronDown, ChevronUp, Printer, Clock, BarChart3, Calendar, BellRing,
-  ArrowLeft, LogOut, Flag, Settings, Bike, Utensils, Mail
+  ArrowLeft, LogOut, Flag, Settings, Bike, Utensils, Mail, Star, Volume2, VolumeX
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import api from '../../services/api.js';
 import socket from '../../services/socket.js';
+import { playOrderNotificationSound, isSoundAlertEnabled, setSoundAlertEnabled } from '../../utils/soundAlerts.js';
 
 const AdminStatusBadge = ({ status }) => {
   const statusMap = {
@@ -33,6 +34,15 @@ const AdminStatusBadge = ({ status }) => {
   );
 };
 
+const CANCEL_PRESET_REASONS = [
+  { id: 'ingredients', labelKey: 'cancelPreset1', fallback: 'Ingrediënten niet voorradig' },
+  { id: 'delivery_area', labelKey: 'cancelPreset2', fallback: 'Buiten bezorggebied' },
+  { id: 'kitchen_overloaded', labelKey: 'cancelPreset3', fallback: 'Keuken overbelast / Te druk' },
+  { id: 'store_closed', labelKey: 'cancelPreset4', fallback: 'Winkel gesloten' },
+  { id: 'customer_request', labelKey: 'cancelPreset5', fallback: 'Klant vroeg annulering aan' },
+  { id: 'technical', labelKey: 'cancelPreset6', fallback: 'Technisch probleem' },
+];
+
 const AdminDashboard = () => {
  const { t } = useTranslation();
  const [activeAdminTab, setActiveAdminTab] = useState('orders');
@@ -44,6 +54,36 @@ const AdminDashboard = () => {
  const [orders, setOrders] = useState([]);
  const [isOrdersLoading, setIsOrdersLoading] = useState(true);
  const [expandedOrderId, setExpandedOrderId] = useState(null);
+
+ // --- Order Cancellation State ---
+ const [orderToCancel, setOrderToCancel] = useState(null);
+ const [cancelReason, setCancelReason] = useState('');
+ const [isCancelling, setIsCancelling] = useState(false);
+
+ const handleOpenCancelModal = (order) => {
+   setOrderToCancel(order);
+   setCancelReason('');
+ };
+
+ const handleConfirmCancelOrder = async () => {
+   if (!orderToCancel) return;
+   setIsCancelling(true);
+   try {
+     await api.patch(`/orders/${orderToCancel.order_id}/status`, {
+       status: 'cancelled',
+       reason: cancelReason.trim() || 'Geen specifieke reden opgegeven'
+     });
+     toast.success(t('admin.toastOrderCancelled', 'Bestelling geannuleerd en e-mail verzonden naar klant.'));
+     setOrderToCancel(null);
+     setCancelReason('');
+     fetchOrders();
+   } catch (err) {
+     console.error("Cancel order error:", err);
+     toast.error(t('admin.toastCancelErr', 'Bestelling annuleren mislukt.'));
+   } finally {
+     setIsCancelling(false);
+   }
+ };
 
  const fetchOrders = async () => {
  setIsOrdersLoading(true);
@@ -61,77 +101,89 @@ const AdminDashboard = () => {
  if (activeAdminTab === 'orders' || activeAdminTab === 'reports') fetchOrders();
  }, [activeAdminTab]);
 
- const audioRef = React.useRef(null);
- const [alertCount, setAlertCount] = useState(0);
+  const [soundEnabled, setSoundEnabled] = useState(isSoundAlertEnabled());
 
- const unacceptedOrders = React.useMemo(() => {
-   return orders.filter(o => o.status === 'pending');
- }, [orders]);
+  const unacceptedOrders = React.useMemo(() => {
+    return orders.filter(o => o.status === 'pending');
+  }, [orders]);
+
+  // Repeated sound alert every 25 seconds while there are pending orders waiting to be accepted
+  useEffect(() => {
+    let intervalId;
+    if (unacceptedOrders.length > 0 && soundEnabled) {
+      // Play immediately
+      playOrderNotificationSound();
+
+      // Repeat chime periodically until the order is accepted or muted
+      intervalId = setInterval(() => {
+        playOrderNotificationSound();
+      }, 25000);
+    }
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [unacceptedOrders.length, soundEnabled]);
+
+  const handleToggleSound = () => {
+    const nextState = !soundEnabled;
+    setSoundEnabled(nextState);
+    setSoundAlertEnabled(nextState);
+    if (nextState) {
+      playOrderNotificationSound(true); // Force play test chime
+      toast.success('Meldingengeluid ingeschakeld (testbel afgespeeld)', { icon: '🔔' });
+    } else {
+      toast('Meldingengeluid gedempt', { icon: '🔕' });
+    }
+  };
 
  useEffect(() => {
-   let timeoutId;
-   if (unacceptedOrders.length > 0) {
-     if (alertCount === 0) {
-       if (audioRef.current) audioRef.current.play().catch(() => {});
-       setAlertCount(1);
-       timeoutId = setTimeout(() => {
-         if (audioRef.current) audioRef.current.play().catch(() => {});
-         setAlertCount(2);
-       }, 30000);
-     }
-   } else {
-     setAlertCount(0);
-   }
-   return () => clearTimeout(timeoutId);
- }, [unacceptedOrders.length, alertCount]);
- useEffect(() => {
- socket.emit('join_admin');
+   socket.emit('join_admin');
 
- socket.on('new_order', (newOrder) => {
- if (audioRef.current) audioRef.current.play().catch(() => {});
- setOrders((prev) => {
- const exists = prev.some(o => o.order_id === newOrder.order_id);
- if (exists) return prev;
- return [newOrder, ...prev];
- });
- 
- toast.success(t('admin.toastNewOrder'), {
- duration: 6000,
- position: 'top-right',
- style: { background: '#059669', color: '#fff', fontWeight: 'bold', border: '1px solid #065f46' }
- });
- });
+   socket.on('new_order', (newOrder) => {
+     playOrderNotificationSound();
+     setOrders((prev) => {
+       const exists = prev.some(o => o.order_id === newOrder.order_id);
+       if (exists) return prev;
+       return [newOrder, ...prev];
+     });
+     
+     toast.success(t('admin.toastNewOrder'), {
+       duration: 6000,
+       position: 'top-right',
+       style: { background: '#059669', color: '#fff', fontWeight: 'bold', border: '1px solid #065f46' }
+     });
+   });
 
- socket.on('new_reservation', (newRes) => {
- if (audioRef.current) audioRef.current.play().catch(() => {});
- setReservations((prev) => {
- const exists = prev.some(r => r.res_id === newRes.res_id);
- if (exists) return prev;
- return [newRes, ...prev];
- });
+   socket.on('new_reservation', (newRes) => {
+     playOrderNotificationSound();
+     setReservations((prev) => {
+       const exists = prev.some(r => r.res_id === newRes.res_id);
+       if (exists) return prev;
+       return [newRes, ...prev];
+     });
 
- toast.success(t('admin.toastNewRes'), {
- duration: 8000,
- position: 'top-right',
- style: { background: '#8b5cf6', color: '#fff', fontWeight: 'bold', border: '1px solid #7c3aed' }
- });
- });
+     toast.success(t('admin.toastNewRes'), {
+       duration: 8000,
+       position: 'top-right',
+       style: { background: '#8b5cf6', color: '#fff', fontWeight: 'bold', border: '1px solid #7c3aed' }
+     });
+   });
 
- socket.on('reservation_cancelled', (updatedRes) => {
- setReservations((prev) => prev.map(r => r.res_id === updatedRes.res_id ? updatedRes : r));
- toast('A reservation was cancelled by the customer.', {
- icon: '⚠️',
- duration: 6000,
- position: 'top-right',
- style: { background: '#fef2f2', color: '#991b1b', border: '1px solid #f87171' }
- });
- });
+   socket.on('reservation_cancelled', (updatedRes) => {
+     setReservations((prev) => prev.map(r => r.res_id === updatedRes.res_id ? updatedRes : r));
+     toast('A reservation was cancelled by the customer.', {
+       icon: '⚠️',
+       duration: 6000,
+       position: 'top-right',
+       style: { background: '#fef2f2', color: '#991b1b', border: '1px solid #f87171' }
+     });
+   });
 
- return () => {
- socket.off('new_order');
- socket.off('new_reservation');
- socket.off('reservation_cancelled');
- };
+   return () => {
+     socket.off('new_order');
+     socket.off('new_reservation');
+     socket.off('reservation_cancelled');
+   };
  }, []);
 
  const handleUpdateStatus = async (id, newStatus) => {
@@ -143,6 +195,24 @@ const AdminDashboard = () => {
  toast.error(t('admin.toastStatusUpdateErr'));
  }
  };
+
+  const handleTestPrint = async () => {
+    try {
+      await api.post(`/orders/test-print`);
+      toast.success('Test print sent to printer!');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Test print failed. Is the printer offline?');
+    }
+  };
+
+  const handleReprint = async (id) => {
+    try {
+      await api.post(`/orders/${id}/reprint`);
+      toast.success('Reprint sent to printer!');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Reprint failed. Is the printer offline?');
+    }
+  };
 
  // --- Menu Management State ---
  const [menuItems, setMenuItems] = useState([]);
@@ -228,6 +298,26 @@ const AdminDashboard = () => {
  useEffect(() => {
  if (activeAdminTab === 'audit') fetchAuditLogs();
  }, [activeAdminTab]);
+ 
+ // --- Reviews State ---
+ const [reviews, setReviews] = useState([]);
+ const [isReviewsLoading, setIsReviewsLoading] = useState(true);
+
+ const fetchReviews = async () => {
+   setIsReviewsLoading(true);
+   try {
+     const res = await api.get('/reviews');
+     setReviews(res.data);
+   } catch (err) {
+     toast.error('Error loading reviews');
+   } finally {
+     setIsReviewsLoading(false);
+   }
+ };
+
+ useEffect(() => {
+   if (activeAdminTab === 'reviews') fetchReviews();
+ }, [activeAdminTab]);
 
  const categories = ['Menu Deals', 'Starters', 'Pizzas', 'Pastas', 'Salads', 'Desserts', 'Drinks', 'Sauces'];
 
@@ -292,12 +382,12 @@ const AdminDashboard = () => {
   { id: 'users', label: t('admin.tabUsers'), icon: Users },
   { id: 'menu', label: t('admin.tabMenu'), icon: Pizza },
   { id: 'audit', label: t('admin.tabAudit'), icon: Settings },
+  { id: 'reviews', label: 'Client Reviews', icon: Star },
  ];
 
  return (
  <div className="flex h-screen bg-paper transition-colors font-sans text-slate overflow-hidden">
  
-  <audio ref={audioRef} src="/sounds/new-order-alert.mp3" preload="auto" />
 
   {/* SIDEBAR */}
   <div className="w-16 md:w-20 bg-mist border-r border-slate flex flex-col items-center py-6 gap-6 z-20 shrink-0">
@@ -342,9 +432,19 @@ const AdminDashboard = () => {
     {unacceptedOrders.length > 0 && activeAdminTab === 'orders' && (
       <div className="bg-mist border-b-2 border-signal-red shadow-sm z-50 w-full animate-in slide-in-from-top-2 duration-300">
         <div className="max-w-7xl mx-auto p-4 flex flex-col gap-3">
-          <div className="flex items-center gap-2 text-signal-red font-bold uppercase tracking-widest text-sm">
-            <BellRing className="w-5 h-5 animate-pulse" />
-            {unacceptedOrders.length} New Order{unacceptedOrders.length > 1 ? 's' : ''} Need{unacceptedOrders.length === 1 ? 's' : ''} Action
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-signal-red font-bold uppercase tracking-widest text-sm">
+              <BellRing className="w-5 h-5 animate-pulse" />
+              {unacceptedOrders.length} New Order{unacceptedOrders.length > 1 ? 's' : ''} Need{unacceptedOrders.length === 1 ? 's' : ''} Action
+            </div>
+            <button
+              onClick={handleToggleSound}
+              className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded bg-paper border border-slate/40 text-slate hover:text-ink font-semibold transition-colors"
+              title="Toggle sound alerts"
+            >
+              {soundEnabled ? <Volume2 className="w-3.5 h-3.5 text-emerald-500" /> : <VolumeX className="w-3.5 h-3.5 text-rose-500" />}
+              {soundEnabled ? 'Geluid Actief' : 'Geluid Gedempt'}
+            </button>
           </div>
           <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
             {unacceptedOrders.map(order => (
@@ -355,11 +455,17 @@ const AdminDashboard = () => {
                   <span className="bg-signal-red/10 text-signal-red text-xs px-2 py-1 rounded font-bold uppercase border border-signal-red/20">{order.delivery_type}</span>
                   <span className="font-mono text-slate text-sm">{order.orderitems?.length || 0} items</span>
                 </div>
-                <div className="flex items-center gap-4">
-                  <span className="font-mono font-bold text-ink text-lg">€{parseFloat(order.total_price).toFixed(2)}</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono font-bold text-ink text-lg mr-2">€{parseFloat(order.total_price).toFixed(2)}</span>
+                  <button 
+                    onClick={() => handleOpenCancelModal(order)}
+                    className="border border-signal-red text-signal-red hover:bg-signal-red hover:text-white px-3.5 py-2 rounded-md font-bold uppercase text-xs transition-colors shadow-sm"
+                  >
+                    {t('admin.btnCancelOrder', 'Annuleren')}
+                  </button>
                   <button 
                     onClick={() => handleUpdateStatus(order.order_id, 'cooking')}
-                    className="bg-signal-red hover:bg-ink text-white px-6 py-2 rounded-md font-bold uppercase text-xs transition-colors shadow-sm"
+                    className="bg-signal-red hover:bg-ink text-white px-5 py-2 rounded-md font-bold uppercase text-xs transition-colors shadow-sm"
                   >
                     Accept Order
                   </button>
@@ -396,6 +502,29 @@ const AdminDashboard = () => {
  className="w-full bg-paper border border-slate text-sm text-ink rounded-md pl-9 pr-4 py-2 focus:outline-none focus:border-stone-600 focus:ring-1 focus:ring-stone-600 transition-all font-mono placeholder-slate"
  />
  </div>
+  {activeAdminTab === 'orders' && (
+    <>
+      <button 
+        onClick={handleToggleSound}
+        className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-semibold transition-colors whitespace-nowrap border ${
+          soundEnabled 
+            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20' 
+            : 'bg-mist text-slate border-slate hover:bg-ink hover:text-paper'
+        }`}
+        title={soundEnabled ? "Geluid is actief. Klik om te testen / dempen" : "Geluid is gedempt. Klik om in te schakelen"}
+      >
+        {soundEnabled ? <Volume2 className="w-4 h-4 text-emerald-500" /> : <VolumeX className="w-4 h-4 text-slate" />}
+        {soundEnabled ? 'Geluid: Aan' : 'Geluid: Uit'}
+      </button>
+
+      <button 
+        onClick={handleTestPrint}
+        className="flex items-center gap-2 bg-mist hover:bg-ink hover:text-paper text-ink px-4 py-2 rounded-md text-sm font-semibold transition-colors whitespace-nowrap border border-slate"
+      >
+        <Printer className="w-4 h-4" /> Test Printer
+      </button>
+    </>
+  )}
  {activeAdminTab === 'menu' && (
  <button 
  onClick={() => openMenuModal()}
@@ -497,6 +626,9 @@ const AdminDashboard = () => {
   </td>
   <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
   <div className="flex justify-end gap-2">
+  <button onClick={(e) => { e.stopPropagation(); handleReprint(order.order_id); }} className="p-1 px-3 bg-mist text-ink border border-slate rounded text-[10px] font-bold uppercase transition-colors hover:bg-black hover:text-paper flex items-center gap-1" title="Reprint Receipt">
+    <Printer className="w-3 h-3" />
+  </button>
   {isPending && (
   <button onClick={() => handleUpdateStatus(order.order_id, 'cooking')} className="p-1 px-3 bg-mist text-ink rounded text-[10px] font-bold uppercase transition-colors hover:bg-black hover:text-paper">
   {t('admin.btnAcceptCook')}
@@ -522,6 +654,15 @@ const AdminDashboard = () => {
   {t('admin.btnMarkPickedUp')}
   </button>
   )}
+  {order.status !== 'delivered' && order.status !== 'picked_up' && order.status !== 'cancelled' && (
+  <button 
+    onClick={(e) => { e.stopPropagation(); handleOpenCancelModal(order); }}
+    className="p-1 px-2.5 bg-red-500/10 text-signal-red hover:bg-signal-red hover:text-white rounded text-[10px] font-bold uppercase transition-colors"
+    title="Cancel Order"
+  >
+    {t('admin.btnCancelOrder', 'Annuleren')}
+  </button>
+  )}
   {(order.status === 'delivered' || order.status === 'picked_up') && (
   <CheckCircle className="w-5 h-5 text-signal-red" />
   )}
@@ -545,6 +686,17 @@ const AdminDashboard = () => {
  <div className="bg-emerald-500/20 text-signal-red px-2 py-0.5 rounded uppercase font-bold">{order.delivery_type}</div>
  </div>
  </div>
+
+ {order.status === 'cancelled' && (
+   <div className="bg-red-500/10 border-b border-signal-red/30 p-4 space-y-1">
+     <span className="text-[10px] uppercase font-bold text-signal-red tracking-widest block">
+       {t('admin.cancellationReasonHeading', 'Reden van annulering')}:
+     </span>
+     <p className="text-sm font-bold text-ink">
+       {order.cancellation_reason || 'Geen specifieke reden geregistreerd'}
+     </p>
+   </div>
+ )}
 
  {/* Ticket Body */}
  <div className="p-8 font-mono text-sm space-y-8 text-stone-700 ">
@@ -1061,7 +1213,49 @@ const AdminDashboard = () => {
  </table>
  </div>
  )
- ) : (
+ 
+ /* --- TAB: REVIEWS --- */
+ ) : activeAdminTab === 'reviews' ? (
+    isReviewsLoading ? (
+      <div className="py-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-slate" /></div>
+    ) : (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {reviews.length === 0 ? (
+          <div className="col-span-full py-12 text-center text-slate">
+            No client reviews received yet.
+          </div>
+        ) : (
+          reviews.map((review) => (
+            <div key={review.review_id} className="bg-paper p-6 rounded-xl shadow-sm border border-mist flex flex-col h-full">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="font-bold text-ink">{review.users?.full_name || 'Guest'}</h3>
+                  <p className="text-sm text-slate">{new Date(review.created_at).toLocaleDateString()}</p>
+                </div>
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star
+                      key={star}
+                      className={`w-5 h-5 ${star <= review.rating ? 'fill-[var(--cheese)] text-[var(--cheese)]' : 'fill-transparent text-[var(--mist)]'}`}
+                    />
+                  ))}
+                </div>
+              </div>
+              <p className="text-ink flex-grow bg-mist/30 p-4 rounded-lg italic">
+                {review.comment ? `"${review.comment}"` : <span className="text-slate not-italic">No comment provided.</span>}
+              </p>
+              <div className="mt-4 pt-4 border-t border-mist flex justify-between items-center text-sm">
+                <span className="text-slate font-mono">Order #{review.order_id.split('-')[0]}</span>
+                {review.orders?.total_price && (
+                  <span className="font-bold text-ink">{parseFloat(review.orders.total_price).toFixed(2)} EUR</span>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    )
+  ) : (
  <div className="p-12 text-center flex flex-col items-center justify-center h-64 border-t border-slate">
  <Activity className="w-12 h-12 text-stone-800 mb-4" />
  <h3 className="text-lg font-medium text-slate">{t('admin.constrTitle')}</h3>
@@ -1155,6 +1349,115 @@ const AdminDashboard = () => {
  </div>
  </div>
  )}
+
+  {/* ORDER CANCELLATION MODAL */}
+  {orderToCancel && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+      <div className="bg-paper border border-slate rounded-xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-200">
+        <div className="flex items-start justify-between border-b border-slate pb-4">
+          <div>
+            <h3 className="font-bold text-ink text-base flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-signal-red" />
+              {t('admin.cancelOrderTitle', 'Bestelling Annuleren')} #{orderToCancel.order_id?.split('-')[0]}
+            </h3>
+            <p className="text-xs text-slate mt-1">
+              {t('admin.cancelOrderSubtitle', 'Selecteer een reden of typ een toelichting. De klant ontvangt automatisch een bevestiging per e-mail.')}
+            </p>
+          </div>
+          <button 
+            onClick={() => setOrderToCancel(null)}
+            className="text-slate hover:text-ink p-1 rounded-md transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Order info summary */}
+        <div className="bg-mist p-3 rounded-lg flex items-center justify-between text-xs">
+          <div>
+            <span className="text-slate block">Klant:</span>
+            <span className="font-bold text-ink">{orderToCancel.users?.full_name || 'Gast'}</span>
+          </div>
+          <div>
+            <span className="text-slate block">E-mail:</span>
+            <span className="font-mono text-ink font-medium">{orderToCancel.users?.email || <span className="text-signal-red">Geen e-mail</span>}</span>
+          </div>
+          <div>
+            <span className="text-slate block">Totaal:</span>
+            <span className="font-mono font-bold text-ink">€{parseFloat(orderToCancel.total_price || 0).toFixed(2)}</span>
+          </div>
+        </div>
+
+        {!orderToCancel.users?.email && (
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded p-2.5 text-xs text-amber-800 dark:text-amber-300">
+            {t('admin.noEmailWarning', 'Let op: Geen e-mailadres bekend voor deze klant. De bestelling wordt geannuleerd zonder e-mailnotificatie.')}
+          </div>
+        )}
+
+        {/* Quick Reason Chips */}
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-ink uppercase tracking-wider block">
+            Snelle Redenen:
+          </label>
+          <div className="flex flex-wrap gap-1.5">
+            {CANCEL_PRESET_REASONS.map(preset => {
+              const label = t(`admin.${preset.labelKey}`, preset.fallback);
+              const isSelected = cancelReason === label;
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => setCancelReason(label)}
+                  className={`text-xs px-2.5 py-1.5 rounded-md border transition-all ${
+                    isSelected 
+                      ? 'bg-ink text-paper font-bold border-ink' 
+                      : 'bg-paper text-slate border-slate hover:border-ink hover:text-ink'
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Custom Reason Textarea */}
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-ink uppercase tracking-wider block">
+            {t('admin.cancelReasonLabel', 'Reden van annulering (wordt vermeld in de e-mail)')}:
+          </label>
+          <textarea
+            value={cancelReason}
+            onChange={(e) => setCancelReason(e.target.value)}
+            placeholder={t('admin.cancelReasonPlaceholder', 'Bijv. Ingrediënten niet voorradig, buiten bezorggebied...')}
+            rows={3}
+            className="w-full bg-paper border border-slate rounded-lg p-3 text-xs font-sans text-ink focus:outline-none focus:border-ink resize-none shadow-xs"
+          />
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate">
+          <button
+            type="button"
+            onClick={() => setOrderToCancel(null)}
+            disabled={isCancelling}
+            className="px-4 py-2 rounded-md border border-slate text-xs font-bold text-slate hover:text-ink hover:bg-mist transition-colors"
+          >
+            {t('admin.btnCancel', 'Sluiten')}
+          </button>
+          <button
+            type="button"
+            onClick={handleConfirmCancelOrder}
+            disabled={isCancelling}
+            className="flex items-center gap-2 px-4 py-2 rounded-md bg-signal-red text-white text-xs font-bold hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50"
+          >
+            {isCancelling ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertCircle className="w-4 h-4" />}
+            {t('admin.btnConfirmCancel', 'Annuleren & E-mail Verzenden')}
+          </button>
+        </div>
+      </div>
+    </div>
+  )}
 
  </div>
  </div>

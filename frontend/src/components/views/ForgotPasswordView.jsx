@@ -3,9 +3,11 @@ import { ArrowLeft, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { forgotPassword } from '../../services/authService.js';
 import SpecularButton from '../ui/SpecularButton';
+import { useTranslation } from 'react-i18next';
 
 const ForgotPasswordView = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -20,7 +22,7 @@ const ForgotPasswordView = () => {
       await forgotPassword(email);
       setIsSuccess(true);
     } catch (err) {
-      setError('Une erreur est survenue lors de la demande. Veuillez réessayer.');
+      setError(t('forgotPassword.errorGeneric', 'Une erreur est survenue lors de la demande. Veuillez réessayer.'));
     } finally {
       setIsLoading(false);
     }
@@ -33,7 +35,7 @@ const ForgotPasswordView = () => {
           
           <Link to="/login" className="inline-flex items-center text-sm font-bold text-slate hover:text-ink mb-8 transition-colors focus:outline-none focus:ring-1 focus:ring-signal-red">
             <ArrowLeft className="w-4 h-4 mr-1" />
-            Retour à la connexion
+            {t('forgotPassword.backToLogin', 'Retour à la connexion')}
           </Link>
 
           {isSuccess ? (
@@ -41,20 +43,20 @@ const ForgotPasswordView = () => {
               <div className="w-16 h-16 bg-mist text-ink rounded-md flex items-center justify-center mx-auto mb-6 border border-slate">
                 <CheckCircle2 className="w-8 h-8" />
               </div>
-              <h2 className="text-2xl font-bold font-display text-ink mb-2 tracking-tight">Email envoyé !</h2>
+              <h2 className="text-2xl font-bold font-display text-ink mb-2 tracking-tight">{t('forgotPassword.emailSentTitle', 'Email envoyé !')}</h2>
               <p className="text-slate mb-8 font-sans">
-                Si le compte existe, un email a été envoyé à <span className="font-bold text-ink">{email}</span> avec les instructions pour réinitialiser le mot de passe.
+                {t('forgotPassword.emailSentDesc', 'Si le compte existe, un email a été envoyé à {{email}} avec les instructions pour réinitialiser le mot de passe.', { email: email })}
               </p>
               <SpecularButton onClick={() => navigate('/login')} size="lg" radius={6} tint="var(--theme-ink)" tintOpacity={1} textColor="var(--theme-paper)" lineColor="var(--theme-paper)" baseColor="var(--theme-slate)" intensity={1} className="w-full">
-Retourner à l'accueil
+{t('forgotPassword.backToHome', "Retourner à l'accueil")}
 </SpecularButton>
             </div>
           ) : (
             <div className="animate-in fade-in duration-300">
               <div className="mb-8">
-                <h2 className="text-3xl font-bold font-display text-ink tracking-tight">Mot de passe oublié ?</h2>
+                <h2 className="text-3xl font-bold font-display text-ink tracking-tight">{t('forgotPassword.title', 'Mot de passe oublié ?')}</h2>
                 <p className="text-slate mt-2 font-sans">
-                  Saisis ton adresse email et nous t'enverrons un lien pour réinitialiser ton mot de passe.
+                  {t('forgotPassword.desc', "Saisis ton adresse email et nous t'enverrons un lien pour réinitialiser ton mot de passe.")}
                 </p>
               </div>
 
@@ -68,7 +70,7 @@ Retourner à l'accueil
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <label className="block text-sm font-bold text-ink mb-2">
-                    Adresse Email
+                    {t('forgotPassword.emailLabel', 'Adresse Email')}
                   </label>
                   <input
                     type="email"
@@ -76,12 +78,12 @@ Retourner à l'accueil
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="appearance-none block w-full px-4 py-3 border border-slate rounded-md shadow-sm bg-paper text-ink focus:outline-none focus:ring-1 focus:ring-signal-red focus:border-signal-red transition-colors"
-                    placeholder="ton@email.com"
+                    placeholder={t('forgotPassword.emailPlaceholder', 'ton@email.com')}
                   />
                 </div>
 
                 <SpecularButton type="submit" disabled={isLoading} size="lg" radius={6} tint="var(--theme-ink)" tintOpacity={1} textColor="var(--theme-paper)" lineColor="var(--theme-paper)" baseColor="var(--theme-slate)" intensity={1} className="w-full">
-{isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Envoyer le lien'}
+{isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : t('forgotPassword.submitBtn', 'Envoyer le lien')}
 </SpecularButton>
               </form>
             </div>

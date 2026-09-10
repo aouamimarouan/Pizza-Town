@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import api from '../../services/api.js';
 import toast from 'react-hot-toast';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, User, Lock } from 'lucide-react';
 
 export default function AccountSettingsView() {
   const { t } = useTranslation();
@@ -107,18 +107,26 @@ export default function AccountSettingsView() {
   const joinDate = new Date(profile.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
   const initials = profile.full_name ? profile.full_name.substring(0, 2).toUpperCase() : 'US';
 
+  const isSettingsChanged = settingsForm.full_name !== (profile.full_name || '') || 
+                            settingsForm.phone_number !== (profile.phone_number || '') || 
+                            settingsForm.address !== (profile.address || '');
+
+  const isPasswordChanged = settingsForm.currentPassword.length > 0 && 
+                            settingsForm.newPassword.length > 0 && 
+                            settingsForm.confirmPassword.length > 0;
+
   return (
     <div className="min-h-screen bg-paper">
       <div className="max-w-4xl mx-auto px-4 py-12 md:py-16">
         
         {/* Account Overview Header */}
-        <div className="flex items-center gap-6 mb-12">
-          <div className="w-16 h-16 rounded-md bg-ink text-paper flex items-center justify-center font-display font-bold text-2xl">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4 sm:gap-6 mb-12">
+          <div className="w-16 h-16 rounded-md bg-ink text-paper flex items-center justify-center font-display font-bold text-2xl shrink-0">
             {initials}
           </div>
           <div>
             <h1 className="font-display font-bold text-3xl text-ink tracking-tight">{profile.full_name || 'Customer'}</h1>
-            <div className="flex items-center gap-4 mt-1 font-sans text-sm text-slate">
+            <div className="flex items-center justify-center sm:justify-start gap-4 mt-1 font-sans text-sm text-slate">
               <span>Member since {joinDate}</span>
             </div>
           </div>
@@ -127,9 +135,12 @@ export default function AccountSettingsView() {
         {/* Content Area */}
         <div className="pb-24 space-y-12">
           
-          <form onSubmit={handleSettingsSave} className="space-y-6 max-w-lg">
-            <div className="flex items-center justify-between border-b border-slate pb-2">
-              <h3 className="font-display font-bold text-xl text-ink">Personal Info & Contact</h3>
+          <form onSubmit={handleSettingsSave} className="space-y-6 max-w-lg bg-mist p-4 sm:p-6 md:p-8 rounded-md">
+            <div className="flex items-center justify-between pb-2">
+              <div className="flex items-center gap-2">
+                <User className="w-5 h-5 text-ink" />
+                <h3 className="font-display font-bold text-xl text-ink">Personal Info & Contact</h3>
+              </div>
               {settingsStatus === 'Saved' && <span className="text-sm font-sans text-slate animate-in fade-in">Saved</span>}
             </div>
 
@@ -171,16 +182,27 @@ export default function AccountSettingsView() {
                 />
               </div>
               <div className="pt-2">
-                <button type="submit" className="px-6 py-2 bg-ink text-paper font-sans font-medium rounded-md hover:bg-slate transition-colors">
+                <button 
+                  type="submit" 
+                  disabled={!isSettingsChanged}
+                  className={`px-6 py-2 font-sans font-medium rounded-md transition-colors ${
+                    isSettingsChanged 
+                      ? 'bg-signal-red text-white hover:bg-red-700' 
+                      : 'bg-paper text-slate cursor-not-allowed border border-slate/20'
+                  }`}
+                >
                   Save changes
                 </button>
               </div>
             </div>
           </form>
 
-          <form onSubmit={handlePasswordSave} className="space-y-6 max-w-lg">
-            <div className="flex items-center justify-between border-b border-slate pb-2">
-              <h3 className="font-display font-bold text-xl text-ink">Security</h3>
+          <form onSubmit={handlePasswordSave} className="space-y-6 max-w-lg bg-mist p-4 sm:p-6 md:p-8 rounded-md">
+            <div className="flex items-center justify-between pb-2">
+              <div className="flex items-center gap-2">
+                <Lock className="w-5 h-5 text-ink" />
+                <h3 className="font-display font-bold text-xl text-ink">Security</h3>
+              </div>
               {passwordStatus === 'Saved' && <span className="text-sm font-sans text-slate animate-in fade-in">Saved</span>}
             </div>
 
@@ -242,7 +264,15 @@ export default function AccountSettingsView() {
               {passwordError && <p className="text-signal-red font-medium text-sm">{passwordError}</p>}
 
               <div className="pt-2">
-                <button type="submit" className="px-6 py-2 bg-ink text-paper font-sans font-medium rounded-md hover:bg-slate transition-colors">
+                <button 
+                  type="submit" 
+                  disabled={!isPasswordChanged}
+                  className={`px-6 py-2 font-sans font-medium rounded-md transition-colors ${
+                    isPasswordChanged 
+                      ? 'bg-signal-red text-white hover:bg-red-700' 
+                      : 'bg-paper text-slate cursor-not-allowed border border-slate/20'
+                  }`}
+                >
                   Update password
                 </button>
               </div>

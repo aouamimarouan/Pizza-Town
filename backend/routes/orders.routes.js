@@ -2,7 +2,8 @@ import { Router } from 'express';
 import { randomUUID } from 'node:crypto';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
-import { sendOrderToPrintRelay } from '../services/printerService.js';
+import { generatePrintPayload, printCustomerReceipt, printKitchenTicket, testConnection } from '../services/printerService.js';
+import { sendPostOrderReviewEmail, sendOrderCancelledEmail } from '../lib/mailer.js';
 
 const router = Router();
 
@@ -20,48 +21,6 @@ const sanitizeOrder = (order) => {
         price: oi.menuitems.price ? parseFloat(oi.menuitems.price.toString()) : 0
       } : null
     }))
-  };
-};
-
-const generatePrintPayload = (order) => {
-  const subtotal = parseFloat(order.total_price.toString()) - parseFloat(order.delivery_fee.toString());
-  
-  return {
-    orderId: order.order_id,
-    date: order.created_at ? order.created_at.toLocaleString('fr-FR') : new Date().toLocaleString('fr-FR'),
-    deliveryType: order.delivery_type.toUpperCase(),
-    customer: {
-      name: order.users.full_name,
-      phone: order.users.phone_number || 'N/A', 
-      address: order.delivery_address || order.users.address || 'N/A'
-    },
-    items: order.orderitems.map(item => {
-      const cust = item.customizations || {};
-      const extras = [...(cust.extras || [])];
-      
-      if (cust.toppings && Array.isArray(cust.toppings)) {
-        cust.toppings.forEach(t => extras.push({ name: t }));
-      }
-      
-      if (cust.crust) {
-        extras.push({ name: `Crust: ${cust.crust.name}` });
-      }
-
-      if (cust.size) {
-         extras.push({ name: `Size: ${cust.size.id.toUpperCase()}` });
-      }
-
-      return {
-        name: item.menuitems.name,
-        quantity: item.quantity,
-        price: parseFloat(item.subtotal.toString()) / item.quantity,
-        subItems: cust.subItems || [], 
-        extras: extras
-      };
-    }),
-    subtotal: subtotal,
-    deliveryFee: parseFloat(order.delivery_fee.toString()),
-    total: parseFloat(order.total_price.toString())
   };
 };
 
@@ -239,7 +198,18 @@ router.get('/', authenticate, async (req, res) => {
       orderBy: { created_at: 'desc' },
     });
 
-    res.json(orders.map(sanitizeOrder));
+    let reasonMap = {};
+    try {
+      const rawReasons = await prisma.$queryRawUnsafe("SELECT order_id, cancellation_reason FROM orders WHERE status = 'cancelled' AND cancellation_reason IS NOT NULL;");
+      reasonMap = Object.fromEntries(rawReasons.map(r => [r.order_id, r.cancellation_reason]));
+    } catch (e) {
+      // fallback
+    }
+
+    res.json(orders.map(o => ({
+      ...sanitizeOrder(o),
+      cancellation_reason: reasonMap[o.order_id] || o.cancellation_reason || null
+    })));
   } catch (err) {
     console.error('[Order GET error]:', err);
     res.status(500).json({ error: 'Internal server error.', details: err.message });
@@ -249,7 +219,7 @@ router.get('/', authenticate, async (req, res) => {
 // PATCH /api/orders/:id/status — Admin only
 router.patch('/:id/status', authenticate, requireAdmin, async (req, res) => {
   try {
-    const { status } = req.body;
+    const { status, reason } = req.body;
     const validStatuses = [
       'pending', 
       'cooking', 
@@ -273,12 +243,55 @@ router.patch('/:id/status', authenticate, requireAdmin, async (req, res) => {
       }
     });
 
+    if (status === 'cancelled') {
+      if (reason) {
+        try {
+          await prisma.$executeRawUnsafe(
+            'UPDATE orders SET cancellation_reason = $1 WHERE order_id = $2::uuid',
+            reason,
+            req.params.id
+          );
+          order.cancellation_reason = reason;
+        } catch (dbErr) {
+          console.error("❌ Failed to save cancellation_reason to db:", dbErr);
+        }
+      }
+
+      if (order.users && order.users.email) {
+        sendOrderCancelledEmail(order.users.email, {
+          order_id: order.order_id,
+          full_name: order.users.full_name || 'Klant',
+          reason: reason || 'Geen specifieke reden opgegeven / No reason specified',
+          total_price: order.total_price,
+          delivery_type: order.delivery_type,
+          items: order.orderitems
+        }).catch(err => console.error("❌ Order cancellation email failed:", err));
+      }
+
+      if (req.io) {
+        req.io.emit('order_status_updated', {
+          order_id: order.order_id,
+          status: 'cancelled',
+          reason: reason || null
+        });
+      }
+    }
+
     if (status === 'cooking') {
       try {
         const printPayload = generatePrintPayload(order);
-        await sendOrderToPrintRelay(printPayload);
+        await printCustomerReceipt(printPayload);
       } catch (printErr) {
-        console.error("⚠️ Print job generation failed:", printErr);
+        console.error("🖨️ Print job generation failed:", printErr);
+      }
+    }
+
+    if (status === 'delivered' || status === 'completed' || status === 'picked_up') {
+      if (order.users && order.users.email) {
+        sendPostOrderReviewEmail(order.users.email, {
+          full_name: order.users.full_name || 'Customer',
+          order_id: order.order_id
+        }).catch(err => console.error("❌ Post-order review email failed:", err));
       }
     }
 
@@ -287,6 +300,50 @@ router.patch('/:id/status', authenticate, requireAdmin, async (req, res) => {
     if (err.code === 'P2025') return res.status(404).json({ error: 'Order not found.' });
     console.error(err);
     res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+// POST /api/orders/test-print — Admin only
+router.post('/test-print', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const success = await testConnection();
+    if (success) {
+      res.json({ message: 'Test print successful' });
+    } else {
+      res.status(500).json({ error: 'Printer is offline or not configured correctly.' });
+    }
+  } catch (err) {
+    console.error('[Test Print Error]:', err);
+    res.status(500).json({ error: 'Failed to test printer connection.', details: err.message });
+  }
+});
+
+// POST /api/orders/:id/reprint — Admin only
+router.post('/:id/reprint', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const order = await prisma.orders.findUnique({
+      where: { order_id: req.params.id },
+      include: {
+        orderitems: { include: { menuitems: { select: { name: true, price: true } } } },
+        users: { select: { full_name: true, email: true, phone_number: true, address: true } },
+      }
+    });
+
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found.' });
+    }
+
+    const printPayload = generatePrintPayload(order);
+    const receiptSuccess = await printCustomerReceipt(printPayload);
+
+    if (receiptSuccess) {
+      res.json({ message: 'Reprint successful' });
+    } else {
+      res.status(500).json({ error: 'Printer is offline. Reprint failed.' });
+    }
+  } catch (err) {
+    console.error('[Reprint Error]:', err);
+    res.status(500).json({ error: 'Failed to reprint order.', details: err.message });
   }
 });
 
