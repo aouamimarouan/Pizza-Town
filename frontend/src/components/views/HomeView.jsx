@@ -135,8 +135,8 @@ const HomeView = () => {
               className="absolute top-0 right-0 w-[75%] h-[75%] object-cover rounded-lg shadow-md border border-mist z-0" 
             />
             <img 
-              src="https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=800&auto=format&fit=crop" 
-              alt="Fresh ingredients" 
+              src="https://images.unsplash.com/photo-1574071318508-1cdbab80d002?q=80&w=1000&auto=format&fit=crop" 
+              alt="Freshly baked artisan pizza" 
               className="absolute bottom-0 left-0 w-[60%] h-[50%] object-cover rounded-lg shadow-xl border-[6px] border-paper z-10" 
             />
             
