@@ -220,7 +220,7 @@ const HomeView = () => {
                   </li>
                   <li className="flex justify-between items-center text-signal-red">
                     <span>{t('location.sunday', 'Sunday')}</span>
-                    <span className="font-bold">16:00 - 23:00</span>
+                    <span className="font-bold">17:00 - 23:00</span>
                   </li>
                 </ul>
                 

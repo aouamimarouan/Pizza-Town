@@ -39,7 +39,7 @@ const Footer = () => {
             </li>
             <li className="flex justify-between border-b border-mist pb-1 text-signal-red font-bold">
               <span className="font-sans">{t('footer.sun')}</span>
-              <span className="font-mono">16:00 - 23:00</span>
+              <span className="font-mono">17:00 - 23:00</span>
             </li>
           </ul>
         </div>

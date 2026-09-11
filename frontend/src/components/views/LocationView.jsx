@@ -82,7 +82,7 @@ const LocationView = () => {
               </li>
               <li className="flex justify-between items-center bg-paper p-3 rounded-sm border border-slate mt-4">
                 <span className="font-bold text-signal-red">{t('location.sunday')}</span>
-                <span className="font-mono text-ink font-bold">16:00 - 23:00</span>
+                <span className="font-mono text-ink font-bold">17:00 - 23:00</span>
               </li>
             </ul>
           </div>
