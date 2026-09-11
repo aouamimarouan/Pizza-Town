@@ -55,6 +55,7 @@ function AppContent() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [user, setUser] = useState(() => toAppUser(getStoredUser()));
   const [cart, setCart] = useState([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
   const [showSplash, setShowSplash] = useState(() => {
     if (typeof window === 'undefined') return false;
     // Only show splash screen on root visit, never on direct sub-routes (login, menu, admin, etc.)
