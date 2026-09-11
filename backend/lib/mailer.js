@@ -35,8 +35,8 @@ export const sendWelcomeEmail = async (toEmail, name) => {
 
 export const sendPasswordResetEmail = async (toEmail, token) => {
   try {
-    // Generate the reset URL. In a real app, use the frontend origin from an env variable.
-    const resetUrl = `http://localhost:5173/reset-password?token=${token}`;
+    const frontendBase = process.env.FRONTEND_URL || 'https://pizza-town.vercel.app';
+    const resetUrl = `${frontendBase}/reset-password?token=${token}`;
     
     const info = await transporter.sendMail({
       from: `"${process.env.EMAIL_FROM_NAME || 'Pizza Town'}" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,

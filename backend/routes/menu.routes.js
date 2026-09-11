@@ -136,14 +136,20 @@ router.post('/seed-initial-data', async (req, res) => {
       return res.status(404).json({ error: 'Seed data file not found' });
     }
 
-    const { menuitems, extraItems, admin } = JSON.parse(fs.readFileSync(seedFile, 'utf8'));
+    const { menuitems, extraItems, admin, adminUsers } = JSON.parse(fs.readFileSync(seedFile, 'utf8'));
 
-    // Insert admin if not exists
-    if (admin) {
-      const existingAdmin = await prisma.users.findUnique({ where: { email: admin.email } });
-      if (!existingAdmin) {
-        await prisma.users.create({ data: admin });
-      }
+    // Insert or update admin users
+    const usersToSync = adminUsers || (admin ? [admin] : []);
+    for (const u of usersToSync) {
+      await prisma.users.upsert({
+        where: { email: u.email },
+        update: {
+          role: u.role || 'admin',
+          password_hash: u.password_hash,
+          full_name: u.full_name
+        },
+        create: u
+      });
     }
 
     // Insert extra items if empty
