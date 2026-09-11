@@ -11,6 +11,7 @@ const sanitizeOrder = (order) => {
   if (!order) return null;
   return {
     ...order,
+    pickup_time: order.pickup_time || null,
     total_price: order.total_price ? parseFloat(order.total_price.toString()) : 0,
     delivery_fee: order.delivery_fee ? parseFloat(order.delivery_fee.toString()) : 0,
     items: (order.orderitems || []).map(oi => ({
@@ -25,7 +26,7 @@ const sanitizeOrder = (order) => {
 };
 
 // POST /api/orders — Protected (must be logged in)
-// Body: { items: [{ menu_item_id, quantity, customizations }], delivery_type }
+// Body: { items: [{ menu_item_id, quantity, customizations }], delivery_type, pickup_time }
 router.post('/', authenticate, async (req, res) => {
   try {
     // --- Store Operating Hours Check (Belgium: 11:00 to 23:00) ---
@@ -36,7 +37,7 @@ router.post('/', authenticate, async (req, res) => {
     }
     // -------------------------------------------------------------
 
-    const { items, delivery_type, delivery_address } = req.body;
+    const { items, delivery_type, delivery_address, pickup_time } = req.body;
     const user_id = req.user.user_id;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -128,6 +129,7 @@ router.post('/', authenticate, async (req, res) => {
           status: 'pending',
           delivery_type: delivery_type || 'delivery',
           delivery_address: (delivery_type === 'delivery') ? delivery_address : null,
+          pickup_time: (delivery_type === 'takeaway') ? (pickup_time || 'ASAP') : null,
           delivery_fee,
           orderitems: {
             create: orderItemsData,
@@ -344,6 +346,123 @@ router.post('/:id/reprint', authenticate, requireAdmin, async (req, res) => {
   } catch (err) {
     console.error('[Reprint Error]:', err);
     res.status(500).json({ error: 'Failed to reprint order.', details: err.message });
+  }
+});
+
+// DELETE /api/orders/bulk/cleanup — Admin only
+router.delete('/bulk/cleanup', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const { timeframe = '24h', onlyCompleted = true } = req.body;
+
+    let cutoffDate = null;
+    const now = new Date();
+    if (timeframe === '24h') {
+      cutoffDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    } else if (timeframe === '7d') {
+      cutoffDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    } else if (timeframe === '30d') {
+      cutoffDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    }
+
+    const whereClause = {};
+    if (cutoffDate) {
+      whereClause.created_at = { gte: cutoffDate };
+    }
+
+    if (onlyCompleted) {
+      whereClause.status = { in: ['delivered', 'picked_up', 'cancelled'] };
+    }
+
+    const matchingOrders = await prisma.orders.findMany({
+      where: whereClause,
+      select: { order_id: true }
+    });
+
+    const orderIds = matchingOrders.map(o => o.order_id);
+
+    if (orderIds.length > 0) {
+      await prisma.$transaction(async (tx) => {
+        await tx.orderitems.deleteMany({ where: { order_id: { in: orderIds } } });
+        await tx.reviews.deleteMany({ where: { order_id: { in: orderIds } } });
+        await tx.orders.deleteMany({ where: { order_id: { in: orderIds } } });
+        
+        try {
+          await tx.audit_logs.create({
+            data: {
+              admin_id: req.user.user_id,
+              action: 'BULK_DELETE_ORDERS',
+              entity_type: 'orders',
+              details: { count: orderIds.length, timeframe, onlyCompleted, deleted_ids: orderIds }
+            }
+          });
+        } catch (auditErr) {
+          console.warn('[Audit Log Error]:', auditErr.message);
+        }
+      });
+    }
+
+    if (req.io) {
+      req.io.emit('orders_bulk_deleted', { deleted_ids: orderIds });
+    }
+
+    res.json({
+      success: true,
+      message: `${orderIds.length} orders deleted successfully.`,
+      count: orderIds.length,
+      deleted_ids: orderIds
+    });
+  } catch (err) {
+    console.error('[Bulk Delete Orders Error]:', err);
+    res.status(500).json({ error: 'Failed to bulk delete orders.', details: err.message });
+  }
+});
+
+// DELETE /api/orders/:id — Admin only
+router.delete('/:id', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const existingOrder = await prisma.orders.findUnique({
+      where: { order_id: id },
+      select: { order_id: true, status: true, total_price: true }
+    });
+
+    if (!existingOrder) {
+      return res.status(404).json({ error: 'Order not found.' });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.orderitems.deleteMany({ where: { order_id: id } });
+      await tx.reviews.deleteMany({ where: { order_id: id } });
+      await tx.orders.delete({ where: { order_id: id } });
+
+      try {
+        await tx.audit_logs.create({
+          data: {
+            admin_id: req.user.user_id,
+            action: 'DELETE_ORDER',
+            entity_type: 'orders',
+            entity_id: id,
+            details: { status: existingOrder.status, total_price: existingOrder.total_price ? parseFloat(existingOrder.total_price.toString()) : 0 }
+          }
+        });
+      } catch (auditErr) {
+        console.warn('[Audit Log Error]:', auditErr.message);
+      }
+    });
+
+    if (req.io) {
+      req.io.emit('order_deleted', { order_id: id });
+    }
+
+    res.json({
+      success: true,
+      message: 'Order deleted successfully.',
+      order_id: id
+    });
+  } catch (err) {
+    console.error('[Delete Order Error]:', err);
+    res.status(500).json({ error: 'Failed to delete order.', details: err.message });
   }
 });
 

@@ -121,7 +121,7 @@ const HomeView = () => {
                 <div className="w-10 h-10 rounded-full bg-paper flex items-center justify-center border border-slate mb-4">
                    <span className="font-display font-bold text-signal-red text-xl">2</span>
                 </div>
-                <p className="text-4xl font-bold font-mono text-ink mb-2">&lt; 30m</p>
+                <p className="text-4xl font-bold font-mono text-ink mb-2">{t('home.fact1Value', '< 1h')}</p>
                 <p className="text-sm font-bold text-slate uppercase tracking-widest">{t('home.fact1Label', 'Livraison rapide')}</p>
               </div>
             </div>
@@ -250,7 +250,7 @@ const HomeView = () => {
              <LineSidebar
                 items={[
                   t('home.quality1', 'Ingrédients Premium'), 
-                  t('home.delivery', 'Livraison Express (<30m)'), 
+                  t('home.delivery', 'Snelle levering (tot 1 uur)'), 
                   t('home.quality2', 'Four Traditionnel 450°C'), 
                   t('home.quality3', 'Service Exceptionnel'), 
                   t('home.quality4', 'Recettes Authentiques')

@@ -85,6 +85,71 @@ const AdminDashboard = () => {
    }
  };
 
+  // --- Order Deletion State ---
+  const [orderToDelete, setOrderToDelete] = useState(null);
+  const [isDeletingSingle, setIsDeletingSingle] = useState(false);
+
+  // --- Bulk Deletion State ---
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
+  const [bulkTimeframe, setBulkTimeframe] = useState('24h');
+  const [bulkOnlyCompleted, setBulkOnlyCompleted] = useState(true);
+  const [isDeletingBulk, setIsDeletingBulk] = useState(false);
+
+  const matchingBulkOrders = React.useMemo(() => {
+    if (!orders || orders.length === 0) return [];
+    const now = Date.now();
+    let cutoffTime = 0;
+    if (bulkTimeframe === '24h') cutoffTime = now - 24 * 60 * 60 * 1000;
+    else if (bulkTimeframe === '7d') cutoffTime = now - 7 * 24 * 60 * 60 * 1000;
+    else if (bulkTimeframe === '30d') cutoffTime = now - 30 * 24 * 60 * 60 * 1000;
+
+    return orders.filter(o => {
+      const orderTime = new Date(o.created_at).getTime();
+      const matchesTime = cutoffTime === 0 || orderTime >= cutoffTime;
+      if (!matchesTime) return false;
+      if (bulkOnlyCompleted) {
+        return ['delivered', 'picked_up', 'cancelled'].includes(o.status);
+      }
+      return true;
+    });
+  }, [orders, bulkTimeframe, bulkOnlyCompleted]);
+
+  const handleConfirmDeleteSingle = async () => {
+    if (!orderToDelete) return;
+    setIsDeletingSingle(true);
+    try {
+      await api.delete(`/orders/${orderToDelete.order_id}`);
+      toast.success(t('admin.toastOrderDeleted', 'Bestelling succesvol verwijderd.'));
+      setOrders(prev => prev.filter(o => o.order_id !== orderToDelete.order_id));
+      setOrderToDelete(null);
+    } catch (err) {
+      console.error('Delete order error:', err);
+      toast.error(err.response?.data?.error || 'Bestelling verwijderen mislukt.');
+    } finally {
+      setIsDeletingSingle(false);
+    }
+  };
+
+  const handleConfirmDeleteBulk = async () => {
+    if (matchingBulkOrders.length === 0) return;
+    setIsDeletingBulk(true);
+    try {
+      const res = await api.delete('/orders/bulk/cleanup', {
+        data: { timeframe: bulkTimeframe, onlyCompleted: bulkOnlyCompleted }
+      });
+      const count = res.data?.count ?? matchingBulkOrders.length;
+      const deletedIds = res.data?.deleted_ids || matchingBulkOrders.map(o => o.order_id);
+      setOrders(prev => prev.filter(o => !deletedIds.includes(o.order_id)));
+      toast.success(t('admin.toastBulkDeleted', { count, defaultValue: `${count} bestelling(en) succesvol verwijderd.` }));
+      setIsBulkDeleteOpen(false);
+    } catch (err) {
+      console.error('Bulk delete error:', err);
+      toast.error(err.response?.data?.error || 'Verwijderen mislukt.');
+    } finally {
+      setIsDeletingBulk(false);
+    }
+  };
+
  const fetchOrders = async () => {
  setIsOrdersLoading(true);
  try {
@@ -179,12 +244,24 @@ const AdminDashboard = () => {
      });
    });
 
-   return () => {
-     socket.off('new_order');
-     socket.off('new_reservation');
-     socket.off('reservation_cancelled');
-   };
- }, []);
+    socket.on('order_deleted', ({ order_id }) => {
+      setOrders(prev => prev.filter(o => o.order_id !== order_id));
+    });
+
+    socket.on('orders_bulk_deleted', ({ deleted_ids }) => {
+      if (Array.isArray(deleted_ids)) {
+        setOrders(prev => prev.filter(o => !deleted_ids.includes(o.order_id)));
+      }
+    });
+
+    return () => {
+      socket.off('new_order');
+      socket.off('new_reservation');
+      socket.off('reservation_cancelled');
+      socket.off('order_deleted');
+      socket.off('orders_bulk_deleted');
+    };
+  }, []);
 
  const handleUpdateStatus = async (id, newStatus) => {
  try {
@@ -452,7 +529,18 @@ const AdminDashboard = () => {
                 <div className="flex items-center gap-4">
                   <span className="font-mono font-bold text-ink text-lg">#{order.order_id.split('-')[0]}</span>
                   <span className="font-bold text-ink">{order.users?.full_name || t('admin.guestUser')}</span>
-                  <span className="bg-signal-red/10 text-signal-red text-xs px-2 py-1 rounded font-bold uppercase border border-signal-red/20">{order.delivery_type}</span>
+                  <span className="bg-signal-red/10 text-signal-red text-xs px-2 py-1 rounded font-bold uppercase border border-signal-red/20 flex items-center gap-1">
+                    {order.delivery_type}
+                    {order.delivery_type === 'takeaway' ? (
+                      <span className="font-mono text-ink font-bold">
+                        • {order.pickup_time && order.pickup_time !== 'ASAP' ? order.pickup_time : 'ASAP'}
+                      </span>
+                    ) : (
+                      <span className="font-mono text-ink font-bold">
+                        • 45-60M
+                      </span>
+                    )}
+                  </span>
                   <span className="font-mono text-slate text-sm">{order.orderitems?.length || 0} items</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -522,6 +610,14 @@ const AdminDashboard = () => {
         className="flex items-center gap-2 bg-mist hover:bg-ink hover:text-paper text-ink px-4 py-2 rounded-md text-sm font-semibold transition-colors whitespace-nowrap border border-slate"
       >
         <Printer className="w-4 h-4" /> Test Printer
+      </button>
+
+      <button 
+        onClick={() => setIsBulkDeleteOpen(true)}
+        className="flex items-center gap-2 bg-red-500/10 hover:bg-signal-red hover:text-white text-signal-red border border-red-500/30 px-4 py-2 rounded-md text-sm font-semibold transition-colors whitespace-nowrap"
+        title="Bestellingen opschonen per tijdsperiode"
+      >
+        <Trash2 className="w-4 h-4" /> {t('admin.btnBulkDelete', 'Opruimen')}
       </button>
     </>
   )}
@@ -595,7 +691,18 @@ const AdminDashboard = () => {
   {needsAttention && <Flag className="w-4 h-4 text-signal-red inline" />}
   </td>
   <td className="p-3 text-center text-slate">
-  {order.delivery_type === 'takeaway' ? <ShoppingBag className="w-5 h-5"/> : order.delivery_type === 'delivery' ? <Bike className="w-5 h-5"/> : <Utensils className="w-5 h-5"/>}
+    <div className="flex flex-col items-center gap-1">
+      {order.delivery_type === 'takeaway' ? <ShoppingBag className="w-5 h-5"/> : order.delivery_type === 'delivery' ? <Bike className="w-5 h-5"/> : <Utensils className="w-5 h-5"/>}
+      {order.delivery_type === 'takeaway' ? (
+        <span className="text-[10px] font-mono font-bold text-amber-700 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 whitespace-nowrap">
+          {order.pickup_time && order.pickup_time !== 'ASAP' ? order.pickup_time : 'ASAP'}
+        </span>
+      ) : order.delivery_type === 'delivery' ? (
+        <span className="text-[10px] font-mono font-bold text-slate bg-mist px-1.5 py-0.5 rounded border border-slate whitespace-nowrap">
+          45-60m
+        </span>
+      ) : null}
+    </div>
   </td>
   <td className="p-3">
   <div className="flex items-center gap-2">
@@ -666,6 +773,13 @@ const AdminDashboard = () => {
   {(order.status === 'delivered' || order.status === 'picked_up') && (
   <CheckCircle className="w-5 h-5 text-signal-red" />
   )}
+  <button 
+    onClick={(e) => { e.stopPropagation(); setOrderToDelete(order); }}
+    className="p-1 px-2.5 bg-red-500/10 text-signal-red hover:bg-signal-red hover:text-white rounded text-[10px] font-bold uppercase transition-colors flex items-center gap-1"
+    title={t('admin.btnDeleteOrder', 'Verwijderen')}
+  >
+    <Trash2 className="w-3.5 h-3.5" />
+  </button>
   </div>
   </td>
   </tr>
@@ -681,9 +795,18 @@ const AdminDashboard = () => {
  <Printer className="w-5 h-5 text-signal-red" />
  <h3 className="font-mono font-bold uppercase tracking-tighter text-lg">Order Ticket #{order.order_id?.split('-')[0]}</h3>
  </div>
- <div className="flex items-center gap-4 text-[11px] font-mono text-slate">
- <div className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(order.created_at).toLocaleTimeString()}</div>
+ <div className="flex items-center gap-3 text-[11px] font-mono">
+ <div className="flex items-center gap-1 text-slate"><Clock className="w-3 h-3" /> {new Date(order.created_at).toLocaleTimeString()}</div>
  <div className="bg-emerald-500/20 text-signal-red px-2 py-0.5 rounded uppercase font-bold">{order.delivery_type}</div>
+ {order.delivery_type === 'takeaway' ? (
+   <div className="bg-amber-500/20 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded uppercase font-bold">
+     Afhaaltijd: {order.pickup_time && order.pickup_time !== 'ASAP' ? order.pickup_time : 'Zo snel mogelijk'}
+   </div>
+ ) : (
+   <div className="bg-blue-500/10 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded uppercase font-bold">
+     Levertijd: 45-60 min
+   </div>
+ )}
  </div>
  </div>
 
@@ -712,11 +835,26 @@ const AdminDashboard = () => {
  <p className="font-bold text-ink ">{order.users?.phone_number || 'N/A'}</p>
  </div>
  </div>
- {order.delivery_type === 'delivery' && (
- <div className="mt-4">
+ {order.delivery_type === 'delivery' ? (
+ <div className="mt-4 space-y-2">
+ <div>
  <p className="text-xs text-slate">Address</p>
  <p className="font-bold text-ink uppercase border-l-4 border-red-500 pl-3 py-1 bg-paper mt-1">
  {order.users?.address}
+ </p>
+ </div>
+ <div>
+ <p className="text-xs text-slate">Geschatte Levertijd</p>
+ <p className="font-bold text-ink text-sm border-l-4 border-blue-500 pl-3 py-1 bg-paper mt-1">
+ Ca. 45 - 60 minuten (tot 1 uur)
+ </p>
+ </div>
+ </div>
+ ) : (
+ <div className="mt-4">
+ <p className="text-xs text-slate">Afhaaltijd / Target Pickup Time</p>
+ <p className="font-bold text-amber-700 dark:text-amber-400 text-sm uppercase border-l-4 border-amber-500 pl-3 py-1 bg-paper mt-1">
+ {order.pickup_time && order.pickup_time !== 'ASAP' ? `Klaar om ${order.pickup_time}` : 'Zo snel mogelijk (~15-20 min)'}
  </p>
  </div>
  )}
@@ -794,12 +932,18 @@ const AdminDashboard = () => {
  </div>
  </div>
 
- {/* Ticket Footer */}
- <div className="bg-paper p-4 border-t border-slate flex justify-center italic text-slate text-[10px] uppercase tracking-[0.2em]">
- *** End of Kitchen Ticket ***
- </div>
- </div>
- </td>
+  {/* Ticket Footer */}
+  <div className="bg-paper p-4 border-t border-slate flex justify-between items-center text-xs">
+    <span className="italic text-slate text-[10px] uppercase tracking-[0.2em]">*** End of Kitchen Ticket ***</span>
+    <button 
+      onClick={() => setOrderToDelete(order)}
+      className="px-3 py-1.5 bg-red-500/10 hover:bg-signal-red hover:text-white text-signal-red rounded border border-red-500/20 text-[11px] font-bold uppercase transition-colors flex items-center gap-1.5"
+    >
+      <Trash2 className="w-3.5 h-3.5" /> {t('admin.btnDeleteOrder', 'Bestelling Verwijderen')}
+    </button>
+  </div>
+  </div>
+  </td>
  </tr>
  )}
  </React.Fragment>
@@ -1453,6 +1597,195 @@ const AdminDashboard = () => {
           >
             {isCancelling ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertCircle className="w-4 h-4" />}
             {t('admin.btnConfirmCancel', 'Annuleren & E-mail Verzenden')}
+          </button>
+        </div>
+      </div>
+    </div>
+  )}
+
+  {/* SINGLE ORDER DELETE CONFIRMATION MODAL */}
+  {orderToDelete && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+      <div className="bg-paper border border-slate rounded-xl max-w-md w-full p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-200">
+        <div className="flex items-start justify-between border-b border-slate pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-red-500/10 text-signal-red rounded-lg border border-red-500/20">
+              <Trash2 className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-ink text-base">
+                {t('admin.deleteSingleTitle', 'Bestelling Permanent Verwijderen')}
+              </h3>
+              <span className="font-mono text-xs text-slate">#{orderToDelete.order_id?.split('-')[0]}</span>
+            </div>
+          </div>
+          <button 
+            onClick={() => setOrderToDelete(null)}
+            className="text-slate hover:text-ink p-1 rounded-md transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Order Info Card */}
+        <div className="bg-mist p-3.5 rounded-lg space-y-1.5 text-xs border border-slate">
+          <div className="flex justify-between">
+            <span className="text-slate font-medium">Klant:</span>
+            <span className="font-bold text-ink">{orderToDelete.users?.full_name || 'Gast'}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate font-medium">Totaal:</span>
+            <span className="font-mono font-bold text-ink">€{parseFloat(orderToDelete.total_price || 0).toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate font-medium">Status:</span>
+            <span className="font-medium text-ink uppercase font-mono">{orderToDelete.status}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate font-medium">Geplaatst:</span>
+            <span className="text-slate">{new Date(orderToDelete.created_at).toLocaleString()}</span>
+          </div>
+        </div>
+
+        <p className="text-xs text-signal-red font-medium">
+          {t('admin.deleteSingleConfirm', { id: orderToDelete.order_id?.split('-')[0], defaultValue: 'Weet u zeker dat u deze bestelling permanent wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.' })}
+        </p>
+
+        {/* Action buttons */}
+        <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate">
+          <button
+            type="button"
+            onClick={() => setOrderToDelete(null)}
+            disabled={isDeletingSingle}
+            className="px-4 py-2 rounded-md border border-slate text-xs font-bold text-slate hover:text-ink hover:bg-mist transition-colors"
+          >
+            {t('admin.btnCancel', 'Annuleren')}
+          </button>
+          <button
+            type="button"
+            onClick={handleConfirmDeleteSingle}
+            disabled={isDeletingSingle}
+            className="flex items-center gap-2 px-4 py-2 rounded-md bg-signal-red text-white text-xs font-bold hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50"
+          >
+            {isDeletingSingle ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+            {t('admin.btnConfirmDelete', 'Permanent Verwijderen')}
+          </button>
+        </div>
+      </div>
+    </div>
+  )}
+
+  {/* BULK TIMEFRAME CLEANUP MODAL */}
+  {isBulkDeleteOpen && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+      <div className="bg-paper border border-slate rounded-xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-200">
+        <div className="flex items-start justify-between border-b border-slate pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-red-500/10 text-signal-red rounded-lg border border-red-500/20">
+              <Trash2 className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-ink text-base">
+                {t('admin.deleteBulkTitle', 'Bestellingen Opruimen per Periode')}
+              </h3>
+              <p className="text-xs text-slate mt-0.5">
+                {t('admin.deleteBulkSubtitle', 'Wis bestellingen permanent uit de database op basis van een gekozen tijdsperiode.')}
+              </p>
+            </div>
+          </div>
+          <button 
+            onClick={() => setIsBulkDeleteOpen(false)}
+            className="text-slate hover:text-ink p-1 rounded-md transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Timeframe selector */}
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-ink uppercase tracking-wider block">
+            Kies tijdsperiode:
+          </label>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { id: '24h', labelKey: 'timeframe24h', fallback: 'Laatste 24 uur' },
+              { id: '7d', labelKey: 'timeframe7d', fallback: 'Laatste week' },
+              { id: '30d', labelKey: 'timeframe30d', fallback: 'Laatste maand' },
+            ].map(item => {
+              const isSelected = bulkTimeframe === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setBulkTimeframe(item.id)}
+                  className={`p-3 rounded-lg border text-center transition-all flex flex-col items-center justify-center gap-1 ${
+                    isSelected 
+                      ? 'bg-signal-red/10 border-signal-red text-signal-red font-bold shadow-xs' 
+                      : 'bg-mist border-slate text-ink hover:border-slate-400'
+                  }`}
+                >
+                  <Clock className="w-4 h-4" />
+                  <span className="text-xs">{t(`admin.${item.labelKey}`, item.fallback)}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Option A: Safety filter toggle */}
+        <div className="p-3 bg-mist rounded-lg border border-slate flex items-start gap-3">
+          <input
+            type="checkbox"
+            id="bulkOnlyCompleted"
+            checked={bulkOnlyCompleted}
+            onChange={(e) => setBulkOnlyCompleted(e.target.checked)}
+            className="mt-0.5 rounded border-slate text-signal-red focus:ring-signal-red cursor-pointer"
+          />
+          <label htmlFor="bulkOnlyCompleted" className="text-xs text-ink cursor-pointer select-none">
+            <span className="font-bold block text-ink">
+              {t('admin.bulkOnlyCompletedLabel', 'Alleen voltooide en geannuleerde bestellingen verwijderen')}
+            </span>
+            <span className="text-slate text-[11px] block mt-0.5">
+              Beschermt actieve bestellingen (nieuw, bereiden, onderweg). Schakel dit uit als u ook actieve testbestellingen wilt verwijderen.
+            </span>
+          </label>
+        </div>
+
+        {/* Live Preview Count Box */}
+        <div className={`p-3 rounded-lg border text-xs flex items-center justify-between ${
+          matchingBulkOrders.length > 0 
+            ? 'bg-amber-500/10 border-amber-500/30 text-amber-900 dark:text-amber-200' 
+            : 'bg-mist border-slate text-slate'
+        }`}>
+          <span className="font-semibold flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-signal-red" />
+            {matchingBulkOrders.length > 0
+              ? t('admin.bulkDeleteMatchingCount', { count: matchingBulkOrders.length, defaultValue: `${matchingBulkOrders.length} bestelling(en) geselecteerd voor verwijdering.` })
+              : t('admin.bulkNoOrdersMatching', 'Geen bestellingen gevonden binnen deze criteria.')}
+          </span>
+          <span className="font-mono font-bold text-sm px-2 py-0.5 bg-paper rounded border border-slate">
+            {matchingBulkOrders.length}
+          </span>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate">
+          <button
+            type="button"
+            onClick={() => setIsBulkDeleteOpen(false)}
+            disabled={isDeletingBulk}
+            className="px-4 py-2 rounded-md border border-slate text-xs font-bold text-slate hover:text-ink hover:bg-mist transition-colors"
+          >
+            {t('admin.btnCancel', 'Annuleren')}
+          </button>
+          <button
+            type="button"
+            onClick={handleConfirmDeleteBulk}
+            disabled={isDeletingBulk || matchingBulkOrders.length === 0}
+            className="flex items-center gap-2 px-4 py-2 rounded-md bg-signal-red text-white text-xs font-bold hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+          >
+            {isDeletingBulk ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+            {t('admin.btnConfirmDelete', 'Permanent Verwijderen')} ({matchingBulkOrders.length})
           </button>
         </div>
       </div>

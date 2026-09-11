@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, Minus, Plus, ShoppingBag, MapPin, Store, Phone, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { X, Minus, Plus, ShoppingBag, MapPin, Store, Phone, Loader2, Clock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
@@ -33,6 +33,10 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
   const [editingAddress, setEditingAddress] = useState(false);
   const [editingPhone, setEditingPhone] = useState(false);
 
+  // Takeaway pickup timing state
+  const [pickupTimingType, setPickupTimingType] = useState('asap'); // 'asap' or 'scheduled'
+  const [selectedPickupTime, setSelectedPickupTime] = useState('');
+
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   
@@ -41,6 +45,40 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
   const [activeSuggestionCategory, setActiveSuggestionCategory] = useState('Desserts');
   
   const [activeStep, setActiveStep] = useState(1);
+
+  // Compute available pickup slots in 15-min intervals during opening hours (11:00-23:00)
+  const availablePickupSlots = useMemo(() => {
+    const slots = [];
+    try {
+      const nowStr = new Date().toLocaleString("en-US", { timeZone: "Europe/Brussels" });
+      const now = new Date(nowStr);
+
+      const earliest = new Date(now.getTime() + 20 * 60000); // 20 min preparation
+      const remainder = earliest.getMinutes() % 15;
+      if (remainder !== 0) {
+        earliest.setMinutes(earliest.getMinutes() + (15 - remainder));
+      }
+      earliest.setSeconds(0, 0);
+
+      const opening = new Date(now);
+      opening.setHours(11, 0, 0, 0);
+
+      const closing = new Date(now);
+      closing.setHours(22, 45, 0, 0);
+
+      let currentSlot = earliest < opening ? new Date(opening) : new Date(earliest);
+
+      while (currentSlot <= closing) {
+        const hh = String(currentSlot.getHours()).padStart(2, '0');
+        const mm = String(currentSlot.getMinutes()).padStart(2, '0');
+        slots.push(`${hh}:${mm}`);
+        currentSlot = new Date(currentSlot.getTime() + 15 * 60000);
+      }
+    } catch (e) {
+      console.error("Error computing pickup slots:", e);
+    }
+    return slots;
+  }, [isOpen, orderMode]);
 
   // Pre-fill user data
   useEffect(() => {
@@ -75,6 +113,10 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
       toast.error('Please provide a delivery address.');
       return;
     }
+    if (orderMode === 'takeaway' && pickupTimingType === 'scheduled' && !selectedPickupTime) {
+      toast.error(t('cart.choosePickupTime', 'Kies een geldig afhaaltijdstip.'));
+      return;
+    }
     if (!phone.trim()) {
       toast.error('Please provide a contact number.');
       return;
@@ -88,10 +130,15 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
         customizations: item.customizations
       }));
 
+      const finalPickupTime = orderMode === 'takeaway'
+        ? (pickupTimingType === 'asap' ? 'ASAP' : selectedPickupTime)
+        : null;
+
       await api.post('/orders', {
         items,
         delivery_address: orderMode === 'delivery' ? address : null,
-        delivery_type: orderMode
+        delivery_type: orderMode,
+        pickup_time: finalPickupTime
       });
 
       setIsSuccess(true);
@@ -117,6 +164,7 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
 
   const isFormValid = () => {
     if (orderMode === 'delivery' && !address.trim()) return false;
+    if (orderMode === 'takeaway' && pickupTimingType === 'scheduled' && !selectedPickupTime) return false;
     if (!phone.trim()) return false;
     if (editingAddress || editingPhone) return false;
     if (!hasMainItem) return false;
@@ -429,8 +477,8 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
                 </div>
                 <p className="text-xs text-slate font-sans text-center">
                   {orderMode === 'delivery' 
-                    ? `Estimated delivery time: 30-45 mins • Fee: €${deliveryFee.toFixed(2)}` 
-                    : 'Estimated pickup time: 15-20 mins'}
+                    ? t('cart.deliveryEstimateWithFee', { fee: deliveryFee.toFixed(2), defaultValue: `Geschatte levertijd: 45-60 min (tot 1 uur) • Bezorgkosten: €${deliveryFee.toFixed(2)}` }) 
+                    : t('cart.pickupEstimate', 'Geschatte afhaaltijd: 15-20 min')}
                 </p>
               </div>
 
@@ -474,12 +522,103 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
                     )}
                   </div>
                 ) : (
-                  <div className="bg-mist border border-slate rounded-md p-4">
-                    <div className="flex items-center text-ink font-bold font-sans text-sm mb-1">
-                      <Store className="w-4 h-4 mr-2" />
-                      Picking up from
+                  <div className="space-y-3">
+                    {/* Store Card */}
+                    <div className="bg-mist border border-slate rounded-md p-4">
+                      <div className="flex items-center text-ink font-bold font-sans text-sm mb-1">
+                        <Store className="w-4 h-4 mr-2 text-signal-red" />
+                        {t('cart.pickupStoreAddressLabel', 'Afhaallocatie')}
+                      </div>
+                      <p className="text-sm font-sans text-ink font-bold">Pizza Town</p>
+                      <p className="text-xs font-sans text-slate mt-0.5">Stationsstraat 14, 1861 Meise</p>
+                      <div className="mt-2 inline-flex items-center text-[11px] font-mono font-medium text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                        Open: 11:00 - 23:00
+                      </div>
                     </div>
-                    <p className="text-sm font-sans text-ink">Pizza Town, 123 Main Street<br/>Open until 23:00</p>
+
+                    {/* Pickup Timing Card */}
+                    <div className="bg-mist border border-slate rounded-md p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center text-ink font-bold font-sans text-sm">
+                          <Clock className="w-4 h-4 mr-2 text-ink" />
+                          {t('cart.pickupTimeLabel', 'Afhaaltijd')}
+                        </div>
+                        <span className="text-xs font-mono font-bold text-signal-red">
+                          {pickupTimingType === 'asap' ? t('cart.asap', 'Zo snel mogelijk') : (selectedPickupTime || '—')}
+                        </span>
+                      </div>
+
+                      {/* As Soon As Possible vs Specific Time Toggle */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setPickupTimingType('asap')}
+                          className={`py-2 px-3 rounded-md text-xs font-sans font-bold text-center border transition-all ${
+                            pickupTimingType === 'asap'
+                              ? 'bg-ink text-paper border-ink shadow-xs'
+                              : 'bg-paper text-slate border-slate hover:text-ink hover:border-ink/50'
+                          }`}
+                        >
+                          {t('cart.asap', 'Zo snel mogelijk (~15-20 min)')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPickupTimingType('scheduled');
+                            if (!selectedPickupTime && availablePickupSlots.length > 0) {
+                              setSelectedPickupTime(availablePickupSlots[0]);
+                            }
+                          }}
+                          className={`py-2 px-3 rounded-md text-xs font-sans font-bold text-center border transition-all ${
+                            pickupTimingType === 'scheduled'
+                              ? 'bg-ink text-paper border-ink shadow-xs'
+                              : 'bg-paper text-slate border-slate hover:text-ink hover:border-ink/50'
+                          }`}
+                        >
+                          {t('cart.choosePickupTime', 'Kies afhaaltijd')}
+                        </button>
+                      </div>
+
+                      {/* Time slot picker */}
+                      {pickupTimingType === 'scheduled' && (
+                        <div className="pt-2 border-t border-slate/30 space-y-2 animate-in fade-in duration-200">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-slate font-medium">
+                              {t('cart.pickupReadyAt', 'Klaar voor afhaling om')}:
+                            </span>
+                            <span className="font-mono font-bold text-ink">
+                              {selectedPickupTime ? `${selectedPickupTime} uur` : 'Kies een tijdstip'}
+                            </span>
+                          </div>
+
+                          {availablePickupSlots.length > 0 ? (
+                            <div className="max-h-36 overflow-y-auto custom-scrollbar grid grid-cols-4 gap-1.5 p-1 bg-paper border border-slate rounded-md">
+                              {availablePickupSlots.map(slot => {
+                                const isSelected = selectedPickupTime === slot;
+                                return (
+                                  <button
+                                    key={slot}
+                                    type="button"
+                                    onClick={() => setSelectedPickupTime(slot)}
+                                    className={`py-1.5 px-1 rounded text-xs font-mono font-bold transition-all text-center ${
+                                      isSelected
+                                        ? 'bg-signal-red text-white shadow-xs'
+                                        : 'text-ink hover:bg-mist'
+                                    }`}
+                                  >
+                                    {slot}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-signal-red font-sans">
+                              Geen tijdsloten meer beschikbaar voor vandaag.
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -525,8 +664,43 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
 
               <Step>
                 <div className="px-6 pb-6 space-y-6 h-full overflow-y-auto custom-scrollbar">
+                  {/* Fulfillment Summary Card */}
+                  <div className="bg-mist border border-slate rounded-md p-4 space-y-2 mt-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate font-sans flex items-center gap-1.5">
+                        {orderMode === 'takeaway' ? (
+                          <>
+                            <Store className="w-3.5 h-3.5 text-signal-red" />
+                            Afhalen
+                          </>
+                        ) : (
+                          <>
+                            <MapPin className="w-3.5 h-3.5 text-signal-red" />
+                            Bezorging
+                          </>
+                        )}
+                      </span>
+                      <span className="text-xs font-mono font-bold text-signal-red">
+                        {orderMode === 'takeaway'
+                          ? (pickupTimingType === 'asap' ? t('cart.asap', 'Zo snel mogelijk (~15-20 min)') : `Klaar om ${selectedPickupTime}`)
+                          : t('cart.deliveryEstimateSummary', 'Geschatte levertijd: 45-60 min (tot 1 uur)')}
+                      </span>
+                    </div>
+                    {orderMode === 'takeaway' ? (
+                      <div className="pt-1 border-t border-slate/30">
+                        <p className="text-sm font-sans font-bold text-ink">Pizza Town</p>
+                        <p className="text-xs font-sans text-slate">Stationsstraat 14, 1861 Meise</p>
+                      </div>
+                    ) : (
+                      <div className="pt-1 border-t border-slate/30">
+                        <p className="text-sm font-sans font-bold text-ink">{address}</p>
+                      </div>
+                    )}
+                    <p className="text-xs font-sans text-slate">Tel: {phone}</p>
+                  </div>
+
                   {/* Order Summary */}
-                  <div className="pt-6 space-y-3">
+                  <div className="pt-2 space-y-3">
                     <div className="flex justify-between text-slate font-sans text-sm">
                       <span>{t('cart.subtotal', 'Subtotal')}</span>
                       <span className="font-mono text-ink">€{subtotal.toFixed(2)}</span>

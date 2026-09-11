@@ -181,6 +181,7 @@ export const generatePrintPayload = (order) => {
     orderId: order.order_id,
     date: order.created_at ? new Date(order.created_at).toLocaleString('nl-BE') : new Date().toLocaleString('nl-BE'),
     deliveryType: (order.delivery_type || 'takeaway').toUpperCase(),
+    pickupTime: order.pickup_time || null,
     notes: order.delivery_notes || '',
     customer: {
       name: order.users?.full_name || 'Klant',
@@ -241,6 +242,17 @@ export const printCustomerReceipt = async (orderData) => {
       printer.alignCenter();
       printer.bold(true);
       printer.println(isTakeaway ? '** AFHALEN **' : '** BEZORGING **');
+      if (isTakeaway) {
+        printer.setTextDoubleHeight();
+        if (orderData.pickupTime && orderData.pickupTime.toLowerCase() !== 'asap') {
+          printer.println(`AFHAALTIJD: ${orderData.pickupTime}`);
+        } else {
+          printer.println('AFHAALTIJD: ZO SNEL MOGELIJK');
+        }
+        printer.setTextNormal();
+      } else {
+        printer.println('LEVERTIJD: CA. 45-60 MIN (MAX 1 UUR)');
+      }
       printer.bold(false);
       printer.drawLine();
 
@@ -354,6 +366,17 @@ export const printKitchenTicket = async (orderData) => {
       const isTakeaway = orderData.deliveryType?.toLowerCase() === 'takeaway';
       printer.bold(true);
       printer.println(isTakeaway ? 'AFHALEN / MEENEMEN' : 'BEZORGING');
+      if (isTakeaway) {
+        printer.setTextDoubleHeight();
+        if (orderData.pickupTime && orderData.pickupTime.toLowerCase() !== 'asap') {
+          printer.println(`AFHAALTIJD: ${orderData.pickupTime}`);
+        } else {
+          printer.println('AFHAALTIJD: ZO SNEL MOGELIJK');
+        }
+        printer.setTextNormal();
+      } else {
+        printer.println('LEVERTIJD: CA. 45-60 MIN (MAX 1 UUR)');
+      }
       printer.bold(false);
       printer.drawLine();
 

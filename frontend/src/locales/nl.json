@@ -30,6 +30,7 @@
     "storyTitle1": "Een lokale passie,",
     "storyTitle2": "sinds 2015.",
     "storyDesc": "Wij geloven in één simpel ding: een goede pizza vereist uitzonderlijke ingrediënten en een gerespecteerd deeg. Geen sluiproutes, geen compromissen. Gewoon de authentieke smaak van Italië, geserveerd in het hart van Meise.",
+    "fact1Value": "< 1u",
     "fact1Label": "Snelle Levering",
     "fact2Label": "Traditionele oven",
     "localBadge1": "Meise",
@@ -41,7 +42,7 @@
     "openingHours": "Openingstijden",
     "qualityTitle": "Uitmuntendheid bij elke bestelling",
     "quality1": "Premium Ingrediënten",
-    "delivery": "Snelle levering (<30m)",
+    "delivery": "Snelle levering (tot 1 uur)",
     "quality2": "450°C Traditionele oven",
     "quality3": "Uitzonderlijke Service",
     "quality4": "Authentieke Recepten",
@@ -247,7 +248,16 @@
     "completeOrder": "Maak je bestelling compleet",
     "suggestionsSubtitle": "Kies desserts, sauzen of drankjes",
     "cancellationNoticeTitle": "Wil je je bestelling annuleren?",
-    "cancellationNoticeDesc": "Zodra je bestelling geplaatst is, kan deze alleen telefonisch geannuleerd worden door direct contact op te nemen met het restaurant:"
+    "cancellationNoticeDesc": "Zodra je bestelling geplaatst is, kan deze alleen telefonisch geannuleerd worden door direct contact op te nemen met het restaurant:",
+    "asap": "Zo snel mogelijk (~15-20 min)",
+    "specificTime": "Specifiek tijdstip",
+    "choosePickupTime": "Kies afhaaltijd",
+    "pickupTimeLabel": "Afhaaltijd",
+    "pickupStoreAddress": "Stationsstraat 14, 1861 Meise",
+    "pickupReadyAt": "Klaar voor afhaling om",
+    "deliveryEstimateWithFee": "Geschatte levertijd: 45-60 min (tot 1 uur) • Bezorgkosten: €{{fee}}",
+    "deliveryEstimateSummary": "Geschatte levertijd: 45-60 min (tot 1 uur)",
+    "pickupEstimate": "Geschatte afhaaltijd: 15-20 min"
   },
   "modal": {
     "subtitle": "Personaliseer je pizza",
@@ -363,6 +373,22 @@
     "toastOrderCancelled": "Bestelling geannuleerd en e-mail verzonden naar klant.",
     "toastCancelErr": "Bestelling annuleren mislukt.",
     "noEmailWarning": "Let op: Geen e-mailadres bekend voor deze klant. De bestelling wordt geannuleerd zonder e-mailnotificatie.",
-    "cancellationReasonHeading": "Reden van annulering"
+    "cancellationReasonHeading": "Reden van annulering",
+    "btnDeleteOrder": "Verwijderen",
+    "btnBulkDelete": "Opruimen",
+    "deleteSingleTitle": "Bestelling Permanent Verwijderen",
+    "deleteSingleConfirm": "Weet u zeker dat u bestelling #{{id}} permanent wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.",
+    "deleteBulkTitle": "Bestellingen Opruimen per Periode",
+    "deleteBulkSubtitle": "Wis bestellingen permanent uit de database op basis van een gekozen tijdsperiode.",
+    "timeframe24h": "Afgelopen 24 uur",
+    "timeframe7d": "Afgelopen week (7 dagen)",
+    "timeframe30d": "Afgelopen maand (30 dagen)",
+    "timeframeAll": "Alle bestellingen (volledig)",
+    "bulkOnlyCompletedLabel": "Alleen voltooide en geannuleerde bestellingen verwijderen (actieve bestellingen behouden)",
+    "bulkDeleteMatchingCount": "{{count}} bestelling(en) geselecteerd voor verwijdering.",
+    "bulkNoOrdersMatching": "Geen bestellingen gevonden binnen deze criteria.",
+    "btnConfirmDelete": "Permanent Verwijderen",
+    "toastOrderDeleted": "Bestelling succesvol verwijderd.",
+    "toastBulkDeleted": "{{count}} bestelling(en) succesvol verwijderd."
   }
 }

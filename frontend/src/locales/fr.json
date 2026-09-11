@@ -30,6 +30,7 @@
     "storyTitle1": "Une passion locale,",
     "storyTitle2": "depuis 2015.",
     "storyDesc": "Nous croyons en une chose simple : une bonne pizza nécessite des ingrédients exceptionnels et une pâte respectée. Pas de raccourcis, pas de compromis. Juste le goût authentique de l'Italie, servi au cœur de Meise.",
+    "fact1Value": "< 1h",
     "fact1Label": "Livraison rapide",
     "fact2Label": "Four traditionnel",
     "localBadge1": "Meise",
@@ -41,7 +42,7 @@
     "openingHours": "Heures d'Ouverture",
     "qualityTitle": "L'excellence à chaque commande",
     "quality1": "Ingrédients Premium",
-    "delivery": "Livraison Express (<30m)",
+    "delivery": "Livraison soignée (jusqu'à 1 heure)",
     "quality2": "Four Traditionnel 450°C",
     "quality3": "Service Exceptionnel",
     "quality4": "Recettes Authentiques",
@@ -247,7 +248,16 @@
     "completeOrder": "Complétez votre commande",
     "suggestionsSubtitle": "Choisissez des desserts, sauces ou boissons",
     "cancellationNoticeTitle": "Vous souhaitez annuler votre commande ?",
-    "cancellationNoticeDesc": "Une fois votre commande passée, elle ne peut être annulée qu'en appelant directement le restaurant :"
+    "cancellationNoticeDesc": "Une fois votre commande passée, elle ne peut être annulée qu'en appelant directement le restaurant :",
+    "asap": "Dès que possible (~15-20 min)",
+    "specificTime": "Heure spécifique",
+    "choosePickupTime": "Choisir l'heure de retrait",
+    "pickupTimeLabel": "Heure de retrait",
+    "pickupStoreAddress": "Stationsstraat 14, 1861 Meise",
+    "pickupReadyAt": "Prêt pour retrait à",
+    "deliveryEstimateWithFee": "Délai de livraison estimé : 45-60 min (jusqu'à 1h) • Frais : €{{fee}}",
+    "deliveryEstimateSummary": "Délai de livraison estimé : 45-60 min (jusqu'à 1 heure)",
+    "pickupEstimate": "Temps de retrait estimé : 15-20 min"
   },
   "modal": {
     "subtitle": "Personnalisez votre pizza",
@@ -363,6 +373,22 @@
     "toastOrderCancelled": "Commande annulée et e-mail envoyé au client.",
     "toastCancelErr": "Échec de l'annulation de la commande.",
     "noEmailWarning": "Attention : Aucune adresse e-mail trouvée pour cet utilisateur. La commande sera annulée sans notification par e-mail.",
-    "cancellationReasonHeading": "Motif d'annulation"
+    "cancellationReasonHeading": "Motif d'annulation",
+    "btnDeleteOrder": "Supprimer",
+    "btnBulkDelete": "Nettoyer",
+    "deleteSingleTitle": "Supprimer Définitivement la Commande",
+    "deleteSingleConfirm": "Êtes-vous sûr de vouloir supprimer définitivement la commande #{{id}} ? Cette action est irréversible.",
+    "deleteBulkTitle": "Nettoyer les Commandes par Période",
+    "deleteBulkSubtitle": "Supprimez définitivement les commandes de la base de données selon une période choisie.",
+    "timeframe24h": "Dernières 24 heures",
+    "timeframe7d": "Dernière semaine (7 jours)",
+    "timeframe30d": "Dernier mois (30 jours)",
+    "timeframeAll": "Toutes les commandes (historique complet)",
+    "bulkOnlyCompletedLabel": "Supprimer uniquement les commandes terminées et annulées (conserver les commandes actives)",
+    "bulkDeleteMatchingCount": "{{count}} commande(s) sélectionnée(s) pour suppression.",
+    "bulkNoOrdersMatching": "Aucune commande trouvée selon ces critères.",
+    "btnConfirmDelete": "Supprimer Définitivement",
+    "toastOrderDeleted": "Commande supprimée avec succès.",
+    "toastBulkDeleted": "{{count}} commande(s) supprimée(s) avec succès."
   }
 }

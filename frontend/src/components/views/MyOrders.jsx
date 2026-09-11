@@ -83,27 +83,51 @@ export default function AccountView() {
   const renderActiveTracker = () => {
     if (activeOrders.length === 0) return null;
     const order = activeOrders[0]; // Show first active order
-    const steps = ['pending', 'cooking', 'out_for_delivery', 'delivered'];
+    const isTakeaway = order.delivery_type === 'takeaway';
+    const steps = isTakeaway
+      ? ['pending', 'cooking', 'ready_for_pickup', 'picked_up']
+      : ['pending', 'cooking', 'out_for_delivery', 'delivered'];
     const currentIdx = steps.indexOf(order.status);
     
     return (
       <div className="bg-mist border border-slate rounded-md p-6 mb-8 shadow-sm">
         <div className="flex justify-between items-center mb-6">
-          <h3 className="font-display font-bold text-ink">Active Order</h3>
+          <div>
+            <h3 className="font-display font-bold text-ink">Active Order</h3>
+            {isTakeaway ? (
+              <span className="inline-block mt-1 text-xs font-mono font-bold text-amber-700 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                Afhalen {order.pickup_time && order.pickup_time !== 'ASAP' ? `• Ophaaltijd: ${order.pickup_time}` : '• Zo snel mogelijk'}
+              </span>
+            ) : (
+              <span className="inline-block mt-1 text-xs font-mono font-bold text-slate bg-paper px-2 py-0.5 rounded border border-slate">
+                Bezorging • Geschatte levertijd: 45-60 min (tot 1 uur)
+              </span>
+            )}
+          </div>
           <span className="font-mono text-ink font-medium">{formatDateMono(order.created_at)}</span>
         </div>
         
         <div className="relative flex items-center justify-between w-full">
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-[1px] bg-slate/30 z-0" />
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-px bg-slate/30 z-0" />
           
           {steps.map((step, idx) => {
             const isCompleted = currentIdx >= idx;
             const isCurrent = currentIdx === idx;
+            const getLabel = (s) => {
+              if (s === 'pending') return 'Placed';
+              if (s === 'cooking') return 'Preparing';
+              if (s === 'ready_for_pickup') return 'Ready';
+              if (s === 'picked_up') return 'Picked Up';
+              if (s === 'out_for_delivery') return 'Delivering';
+              if (s === 'delivered') return 'Delivered';
+              return s.charAt(0).toUpperCase() + s.slice(1);
+            };
+
             return (
               <div key={step} className="relative z-10 flex flex-col items-center gap-2 bg-mist px-2">
                 <div className={`w-3 h-3 rounded-full transition-colors duration-200 ${isCompleted ? 'bg-ink' : 'bg-paper border border-slate'}`} />
                 <span className={`text-sm ${isCurrent ? 'font-bold text-ink' : 'text-slate'}`}>
-                  {step === 'pending' ? 'Placed' : step === 'out_for_delivery' ? 'Delivering' : step.charAt(0).toUpperCase() + step.slice(1)}
+                  {getLabel(step)}
                 </span>
               </div>
             );
@@ -145,9 +169,14 @@ export default function AccountView() {
             <div key={order.order_id} className="bg-paper border border-slate rounded-md p-5 hover:bg-mist transition-colors duration-150 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               
               <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
+                <div className="flex items-center gap-3 mb-2 flex-wrap">
                   <span className="font-mono text-ink text-sm font-bold">#{order.order_id.split('-')[0].toUpperCase()}</span>
                   <span className="font-mono text-slate text-sm">{formatDateMono(order.created_at)}</span>
+                  {order.delivery_type === 'takeaway' && (
+                    <span className="text-[11px] font-mono font-bold text-amber-700 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                      Afhalen {order.pickup_time && order.pickup_time !== 'ASAP' ? `• ${order.pickup_time}` : '• ASAP'}
+                    </span>
+                  )}
                 </div>
                 <p className="font-sans text-ink text-sm mb-3">{previewText}</p>
                 <div className="flex items-center gap-2">
@@ -230,8 +259,26 @@ export default function AccountView() {
           </div>
 
           <div className="border-t border-slate mt-8 pt-6 font-sans text-sm text-slate">
-            <p className="mb-1"><span className="text-ink font-medium">Delivery Address:</span> {order.delivery_address || profile.address}</p>
-            <p><span className="text-ink font-medium">Payment:</span> Cash on Delivery</p>
+            {order.delivery_type === 'takeaway' ? (
+              <>
+                <p className="mb-1"><span className="text-ink font-medium">Type:</span> Afhalen (Takeaway)</p>
+                <p className="mb-1"><span className="text-ink font-medium">Afhaallocatie:</span> Pizza Town, Stationsstraat 14, 1861 Meise</p>
+                <p className="mb-1">
+                  <span className="text-ink font-medium">Afhaaltijd:</span>{' '}
+                  <span className="font-bold text-ink">
+                    {order.pickup_time && order.pickup_time !== 'ASAP' ? `Om ${order.pickup_time}` : 'Zo snel mogelijk (~15-20 min)'}
+                  </span>
+                </p>
+                <p><span className="text-ink font-medium">Betaling:</span> Betalen bij afhaling (Pay at store)</p>
+              </>
+            ) : (
+              <>
+                <p className="mb-1"><span className="text-ink font-medium">Type:</span> Bezorging (Delivery)</p>
+                <p className="mb-1"><span className="text-ink font-medium">Delivery Address:</span> {order.delivery_address || profile.address}</p>
+                <p className="mb-1"><span className="text-ink font-medium">Geschatte levertijd:</span> 45-60 min (tot 1 uur)</p>
+                <p><span className="text-ink font-medium">Payment:</span> Cash on Delivery</p>
+              </>
+            )}
           </div>
         </div>
       </div>
