@@ -76,7 +76,8 @@ router.post('/register', async (req, res) => {
     });
 
     // Send the welcome email (non-blocking)
-    sendWelcomeEmail(user.email, user.full_name);
+    const reqOrigin = req.headers.origin || (req.headers.referer ? new URL(req.headers.referer).origin : null);
+    sendWelcomeEmail(user.email, user.full_name, reqOrigin);
 
     const token = signToken(user);
     setAuthCookie(res, token);
@@ -185,7 +186,8 @@ router.post('/forgot-password', authLimiter, async (req, res) => {
     );
 
     // Send the email
-    sendPasswordResetEmail(user.email, resetToken);
+    const reqOrigin = req.headers.origin || (req.headers.referer ? new URL(req.headers.referer).origin : null);
+    sendPasswordResetEmail(user.email, resetToken, reqOrigin);
 
     res.json({ message: 'If this email is registered, a reset link has been sent.' });
   } catch (err) {

@@ -11,17 +11,31 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export const sendWelcomeEmail = async (toEmail, name) => {
+export const getFrontendUrl = (customOrigin) => {
+  if (customOrigin && typeof customOrigin === 'string' && customOrigin.startsWith('http')) {
+    return customOrigin.replace(/\/+$/, '');
+  }
+  const base = process.env.FRONTEND_URL || 'https://pizza-town.vercel.app';
+  return base.replace(/\/+$/, '');
+};
+
+export const sendWelcomeEmail = async (toEmail, name, origin) => {
   try {
+    const menuUrl = `${getFrontendUrl(origin)}/menu`;
     const info = await transporter.sendMail({
       from: `"${process.env.EMAIL_FROM_NAME || 'Pizza Town'}" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
       to: toEmail,
       subject: 'Bienvenue dans la famille Pizza Town ! 🍕',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h1 style="color: #e11d48;">Bienvenue chez Pizza Town, ${name} !</h1>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #14120F; background-color: #FAF9F7; border-radius: 8px;">
+          <h1 style="color: #e11d48; margin-top: 0;">Bienvenue chez Pizza Town, ${name} !</h1>
           <p>Nous sommes ravis de t'accueillir dans notre famille.</p>
           <p>Tu peux dès maintenant commander tes pizzas préférées ou réserver une table depuis ton compte.</p>
+          <div style="text-align: center; margin: 25px 0;">
+            <a href="${menuUrl}" style="display: inline-block; background-color: #e11d48; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">
+              Découvrir notre carte 🍕
+            </a>
+          </div>
           <p>À très bientôt !</p>
           <p><strong>L'équipe Pizza Town</strong></p>
         </div>
@@ -33,10 +47,9 @@ export const sendWelcomeEmail = async (toEmail, name) => {
   }
 };
 
-export const sendPasswordResetEmail = async (toEmail, token) => {
+export const sendPasswordResetEmail = async (toEmail, token, origin) => {
   try {
-    const frontendBase = process.env.FRONTEND_URL || 'https://pizza-town.vercel.app';
-    const resetUrl = `${frontendBase}/reset-password?token=${token}`;
+    const resetUrl = `${getFrontendUrl(origin)}/reset-password?token=${token}`;
     
     const info = await transporter.sendMail({
       from: `"${process.env.EMAIL_FROM_NAME || 'Pizza Town'}" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
@@ -61,14 +74,13 @@ export const sendPasswordResetEmail = async (toEmail, token) => {
   }
 };
 
-export const sendReservationConfirmedEmail = async (toEmail, details) => {
+export const sendReservationConfirmedEmail = async (toEmail, details, origin) => {
   try {
     const { full_name, res_date, res_time, guests } = details;
     const dateStr = new Date(res_date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     const timeStr = new Date(res_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     
-    // In a real app, point this to the actual manage reservations link
-    const manageUrl = `http://localhost:5173/account`;
+    const manageUrl = `${getFrontendUrl(origin)}/account`;
 
     const info = await transporter.sendMail({
       from: `"${process.env.EMAIL_FROM_NAME || 'Pizza Town'}" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
@@ -105,10 +117,10 @@ export const sendReservationConfirmedEmail = async (toEmail, details) => {
   }
 };
 
-export const sendReservationDeclinedEmail = async (toEmail, details) => {
+export const sendReservationDeclinedEmail = async (toEmail, details, origin) => {
   try {
     const { full_name, reason } = details;
-    const bookUrl = `http://localhost:5173/book`;
+    const bookUrl = `${getFrontendUrl(origin)}/book`;
 
     const info = await transporter.sendMail({
       from: `"${process.env.EMAIL_FROM_NAME || 'Pizza Town'}" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
@@ -138,9 +150,9 @@ export const sendReservationDeclinedEmail = async (toEmail, details) => {
   }
 };
 
-export const sendPostOrderReviewEmail = async (toEmail, details) => {
+export const sendPostOrderReviewEmail = async (toEmail, details, origin) => {
   const { full_name, order_id } = details;
-  const reviewUrl = `http://localhost:5173/review/${order_id}`;
+  const reviewUrl = `${getFrontendUrl(origin)}/review/${order_id}`;
   
   const mailOptions = {
     from: `"${process.env.EMAIL_FROM_NAME || 'Pizza Town'}" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
