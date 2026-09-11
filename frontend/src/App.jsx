@@ -55,8 +55,26 @@ function AppContent() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [user, setUser] = useState(() => toAppUser(getStoredUser()));
   const [cart, setCart] = useState([]);
-  const [isCartOpen, setIsCartOpen] = useState(false);
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    // Only show splash screen on root visit, never on direct sub-routes (login, menu, admin, etc.)
+    if (window.location.pathname !== '/') return false;
+    try {
+      const alreadyShown = sessionStorage.getItem('pizza_town_splash_shown');
+      if (alreadyShown) return false;
+      sessionStorage.setItem('pizza_town_splash_shown', 'true');
+      return true;
+    } catch {
+      return false;
+    }
+  });
+
+  const handleSplashComplete = useCallback(() => {
+    try {
+      sessionStorage.setItem('pizza_town_splash_shown', 'true');
+    } catch (_) {}
+    setShowSplash(false);
+  }, []);
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -142,7 +160,7 @@ function AppContent() {
 
   return (
     <div className={`flex flex-col min-h-screen bg-paper text-ink transition-colors ${showSplash ? 'overflow-hidden h-screen' : ''}`}>
-      {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
+      {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
       
       {/* Custom Toast Notifications */}
       <Toaster 

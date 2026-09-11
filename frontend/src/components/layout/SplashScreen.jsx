@@ -6,14 +6,19 @@ import StrokeText from '../ui/StrokeText';
 const SplashScreen = ({ onComplete }) => {
   const [phase, setPhase] = useState('loading'); // loading, exit, hidden
 
+  const handleSkip = () => {
+    setPhase('hidden');
+    if (onComplete) onComplete();
+  };
+
   useEffect(() => {
-    // Sequence timing (extended slightly for the draw animation)
+    // Sequence timing (snappy animation)
     const timers = [
-      setTimeout(() => setPhase('exit'), 2500),
+      setTimeout(() => setPhase('exit'), 2000),
       setTimeout(() => {
         setPhase('hidden');
         if (onComplete) onComplete();
-      }, 3000), // 2500ms + 500ms for exit transition
+      }, 2400),
     ];
 
     return () => timers.forEach(clearTimeout);
@@ -23,9 +28,11 @@ const SplashScreen = ({ onComplete }) => {
 
   return (
     <div 
-      className={`fixed inset-0 z-[100] flex items-center justify-center bg-paper transition-transform duration-500 ease-in-out ${
+      onClick={handleSkip}
+      className={`fixed inset-0 z-[100] flex items-center justify-center bg-paper transition-transform duration-400 ease-in-out cursor-pointer select-none ${
         phase === 'exit' ? '-translate-y-full' : 'translate-y-0'
       }`}
+      title="Cliquer pour passer"
     >
       <div className="relative flex flex-col items-center justify-center animate-in fade-in duration-300">
         
