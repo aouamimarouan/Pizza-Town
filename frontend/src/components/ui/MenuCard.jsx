@@ -29,18 +29,36 @@ const isCustomizable = (item) => {
   return false;
 };
 
+// Reliable category fallback photos so no card is ever empty or broken
+const CATEGORY_FALLBACKS = {
+  'Drinks': 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=600&auto=format&fit=crop&q=80',
+  'Pizzas': 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&auto=format&fit=crop&q=80',
+  'Pastas': 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=600&auto=format&fit=crop&q=80',
+  'Desserts': 'https://images.unsplash.com/photo-1551024506-0bccd828d307?w=600&auto=format&fit=crop&q=80',
+  'Salads': 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&auto=format&fit=crop&q=80',
+  'Starters': 'https://images.unsplash.com/photo-1541529086526-db283c563270?w=600&auto=format&fit=crop&q=80',
+  'Menu Deals': 'https://images.unsplash.com/photo-1544982503-9f984c14501a?w=600&auto=format&fit=crop&q=80',
+  'Sauces': 'https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=600&auto=format&fit=crop&q=80',
+};
+
+const getCategoryFallback = (category) => {
+  return CATEGORY_FALLBACKS[category] || 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&auto=format&fit=crop&q=80';
+};
+
+const resolveImageUrl = (path) => {
+  if (!path) return null;
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return encodeURI(path);
+  }
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  return encodeURI(cleanPath);
+};
+
 const MenuCard = ({ item, handleAddToCart, openModal, searchQuery = '', priority = false }) => {
   const { t } = useTranslation();
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Helper to transform static /images/ path to the dynamic backend /api/images/ path
-  const getDynamicImageUrl = (originalPath, width) => {
-    if (!originalPath) return null;
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-    // Remove leading /images/ to hit /api/images/
-    const apiPath = originalPath.replace(/^\/images\//, '/api/images/');
-    return `${API_URL}${apiPath}?w=${width}`;
-  };
+  const imageSrc = resolveImageUrl(item.image_url) || getCategoryFallback(item.category);
 
   return (
     <div 
@@ -55,32 +73,23 @@ const MenuCard = ({ item, handleAddToCart, openModal, searchQuery = '', priority
     >
       {/* Product Photo Top Area */}
       <div className="aspect-video bg-mist w-full relative border-b border-mist overflow-hidden">
-        {item.image_url ? (
-          <>
-            {/* Skeleton Placeholder */}
-            <div 
-              className={`absolute inset-0 bg-slate/20 animate-pulse transition-opacity duration-500 ${isLoaded ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} 
-            />
-            <img 
-              srcSet={`
-                ${getDynamicImageUrl(item.image_url, 400)} 400w,
-                ${getDynamicImageUrl(item.image_url, 800)} 800w,
-                ${getDynamicImageUrl(item.image_url, 1200)} 1200w
-              `}
-              sizes="(max-width: 640px) 400px, (max-width: 1024px) 800px, 1200px"
-              src={getDynamicImageUrl(item.image_url, 800)} 
-              alt={item.name} 
-              loading={priority ? 'eager' : 'lazy'}
-              decoding="async"
-              onLoad={() => setIsLoaded(true)}
-              className={`w-full h-full object-cover transition-all duration-300 ease-out group-hover:scale-[1.02] ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
-            />
-          </>
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-slate font-mono text-xs opacity-50">
-            [ IMAGE ]
-          </div>
-        )}
+        {/* Skeleton Placeholder */}
+        <div 
+          className={`absolute inset-0 bg-slate/20 animate-pulse transition-opacity duration-500 ${isLoaded ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} 
+        />
+        <img 
+          src={imageSrc} 
+          alt={item.name} 
+          loading={priority ? 'eager' : 'lazy'}
+          decoding="async"
+          onLoad={() => setIsLoaded(true)}
+          onError={(e) => {
+            setIsLoaded(true);
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = getCategoryFallback(item.category);
+          }}
+          className={`w-full h-full object-cover transition-all duration-300 ease-out group-hover:scale-[1.02] ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+        />
         
         {/* Tags */}
         <div className="absolute top-3 left-3 flex gap-2">

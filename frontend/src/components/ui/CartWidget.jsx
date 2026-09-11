@@ -404,10 +404,13 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
                           >
                             <div className="relative w-full h-20 bg-mist overflow-hidden border-b border-slate">
                               <img 
-                                src={item.image_url} 
+                                src={item.image_url ? encodeURI(item.image_url.startsWith('/') ? item.image_url : `/${item.image_url}`) : 'https://images.unsplash.com/photo-1628840042765-356cda07504e?q=80&w=200&auto=format&fit=crop'} 
                                 alt={item.name} 
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" 
-                                onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1628840042765-356cda07504e?q=80&w=200&auto=format&fit=crop'; }}
+                                onError={(e) => { 
+                                  e.currentTarget.onerror = null;
+                                  e.currentTarget.src = 'https://images.unsplash.com/photo-1628840042765-356cda07504e?q=80&w=200&auto=format&fit=crop'; 
+                                }}
                               />
                               {inCartQty > 0 && (
                                 <span className="absolute top-1 right-1 bg-ink text-paper text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full shadow-sm">
