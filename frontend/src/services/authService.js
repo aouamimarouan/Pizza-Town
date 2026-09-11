@@ -1,14 +1,21 @@
 import api from './api.js';
 
 const USER_KEY  = 'pt_user';
+const TOKEN_KEY = 'pt_token';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
-const saveSession = ({ user }) => {
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
+const saveSession = ({ user, token }) => {
+  if (user) localStorage.setItem(USER_KEY, JSON.stringify(user));
+  if (token) localStorage.setItem(TOKEN_KEY, token);
 };
 
 export const clearSession = () => {
   localStorage.removeItem(USER_KEY);
+  localStorage.removeItem(TOKEN_KEY);
+};
+
+export const getStoredToken = () => {
+  return localStorage.getItem(TOKEN_KEY);
 };
 
 export const getStoredUser = () => {

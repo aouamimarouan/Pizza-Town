@@ -7,7 +7,19 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// Request Interceptor no longer needs to attach JWT, HttpOnly cookie handles it.
+// ─── Request Interceptor ──────────────────────────────────────────────────
+// Attaches Bearer token (essential for iOS Safari & mobile cross-site cookie restrictions)
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('pt_token');
+    if (token) {
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 // ─── Response Interceptor ─────────────────────────────────────────────────
 // If the token is expired or invalid (401), clear storage and redirect to login
@@ -16,6 +28,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('pt_user');
+      localStorage.removeItem('pt_token');
       window.dispatchEvent(new Event('auth:logout'));
     }
     return Promise.reject(error);
