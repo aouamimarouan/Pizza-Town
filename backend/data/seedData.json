@@ -1,0 +1,1240 @@
+{
+  "menuitems": [
+    {
+      "item_id": "7eda54b2-9459-483a-9454-87d8b3adef66",
+      "name": "Deal 3",
+      "category": "Menu Deals",
+      "description": "1 medium pizza, 2 blikjes drank en 1 voorgerecht.",
+      "price": "20",
+      "image_url": "/images/deals/Deal 3.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "58096466-c2f7-4f76-95b4-b71773816737",
+      "name": "Deal 4",
+      "category": "Menu Deals",
+      "description": "4 chicken wings, crispy chicken nuggets en 1 American potatoes.",
+      "price": "8",
+      "image_url": "/images/deals/Deal 4.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "ce0b4710-b0ab-476c-b622-ec97159afe8d",
+      "name": "Margherita",
+      "category": "Pizzas",
+      "description": "tomatensaus, kaas",
+      "price": "11.95",
+      "image_url": "/images/pizzas/Margherita.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "c1bec82d-b4ee-41e5-b056-0f74bfb139a1",
+      "name": "Proscuitto",
+      "category": "Pizzas",
+      "description": "kaas, ham, mozzarella",
+      "price": "11.95",
+      "image_url": "/images/pizzas/Prosciutto.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "b3421df3-d4c7-4895-8cea-4ce0a2c4084d",
+      "name": "Funghi",
+      "category": "Pizzas",
+      "description": "kaas, champignons",
+      "price": "11.95",
+      "image_url": "/images/pizzas/i106951-pizza-ai-funghi-forestiere.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "64be78ec-8516-4e9d-9de3-e555dcdc90db",
+      "name": "Pepperoni",
+      "category": "Pizzas",
+      "description": "dubbele portie pepperoni, kaas",
+      "price": "11.95",
+      "image_url": "/images/pizzas/peperoni.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "420bdcb0-af16-4217-bd55-4e69bf911cd3",
+      "name": "BBQ Chicken",
+      "category": "Pizzas",
+      "description": "bbq saus, kip, paprika, ui, mozzarella",
+      "price": "11.95",
+      "image_url": "/images/pizzas/bbq chicken.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "b87ff42d-4f6c-4639-bfaf-61b1c10d1916",
+      "name": "Calzone",
+      "category": "Pizzas",
+      "description": "gevouwen pizza, bolognesesaus, champignons, paprika, salami, ham",
+      "price": "11.95",
+      "image_url": "/images/pizzas/calzone.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "0411deef-f69b-4e56-ad91-f9b7b2efad08",
+      "name": "Tiramisu",
+      "category": "Desserts",
+      "description": "Klassieke tiramisu",
+      "price": "4",
+      "image_url": "/images/desserts/Tiramisu.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "c497d088-c7fb-45d5-9e64-ba592a62edd7",
+      "name": "Chocomousse",
+      "category": "Desserts",
+      "description": "Chocolademousse",
+      "price": "3",
+      "image_url": "/images/desserts/Chocomousse.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "12ce3909-ce42-4b7b-8c5f-48510a96bfe3",
+      "name": "Ben & Jerry",
+      "category": "Desserts",
+      "description": "IJs",
+      "price": "9",
+      "image_url": "/images/desserts/Ben & Jerry.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "a2011144-79ab-4502-b2ed-f2f8c641e4bf",
+      "name": "Pasta Scampi",
+      "category": "Pastas",
+      "description": "Scampi pasta",
+      "price": "12",
+      "image_url": "/images/pastas/Pasta Scampi.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "8639abda-b162-4e17-81f8-eec669e835ce",
+      "name": "Pasta Salmone",
+      "category": "Pastas",
+      "description": "Zalm pasta",
+      "price": "12",
+      "image_url": "/images/pastas/Pasta Salmone.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "041a1452-0fbb-4ce8-9b9c-01e3f18c3068",
+      "name": "Pasta Bolognese",
+      "category": "Pastas",
+      "description": "Klassieke pasta bolognese",
+      "price": "12",
+      "image_url": "/images/pastas/Pasta Bolognese.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "70150d30-50df-445d-982a-6649736fcdfe",
+      "name": "Lasagne Bolognese",
+      "category": "Pastas",
+      "description": "Ovengebakken lasagne",
+      "price": "12",
+      "image_url": "/images/pastas/Lasagne Bolognese.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "1c9f209a-edf5-4f29-be5c-5f4ee137341c",
+      "name": "Lookbaguette",
+      "category": "Starters",
+      "description": "Lookbrood natuur",
+      "price": "3",
+      "image_url": "/images/starters/Lookbaguette.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "b0d2f169-3cc4-4fbf-81b9-7acc899f1459",
+      "name": "Lookbrood Kaas",
+      "category": "Starters",
+      "description": "4 stuks",
+      "price": "3.6",
+      "image_url": "/images/starters/Lookbrood Kaas.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "4ae7de91-c2d7-4fef-a3b6-e8063081d862",
+      "name": "Hot Wings",
+      "category": "Starters",
+      "description": "6 stuks",
+      "price": "5",
+      "image_url": "/images/starters/Hot Wings.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "f3e62d0e-cb0d-40bc-9f2a-5fc7cc633216",
+      "name": "Chicken Tenders",
+      "category": "Starters",
+      "description": "4 stuks",
+      "price": "7",
+      "image_url": "/images/starters/Chicken Tenders.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "60784d19-f2c6-478b-9e73-a3dd15ad5a64",
+      "name": "Crispy Cheese Jalapeneos",
+      "category": "Starters",
+      "description": "8 stuks",
+      "price": "5",
+      "image_url": "/images/starters/Crispy Cheese Jalapeneos.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "b1d06204-a9fc-4341-8341-da145c8a65cb",
+      "name": "Chicken Salade",
+      "category": "Salads",
+      "description": "Kip en verse groenten",
+      "price": "7",
+      "image_url": "/images/salads/Chicken Salade.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "5b109fa9-8c66-4148-8c2c-d516f42db467",
+      "name": "Tuna Salade",
+      "category": "Salads",
+      "description": "Tonijn en verse groenten",
+      "price": "7",
+      "image_url": "/images/salads/Tuna Salade.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "efef274f-6af9-439e-8019-a7e9c62c3873",
+      "name": "Feta Salade",
+      "category": "Salads",
+      "description": "Feta kaas en verse groenten",
+      "price": "7",
+      "image_url": "/images/salads/Feta Salade.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "03bc6692-8b74-4b93-8cc0-00f94b116260",
+      "name": "Coca-cola (33cl)",
+      "category": "Drinks",
+      "description": null,
+      "price": "2",
+      "image_url": "/images/drinks/Coca-Cola (33cl).jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "b8746769-328c-43be-835a-5ef97a771111",
+      "name": "Coca-cola Zero Sugar (33cl)",
+      "category": "Drinks",
+      "description": null,
+      "price": "2",
+      "image_url": "/images/drinks/Coca-Cola zero sugar (33cl).jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "8948e89c-a6a2-486e-94cd-ef020d0e278e",
+      "name": "Fanta Orange (33cl)",
+      "category": "Drinks",
+      "description": null,
+      "price": "2",
+      "image_url": "/images/drinks/Fanta Orange (33cl).jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "3e8a7de5-8bc0-4874-ada8-768a89b769ce",
+      "name": "Fanta Lemon (33cl)",
+      "category": "Drinks",
+      "description": null,
+      "price": "2",
+      "image_url": "/images/drinks/Fanta Lemon (33cl).jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "ef6f59cb-a7cb-4be3-b921-8d239167daff",
+      "name": "Fanta Strawberry (33cl)",
+      "category": "Drinks",
+      "description": null,
+      "price": "2.2",
+      "image_url": "/images/drinks/Fanta strawberry (33cl).jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "d33d17e5-7824-47fd-be50-4e7c1b4b44e7",
+      "name": "Deal 5",
+      "category": "Menu Deals",
+      "description": "1 pasta, 1 blikje drank en 1 voorgerecht.",
+      "price": "17",
+      "image_url": "/images/deals/Deal 5.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "4350499f-d1fe-4708-a245-c66eb6c1d802",
+      "name": "Fanta Elderflower Lemon",
+      "category": "Drinks",
+      "description": null,
+      "price": "2.2",
+      "image_url": "/images/drinks/Fanta elderflower lemon.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "2b54eac5-2f75-4067-8a97-3de0962fc1a7",
+      "name": "Ice Tea (33cl)",
+      "category": "Drinks",
+      "description": null,
+      "price": "2",
+      "image_url": "/images/drinks/Ice tea (33cl).jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "20143985-b9af-4d48-822c-68acab102571",
+      "name": "Ice Tea Peche (33cl)",
+      "category": "Drinks",
+      "description": null,
+      "price": "2.2",
+      "image_url": "/images/drinks/Ice tea peche (33cl).jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "58fb1b60-2a8c-48b4-9dd6-accc3775a8c7",
+      "name": "Gini (33cl)",
+      "category": "Drinks",
+      "description": null,
+      "price": "2",
+      "image_url": "/images/drinks/Gini (33cl).jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "c955ecdc-df06-4e57-9559-cffbb5c5262a",
+      "name": "Schweppes Agrum (33cl)",
+      "category": "Drinks",
+      "description": null,
+      "price": "2",
+      "image_url": "/images/drinks/Schweppes agrum (33cl).jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "c475e625-66bd-40ca-82e4-0fbb2b71dd3a",
+      "name": "Sprite Regular (33cl)",
+      "category": "Drinks",
+      "description": null,
+      "price": "2",
+      "image_url": "/images/drinks/Sprite Regular (33cl).jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "3a1f97be-7356-4557-831b-6bfdb48ade1d",
+      "name": "Red Bull (25cl)",
+      "category": "Drinks",
+      "description": null,
+      "price": "2.5",
+      "image_url": "/images/drinks/Red Bull (25cl).jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "5046fecd-9afb-4656-a913-bf79143a1c36",
+      "name": "Capri-sun (20cl)",
+      "category": "Drinks",
+      "description": null,
+      "price": "1.5",
+      "image_url": "/images/drinks/Capri-sun (20cl).jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "006edad6-8027-4bd4-b6b7-bc07f784d265",
+      "name": "Tropico (33cl)",
+      "category": "Drinks",
+      "description": null,
+      "price": "2.2",
+      "image_url": "/images/drinks/Tropico (33cl).jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "523d3a57-c86d-47a4-bb34-f24780e4e928",
+      "name": "Oasis",
+      "category": "Drinks",
+      "description": null,
+      "price": "2.2",
+      "image_url": "/images/drinks/Oasis.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "52ebf78f-bb44-4da9-aba2-1cccd77c6a04",
+      "name": "Chaudfontaine Sparkling (50cl)",
+      "category": "Drinks",
+      "description": null,
+      "price": "2",
+      "image_url": "/images/drinks/Chaudfontaine sparkling (50cl).jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "f75c9712-96e3-44aa-90e2-61ebb5f45474",
+      "name": "Mayonaise",
+      "category": "Sauces",
+      "description": "Portie mayonaise",
+      "price": "1",
+      "image_url": "/images/sauces/Mayonaise.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "76be5f36-5123-460d-9ef1-d9c2de36677f",
+      "name": "Ketchup",
+      "category": "Sauces",
+      "description": "Portie ketchup",
+      "price": "1",
+      "image_url": "/images/sauces/Ketchup.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "aad0da3c-db8b-490e-85fc-665e4e13b173",
+      "name": "Fanta Exotic (33cl)",
+      "category": "Drinks",
+      "description": null,
+      "price": "2.2",
+      "image_url": "/images/drinks/Fanta Exotic (33cl).jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "cfd26d8e-09f4-41c3-b3c2-a7aa005ef06e",
+      "name": "Deal 1",
+      "category": "Menu Deals",
+      "description": "1 Large Pizza + 2 Blikjes Drank + 1 Voorgerecht",
+      "price": "26",
+      "image_url": "/images/deals/Deal 1.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "6656fc6b-0108-4301-b672-8db010f6cc25",
+      "name": "Deal 2",
+      "category": "Menu Deals",
+      "description": "2 small pizza's, 2 blikjes drank en 1 voorgerecht.",
+      "price": "30",
+      "image_url": "/images/deals/Deal 2.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "ea8e29e4-a149-49b5-ad1d-d4d16a470a7a",
+      "name": "Proscuitto Funghi",
+      "category": "Pizzas",
+      "description": "Kaas , Champignons , Ham , Mozarella",
+      "price": "11.95",
+      "image_url": "/images/pizzas/Proscuitto Funghi.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "94ce440a-4b83-4d92-bfe9-d17dd9817e5f",
+      "name": "Veggie",
+      "category": "Pizzas",
+      "description": "champignons, paprika, ui, olijven, mais, tomaat",
+      "price": "11.95",
+      "image_url": "/images/pizzas/Veggie.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "2518ff93-3e84-4a1e-923f-775371d55cec",
+      "name": "Cheesy Mix",
+      "category": "Pizzas",
+      "description": "roomsaus, feta, gorgonzola, mozzarella, kaas",
+      "price": "11.95",
+      "image_url": "/images/pizzas/Cheesy Mix.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "f9720d14-f12c-4997-919a-8410b133f7d0",
+      "name": "The goat cheese",
+      "category": "Pizzas",
+      "description": "roomsaus, kaas, geitenkaas, honing, mozzarella",
+      "price": "11.95",
+      "image_url": "/images/pizzas/The goat cheese.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "f4012124-a501-4a0a-af4e-b9a8d612ba9a",
+      "name": "Mexican Chilli",
+      "category": "Pizzas",
+      "description": "pepperoni, ui, olijven, look, kappertjes",
+      "price": "11.95",
+      "image_url": "/images/pizzas/Mexican Chilli.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "0aff9e7d-fe58-4c96-937d-294264e93a6a",
+      "name": "Napolitano",
+      "category": "Pizzas",
+      "description": "ansjovis, kappertjes, olijven",
+      "price": "11.95",
+      "image_url": "/images/pizzas/Napolitano.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "c59ddb78-0b3f-40de-81df-d8b69b3388dd",
+      "name": "Seafood de luxe",
+      "category": "Pizzas",
+      "description": "garnalen, mosselen, ui, tonijn",
+      "price": "11.95",
+      "image_url": "/images/pizzas/Seafood de luxe.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "4d9f0935-b0d3-4097-b3fc-0805f0f23981",
+      "name": "Scampini",
+      "category": "Pizzas",
+      "description": "scampi, tomaten, ui, look",
+      "price": "11.95",
+      "image_url": "/images/pizzas/Scampini.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "579ac416-c52b-479b-a89e-c2641af2de08",
+      "name": "Scampi Diabolo",
+      "category": "Pizzas",
+      "description": "pikantesaus, scampi's, ui",
+      "price": "11.95",
+      "image_url": "/images/pizzas/Scampi Diabolo.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "3a1dfe18-caca-40c8-ac98-81acfaf9992b",
+      "name": "Tuna",
+      "category": "Pizzas",
+      "description": "tonijn, ui, paprika, look",
+      "price": "11.95",
+      "image_url": "/images/pizzas/Tuna.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "5f45050a-4b97-443c-9f3d-02cd351e236e",
+      "name": "Scampi de luxe",
+      "category": "Pizzas",
+      "description": "roomsaus, scampi, olijven, mais, oregano, ui",
+      "price": "11.95",
+      "image_url": "/images/pizzas/scampi de luxe.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "844df0cd-464f-42a8-98aa-47d8cf8b4073",
+      "name": "BBQ Beef",
+      "category": "Pizzas",
+      "description": "bbq saus, rundsvlees, paprika, jalapeneos",
+      "price": "11.95",
+      "image_url": "/images/pizzas/bbq beef.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "c56e15d8-1cff-458a-870a-080f9276d55f",
+      "name": "BBQ Meatballs",
+      "category": "Pizzas",
+      "description": "bbq saus, gehaktballetjes, paprika, ui, mozzarella",
+      "price": "11.95",
+      "image_url": "/images/pizzas/bbq meatballs.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "b683e867-26b5-40f3-b47b-fff61d472266",
+      "name": "BBQ Kebab",
+      "category": "Pizzas",
+      "description": "bbq saus, kebab, paprika, ui, mozzarella",
+      "price": "11.95",
+      "image_url": "/images/pizzas/bbq kebab.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "8c0a6f05-26b8-4683-9651-16f28ff78e43",
+      "name": "Indian Curry",
+      "category": "Pizzas",
+      "description": "curry saus, kip, ananas, ui",
+      "price": "11.95",
+      "image_url": "/images/pizzas/indian curry.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "c510f149-c732-476b-8eab-5501d70765de",
+      "name": "Creamy Chicken",
+      "category": "Pizzas",
+      "description": "roomsaus, kip, champignons, ui",
+      "price": "11.95",
+      "image_url": "/images/pizzas/creamy chicken.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "cc70f969-b365-428a-8947-500e65e5021f",
+      "name": "Creamy Spekkie",
+      "category": "Pizzas",
+      "description": "spek, champignons, ui",
+      "price": "11.95",
+      "image_url": "/images/pizzas/creamy spekkie.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "02710283-9ae8-40eb-a628-d50f274cc433",
+      "name": "Creamy Kebab",
+      "category": "Pizzas",
+      "description": "roomsaus, kebab, champignons, ui",
+      "price": "11.95",
+      "image_url": "/images/pizzas/creamy kebab.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "3983f2c5-0756-4134-b41b-32d9020f33c8",
+      "name": "honey Chicken",
+      "category": "Pizzas",
+      "description": "roomsaus, kip, ui, honing",
+      "price": "11.95",
+      "image_url": "/images/pizzas/honey chicken.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "adc78bad-39f4-48f6-8001-b0c862bcc361",
+      "name": "Spicy de luxe",
+      "category": "Pizzas",
+      "description": "kip, paprika, jalapeneos, ui, mais",
+      "price": "11.95",
+      "image_url": "/images/pizzas/Spicy de luxe.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "046c6329-2256-4e1b-af80-ad9dcef9f0f3",
+      "name": "Hawai",
+      "category": "Pizzas",
+      "description": "ham, kip, ananas, mozzarella",
+      "price": "11.95",
+      "image_url": "/images/pizzas/Hawai.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "fc1776a1-dd6b-4005-9ce6-3468485aef07",
+      "name": "Calzone Oriental",
+      "category": "Pizzas",
+      "description": "gevouwen pizza, currysaus, kip, ananas, paprika, ui",
+      "price": "11.95",
+      "image_url": "/images/pizzas/Calzone Oriental.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "10055125-01ad-40ae-9dd7-65c9fafbda1d",
+      "name": "Mafioso",
+      "category": "Pizzas",
+      "description": "pepperoni, rundsvlees, olijven, ui, mozzarella",
+      "price": "11.95",
+      "image_url": "/images/pizzas/Mafioso.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "8e2c6acd-c507-4d82-83b5-297c17381be8",
+      "name": "Bolognese",
+      "category": "Pizzas",
+      "description": "Bolognese saus, look, ui, extra saus",
+      "price": "11.95",
+      "image_url": "/images/pizzas/Bolognese.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "25b6c831-e7f3-45ae-b9df-6fe258a27367",
+      "name": "Merguez",
+      "category": "Pizzas",
+      "description": "dubbele portie merguez, champignons",
+      "price": "11.95",
+      "image_url": "/images/pizzas/Merguez.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "def1a414-af1d-47cd-987f-847dc498448b",
+      "name": "Kefta",
+      "category": "Pizzas",
+      "description": "kefta, kaas, mozzarella",
+      "price": "11.95",
+      "image_url": "/images/pizzas/Kefta.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "23eb9b47-ecf7-441d-acd7-ec3bc6b888a7",
+      "name": "Kebab",
+      "category": "Pizzas",
+      "description": "tomatensaus, paprika, ui, kebab",
+      "price": "11.95",
+      "image_url": "/images/pizzas/Kebab.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "de48bb5d-a4ef-4d58-abe0-80cd8a896394",
+      "name": "Four seasons",
+      "category": "Pizzas",
+      "description": "ham, salami, paprika, champignons",
+      "price": "11.95",
+      "image_url": "/images/pizzas/Four seasons.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "7024d428-5d13-4900-9dc0-1ce37a67d011",
+      "name": "Meat lovers",
+      "category": "Pizzas",
+      "description": "rundsvlees, ham, champignons, ui",
+      "price": "11.95",
+      "image_url": "/images/pizzas/Meat lovers.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "ade3d4a7-e26d-4f96-b72e-fb2bce8582d8",
+      "name": "Supreme",
+      "category": "Pizzas",
+      "description": "rundsvlees, ham, champignons, ui, olijven, jalapeneos",
+      "price": "11.95",
+      "image_url": "/images/pizzas/Supreme.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "138b9c0c-f3a4-4f60-b8ba-1d9431c65749",
+      "name": "Cheesy chicken",
+      "category": "Pizzas",
+      "description": "kip, feta, mozzarella",
+      "price": "11.95",
+      "image_url": "/images/pizzas/chessy chicken.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "b565897b-2c77-466d-8c4c-b8e9a0b4fec2",
+      "name": "Burger",
+      "category": "Pizzas",
+      "description": "tomatensaus, kerstomaat, ui, cheddar, gehakt, augurk, bicky saus, gedroogd ui",
+      "price": "11.95",
+      "image_url": "/images/pizzas/Burger.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "f20717e3-683d-4d2e-80db-6a4039653e4c",
+      "name": "Rucola",
+      "category": "Pizzas",
+      "description": "tomatensaus, kerstomaat, verse rucola blaadjes, ham, mozzarella",
+      "price": "11.95",
+      "image_url": "/images/pizzas/Rucola.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "8e92e7de-75b5-4e98-9ad9-939d51a95a88",
+      "name": "Hot Lovers",
+      "category": "Pizzas",
+      "description": "ham, pepperoni, paprika, jalapeneos, rundsvlees",
+      "price": "11.95",
+      "image_url": "/images/pizzas/Hot Lovers.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "81d42a3a-edea-4b8d-903c-0763466ba996",
+      "name": "Salmon",
+      "category": "Pizzas",
+      "description": "roomsaus, zalm, ui",
+      "price": "11.95",
+      "image_url": "/images/pizzas/salmon.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "38d9329e-3dfa-48e6-88a3-73c4599ec1b9",
+      "name": "Pasta Cheesy Chicken",
+      "category": "Pastas",
+      "description": "",
+      "price": "12",
+      "image_url": "/images/pastas/PASTA CHEESY CHICKEN.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "656d6e36-68b3-43b9-a990-bd2051a4092d",
+      "name": "Pasta Curry Chicken",
+      "category": "Pastas",
+      "description": "",
+      "price": "12",
+      "image_url": "/images/pastas/PASTA CURRY CHICKEN.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "b180b525-f256-4db0-98b7-cf37ac6ce533",
+      "name": "Pasta Pesto Chicken",
+      "category": "Pastas",
+      "description": "",
+      "price": "12",
+      "image_url": "/images/pastas/PASTA PESTO CHICKEN.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "69eba857-c871-4ff3-81cb-9247d55f5d37",
+      "name": "Pasta Arabiata",
+      "category": "Pastas",
+      "description": "",
+      "price": "12",
+      "image_url": "/images/pastas/PASTA ARABIATA.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "9f23a0c5-3baa-4cb0-8086-b026b0257bf1",
+      "name": "Pasta Carbonara",
+      "category": "Pastas",
+      "description": "",
+      "price": "12",
+      "image_url": "/images/pastas/PASTA CARBONARA.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "2cfbeaa9-04f0-43d6-990f-8aa3306d41ff",
+      "name": "Pasta Chicken",
+      "category": "Pastas",
+      "description": "",
+      "price": "12",
+      "image_url": "/images/pastas/PASTA CHICKEN.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "de3b85f5-c146-42cf-8c6b-2ca0d495a688",
+      "name": "Pasta Vier Kazen",
+      "category": "Pastas",
+      "description": "",
+      "price": "12",
+      "image_url": "/images/pastas/PASTA VIER KAZEN.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "50d9a12d-0bf1-47ed-a0f5-4ce640045bf3",
+      "name": "Lookbrood Natuur",
+      "category": "Starters",
+      "description": "4 stuks",
+      "price": "3",
+      "image_url": "/images/starters/LOOKBROOD NATUUR.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "681e33c9-7f06-44b1-a2d2-af57c32c1c6b",
+      "name": "Pasta Seafood",
+      "category": "Pastas",
+      "description": "",
+      "price": "12",
+      "image_url": "/images/pastas/PASTA SEAFOOD.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "d62b7be0-2bf7-492d-9473-a10a2e80788d",
+      "name": "Lookbrood Kaas Ham",
+      "category": "Starters",
+      "description": "4 stuks",
+      "price": "4",
+      "image_url": "/images/starters/LOOKBROOD KAAS HAM.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "c85b25dc-900b-4112-b548-be16897464c3",
+      "name": "Lookbrood Kaas Kip",
+      "category": "Starters",
+      "description": "4 stuks",
+      "price": "4",
+      "image_url": "/images/starters/LOOKBROOD KAAS KIP.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "7584e636-4978-4560-899f-239d6a40b09d",
+      "name": "Lookbrood Salami",
+      "category": "Starters",
+      "description": "4 stuks",
+      "price": "4",
+      "image_url": "/images/starters/LOOKBROOD SALAMI.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "02556b50-5bd7-447d-b843-834ffc514957",
+      "name": "Chicken Taquito's",
+      "category": "Starters",
+      "description": "3 stuks",
+      "price": "6.5",
+      "image_url": "/images/starters/CHICKEN TAQUITO'S.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "f2e810c3-c40c-4cc8-97ff-3fe325fc65a4",
+      "name": "Chicken Wings",
+      "category": "Starters",
+      "description": "8 stuks",
+      "price": "5",
+      "image_url": "/images/starters/CHICKEN WINGS.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "2b59340d-47f6-4b1e-97b4-a302758af9df",
+      "name": "Chicken Nuggets",
+      "category": "Starters",
+      "description": "8 stuks",
+      "price": "5",
+      "image_url": "/images/starters/CHICKEN NUGGETS.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "dfbf45cd-ab61-4480-ba6b-ca12072fca9b",
+      "name": "Chicken Fingers",
+      "category": "Starters",
+      "description": "6 stuks",
+      "price": "5",
+      "image_url": "/images/starters/CHICKEN FINGERS.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "073499ba-1388-4cb3-9374-db49526b65d4",
+      "name": "Viggie Salade",
+      "category": "Salads",
+      "description": "",
+      "price": "7",
+      "image_url": "/images/salads/Viggie Salade.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "d0a16964-a98b-4805-afb0-e97e78d6e451",
+      "name": "Coca-cola (1.5l)",
+      "category": "Drinks",
+      "description": null,
+      "price": "3.5",
+      "image_url": "/images/drinks/Coca-cola (1.5l).jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "70fbe16a-2686-4944-8e06-edbe1a09d3e2",
+      "name": "Spa Plat",
+      "category": "Drinks",
+      "description": null,
+      "price": "2",
+      "image_url": "/images/drinks/Spa plat.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "8460a3f2-ad35-4c45-b1d6-83e6063662b4",
+      "name": "Zoetzuur",
+      "category": "Sauces",
+      "description": "",
+      "price": "1",
+      "image_url": "/images/sauces/Zoetzuur.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "f5860343-bb35-47c5-a775-f6fb3545c506",
+      "name": "Curry",
+      "category": "Sauces",
+      "description": "",
+      "price": "1",
+      "image_url": "/images/sauces/CURRY.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "3d1b5a69-8520-44ee-b1ad-36af267dc2e7",
+      "name": "Barbecue",
+      "category": "Sauces",
+      "description": "",
+      "price": "1",
+      "image_url": "/images/sauces/BARBECUE.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "9083e738-963e-4af1-b291-19a50b35921a",
+      "name": "Looksaus",
+      "category": "Sauces",
+      "description": "",
+      "price": "1",
+      "image_url": "/images/sauces/LOOKSAUS.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "3d544c61-1c4e-41cd-8bb9-a12e4d3a11dd",
+      "name": "Chaudfontaine Still (50cl)",
+      "category": "Drinks",
+      "description": null,
+      "price": "2",
+      "image_url": "/images/drinks/Chaudfontaine Still (50cl).jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "99635b27-d218-4cf3-bcda-9071eeadfd5e",
+      "name": "American Potatoes",
+      "category": "Starters",
+      "description": "",
+      "price": "4",
+      "image_url": "/images/starters/AMERICAN POTATOES.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "7f4bcee0-8de5-446e-ae9b-50d2b3acea67",
+      "name": "Coca-cola Zero (1.5l)",
+      "category": "Drinks",
+      "description": null,
+      "price": "3.5",
+      "image_url": "/images/drinks/Coca-Cola zero (1.5L).jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "436f5852-451c-4551-9e58-ce784cc3748f",
+      "name": "Samourai",
+      "category": "Sauces",
+      "description": "",
+      "price": "1",
+      "image_url": "/images/sauces/SAMOURAI.jpg",
+      "is_available": true
+    },
+    {
+      "item_id": "4eeb2fa2-662c-4366-9f25-f4779327ce47",
+      "name": "Fanta Lemon (1.5l)",
+      "category": "Drinks",
+      "description": null,
+      "price": "3.5",
+      "image_url": "/images/drinks/Fanta Lemon (1.5l).webp",
+      "is_available": true
+    }
+  ],
+  "extraItems": [
+    {
+      "id": "e4d3e61b-fee3-4b2a-b9b1-8df62b16cda5",
+      "name": "Classic",
+      "category": "Bodem",
+      "price": "0",
+      "is_mandatory": true
+    },
+    {
+      "id": "902b6fde-1674-44d1-ba9a-ff9446967dda",
+      "name": "Deeppan",
+      "category": "Bodem",
+      "price": "1",
+      "is_mandatory": true
+    },
+    {
+      "id": "d997175f-f45c-4a47-83e2-4d579cc42d87",
+      "name": "Cheesy crust",
+      "category": "Bodem",
+      "price": "1.5",
+      "is_mandatory": true
+    },
+    {
+      "id": "5a3cbd15-b0c7-45f5-ac8e-89f3b5394aed",
+      "name": "Fetakaas",
+      "category": "Cheese",
+      "price": "1",
+      "is_mandatory": false
+    },
+    {
+      "id": "4d0d22ef-881b-4acf-bf39-e4528791795b",
+      "name": "Gorgonzola",
+      "category": "Cheese",
+      "price": "1",
+      "is_mandatory": false
+    },
+    {
+      "id": "b007dc19-a28b-4092-a4ba-ce935cde44fe",
+      "name": "Mozzarella",
+      "category": "Cheese",
+      "price": "1",
+      "is_mandatory": false
+    },
+    {
+      "id": "eb23fd61-a164-4b25-a85f-f62d1f8c5517",
+      "name": "Extra kaas",
+      "category": "Cheese",
+      "price": "1",
+      "is_mandatory": false
+    },
+    {
+      "id": "205570a8-2366-46af-b17b-cf8baae5825a",
+      "name": "Champignons",
+      "category": "Veggies",
+      "price": "1",
+      "is_mandatory": false
+    },
+    {
+      "id": "3a27462b-97ac-44a1-9ef9-2ed899fcb3df",
+      "name": "Ui",
+      "category": "Veggies",
+      "price": "1",
+      "is_mandatory": false
+    },
+    {
+      "id": "1e1839a4-6a70-49c0-b7a2-83435b1bb6ad",
+      "name": "Paprika",
+      "category": "Veggies",
+      "price": "1",
+      "is_mandatory": false
+    },
+    {
+      "id": "034c4fa4-75ff-49da-bbc1-753b68868f44",
+      "name": "Look",
+      "category": "Veggies",
+      "price": "1",
+      "is_mandatory": false
+    },
+    {
+      "id": "0c1fd9d0-c96f-48dc-8280-35b93850b695",
+      "name": "Olijven",
+      "category": "Veggies",
+      "price": "1",
+      "is_mandatory": false
+    },
+    {
+      "id": "d5109bb1-eaa1-416d-84f6-aec658155df4",
+      "name": "Ananas",
+      "category": "Veggies",
+      "price": "1",
+      "is_mandatory": false
+    },
+    {
+      "id": "9fb8badb-351a-41c6-ad67-84b839524dc5",
+      "name": "Maïs",
+      "category": "Veggies",
+      "price": "1",
+      "is_mandatory": false
+    },
+    {
+      "id": "9d823242-e916-4533-a2bd-edd59bbd3add",
+      "name": "Jalapenos",
+      "category": "Veggies",
+      "price": "1",
+      "is_mandatory": false
+    },
+    {
+      "id": "2cd44d52-9af0-46e8-bf1f-26c21004c057",
+      "name": "Tomaat",
+      "category": "Veggies",
+      "price": "1",
+      "is_mandatory": false
+    },
+    {
+      "id": "18287c47-42e4-4ade-8f7d-5d3e6fbc9231",
+      "name": "Shoarmavlees",
+      "category": "Meat",
+      "price": "1",
+      "is_mandatory": false
+    },
+    {
+      "id": "a5416cad-8826-4786-ae25-7ba4de0b529a",
+      "name": "Salami",
+      "category": "Meat",
+      "price": "1",
+      "is_mandatory": false
+    },
+    {
+      "id": "baa36a89-6852-4105-a77c-f76dd1f9fbcb",
+      "name": "Pepperoni",
+      "category": "Meat",
+      "price": "1",
+      "is_mandatory": false
+    },
+    {
+      "id": "f696e4c7-b4b6-4c97-8247-a8e27bfb6d83",
+      "name": "Gehakt",
+      "category": "Meat",
+      "price": "1",
+      "is_mandatory": false
+    },
+    {
+      "id": "41fb143c-af3e-4158-a5b1-e10ddd7f3cea",
+      "name": "Ham",
+      "category": "Meat",
+      "price": "1",
+      "is_mandatory": false
+    },
+    {
+      "id": "e8710d72-fec8-405c-ae51-6b19e065d911",
+      "name": "Kip",
+      "category": "Meat",
+      "price": "1",
+      "is_mandatory": false
+    },
+    {
+      "id": "88d44e81-1171-49fa-951f-91ea35c2ffdd",
+      "name": "Spek",
+      "category": "Meat",
+      "price": "1",
+      "is_mandatory": false
+    },
+    {
+      "id": "974aeaae-ab8f-430d-897d-99fee404a121",
+      "name": "Kebab",
+      "category": "Meat",
+      "price": "1",
+      "is_mandatory": false
+    },
+    {
+      "id": "721349cc-9777-4165-941c-cb94838c0aa6",
+      "name": "Meatballs",
+      "category": "Meat",
+      "price": "1",
+      "is_mandatory": false
+    },
+    {
+      "id": "cb708f4b-cbe2-455a-9b80-cb26e69c112c",
+      "name": "Tonijn",
+      "category": "Seafood",
+      "price": "1",
+      "is_mandatory": false
+    },
+    {
+      "id": "5ee24c6f-9455-43f9-970d-848162002f5f",
+      "name": "Ansjovis",
+      "category": "Seafood",
+      "price": "1",
+      "is_mandatory": false
+    },
+    {
+      "id": "c2ae4a24-7df1-4192-b3e1-e4b5f8b45b3e",
+      "name": "Garnalen",
+      "category": "Seafood",
+      "price": "1",
+      "is_mandatory": false
+    },
+    {
+      "id": "a43814b9-d914-4460-896e-6de3e81f50b9",
+      "name": "Mosselen",
+      "category": "Seafood",
+      "price": "1",
+      "is_mandatory": false
+    },
+    {
+      "id": "b75db2e4-4d0b-4684-b307-5fcdcbc345d1",
+      "name": "Zalm",
+      "category": "Seafood",
+      "price": "1",
+      "is_mandatory": false
+    },
+    {
+      "id": "9840d0c9-f9af-4525-9039-b8cc71891271",
+      "name": "Scampi's",
+      "category": "Seafood",
+      "price": "1",
+      "is_mandatory": false
+    },
+    {
+      "id": "d08631cc-8a11-4681-91ee-72f5590bf4cc",
+      "name": "Tomatensaus",
+      "category": "Sauces",
+      "price": "1",
+      "is_mandatory": false
+    },
+    {
+      "id": "9af1df06-f180-4a8f-928c-147eae3c5665",
+      "name": "Bolognesesaus",
+      "category": "Sauces",
+      "price": "1",
+      "is_mandatory": false
+    },
+    {
+      "id": "5847fac7-625a-4c01-bce7-554712e3f392",
+      "name": "BBQ saus",
+      "category": "Sauces",
+      "price": "1",
+      "is_mandatory": false
+    },
+    {
+      "id": "29cb6d08-9260-46e8-b86f-a8516dd0d770",
+      "name": "Roomsaus",
+      "category": "Sauces",
+      "price": "1",
+      "is_mandatory": false
+    },
+    {
+      "id": "668beda7-c240-4c34-a067-f2d8ee38e684",
+      "name": "Currysaus",
+      "category": "Sauces",
+      "price": "1",
+      "is_mandatory": false
+    }
+  ],
+  "admin": {
+    "user_id": "a5116482-9365-4014-9388-92de5452929c",
+    "full_name": "marouan",
+    "email": "aouamimarouan@gmail.com",
+    "password_hash": "$2b$12$Ieb0kphEPFF2lxd5rweS/.98E4IbjBFHrRKeSy/Udn4TQJd3J/lr6",
+    "phone_number": "04556654",
+    "address": "assduduhad",
+    "role": "admin",
+    "created_at": "2026-08-20T03:15:59.202Z"
+  }
+}

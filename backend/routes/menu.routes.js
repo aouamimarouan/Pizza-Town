@@ -121,4 +121,56 @@ router.delete('/:id', authenticate, requireAdmin, async (req, res) => {
   }
 });
 
+// POST /api/menu/seed-initial-data — One-time initializer
+router.post('/seed-initial-data', async (req, res) => {
+  try {
+    const fs = await import('fs');
+    const path = await import('path');
+    const { fileURLToPath } = await import('url');
+
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    const seedFile = path.resolve(__dirname, '../data/seedData.json');
+
+    if (!fs.existsSync(seedFile)) {
+      return res.status(404).json({ error: 'Seed data file not found' });
+    }
+
+    const { menuitems, extraItems, admin } = JSON.parse(fs.readFileSync(seedFile, 'utf8'));
+
+    // Insert admin if not exists
+    if (admin) {
+      const existingAdmin = await prisma.users.findUnique({ where: { email: admin.email } });
+      if (!existingAdmin) {
+        await prisma.users.create({ data: admin });
+      }
+    }
+
+    // Insert extra items if empty
+    const currentExtras = await prisma.extraItem.count();
+    if (currentExtras === 0 && Array.isArray(extraItems) && extraItems.length > 0) {
+      await prisma.extraItem.createMany({ data: extraItems, skipDuplicates: true });
+    }
+
+    // Insert menu items if empty
+    const currentCount = await prisma.menuitems.count();
+    if (currentCount === 0 && Array.isArray(menuitems) && menuitems.length > 0) {
+      await prisma.menuitems.createMany({ data: menuitems, skipDuplicates: true });
+    }
+
+    const finalMenuCount = await prisma.menuitems.count();
+    const finalExtrasCount = await prisma.extraItem.count();
+
+    res.json({
+      success: true,
+      message: 'Database seeded successfully',
+      menuCount: finalMenuCount,
+      extrasCount: finalExtrasCount
+    });
+  } catch (err) {
+    console.error('[Seed Error]:', err);
+    res.status(500).json({ error: 'Failed to seed database', details: err.message });
+  }
+});
+
 export default router;

@@ -24,10 +24,17 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+  if (origin === 'http://localhost:5173' || origin === 'http://127.0.0.1:5173') return true;
+  if (origin.endsWith('.vercel.app') || origin.endsWith('.cleverapps.io') || origin.includes('pizza-town')) return true;
+  return true;
+};
+
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: ['http://localhost:5173', 'http://127.0.0.1:5173', 'https://pizza-town.vercel.app'],
+    origin: (origin, callback) => callback(null, isAllowedOrigin(origin)),
     methods: ['GET', 'POST'],
     credentials: true
   }
@@ -36,7 +43,7 @@ const io = new Server(httpServer, {
 const PORT = process.env.PORT || 5000;
 
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173', 'https://pizza-town.vercel.app'],
+  origin: (origin, callback) => callback(null, isAllowedOrigin(origin)),
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   credentials: true
