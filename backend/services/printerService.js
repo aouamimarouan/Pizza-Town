@@ -112,7 +112,7 @@ const getPrinter = (overrideInterface) => {
   return new ThermalPrinter(config);
 };
 
-// Gets active printer instance, with automatic USB fallback if network is unreachable
+// Gets active printer instance directly
 const getActivePrinter = async () => {
   let printer = getPrinter();
   let isConnected = false;
@@ -121,20 +121,6 @@ const getActivePrinter = async () => {
     isConnected = await printer.isPrinterConnected();
   } catch (e) {
     isConnected = false;
-  }
-
-  // If network printer (tcp://) is unreachable, seamlessly fall back to USB
-  if (!isConnected && process.env.PRINTER_INTERFACE?.startsWith('tcp://')) {
-    console.warn(`[Printer] Network (${process.env.PRINTER_INTERFACE}) unreachable. Falling back to USB...`);
-    try {
-      const usbPrinter = getPrinter('printer:auto');
-      if (await usbPrinter.isPrinterConnected()) {
-        console.log(`[Printer] Successfully connected to USB fallback printer!`);
-        return usbPrinter;
-      }
-    } catch (usbErr) {
-      console.warn(`[Printer] USB fallback check failed:`, usbErr.message);
-    }
   }
 
   return isConnected ? printer : null;

@@ -11,6 +11,8 @@ import { useTranslation } from 'react-i18next';
 import api from '../../services/api.js';
 import socket from '../../services/socket.js';
 import { playOrderNotificationSound, isSoundAlertEnabled, setSoundAlertEnabled } from '../../utils/soundAlerts.js';
+import { useReactToPrint } from 'react-to-print';
+import OrderReceipt from '../print/OrderReceipt.jsx';
 
 const AdminStatusBadge = ({ status }) => {
   const statusMap = {
@@ -59,6 +61,25 @@ const AdminDashboard = () => {
  const [orderToCancel, setOrderToCancel] = useState(null);
  const [cancelReason, setCancelReason] = useState('');
  const [isCancelling, setIsCancelling] = useState(false);
+
+ // --- Frontend Printing State ---
+ const receiptRef = React.useRef();
+ const [orderToPrint, setOrderToPrint] = useState(null);
+
+ const triggerPrint = useReactToPrint({
+   content: () => receiptRef.current,
+   onAfterPrint: () => setOrderToPrint(null)
+ });
+
+ useEffect(() => {
+   if (orderToPrint) {
+     triggerPrint();
+   }
+ }, [orderToPrint, triggerPrint]);
+
+ const handleFrontendPrint = (order) => {
+   setOrderToPrint(order);
+ };
 
  const handleOpenCancelModal = (order) => {
    setOrderToCancel(order);
@@ -263,10 +284,16 @@ const AdminDashboard = () => {
     };
   }, []);
 
- const handleUpdateStatus = async (id, newStatus) => {
+ const handleUpdateStatus = async (orderId, newStatus, fullOrder = null) => {
  try {
- await api.patch(`/orders/${id}/status`, { status: newStatus });
+ await api.patch(`/orders/${orderId}/status`, { status: newStatus });
  toast.success(t('admin.toastStatusUpdate', { status: newStatus }));
+ 
+ // If accepting an order and we have the full order object, auto-print it
+ if (newStatus === 'cooking' && fullOrder) {
+   handleFrontendPrint(fullOrder);
+ }
+ 
  fetchOrders(); // Refresh the list
  } catch (err) {
  toast.error(t('admin.toastStatusUpdateErr'));
@@ -274,21 +301,23 @@ const AdminDashboard = () => {
  };
 
   const handleTestPrint = async () => {
-    try {
-      await api.post(`/orders/test-print`);
-      toast.success('Test print sent to printer!');
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Test print failed. Is the printer offline?');
-    }
+    // Replaced backend test print with frontend print logic
+    const testOrder = {
+      order_id: 'test-1234',
+      created_at: new Date().toISOString(),
+      delivery_type: 'takeaway',
+      pickup_time: 'ASAP',
+      users: { full_name: 'TEST PRINTER', phone_number: '000000000', address: 'Pizza Town Test' },
+      items: [{ quantity: 1, menuitems: { name: 'Test Pizza' }, subtotal: 10 }],
+      total_price: 10,
+      delivery_fee: 0,
+      delivery_notes: 'Test print from frontend'
+    };
+    handleFrontendPrint(testOrder);
   };
 
-  const handleReprint = async (id) => {
-    try {
-      await api.post(`/orders/${id}/reprint`);
-      toast.success('Reprint sent to printer!');
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Reprint failed. Is the printer offline?');
-    }
+  const handleReprint = (order) => {
+    handleFrontendPrint(order);
   };
 
  // --- Menu Management State ---
@@ -468,6 +497,9 @@ const AdminDashboard = () => {
 
   {/* SIDEBAR */}
   <div className="w-16 md:w-20 bg-mist border-r border-slate flex flex-col items-center py-6 gap-6 z-20 shrink-0">
+    <div style={{ display: 'none' }}>
+      <OrderReceipt ref={receiptRef} order={orderToPrint} />
+    </div>
     {tabs.map((tab) => {
       const Icon = tab.icon;
       const isActive = activeAdminTab === tab.id;
@@ -552,7 +584,7 @@ const AdminDashboard = () => {
                     {t('admin.btnCancelOrder', 'Annuleren')}
                   </button>
                   <button 
-                    onClick={() => handleUpdateStatus(order.order_id, 'cooking')}
+                    onClick={() => handleUpdateStatus(order.order_id, 'cooking', order)}
                     className="bg-signal-red hover:bg-ink text-white px-5 py-2 rounded-md font-bold uppercase text-xs transition-colors shadow-sm"
                   >
                     Accept Order
@@ -733,11 +765,11 @@ const AdminDashboard = () => {
   </td>
   <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
   <div className="flex justify-end gap-2">
-  <button onClick={(e) => { e.stopPropagation(); handleReprint(order.order_id); }} className="p-1 px-3 bg-mist text-ink border border-slate rounded text-[10px] font-bold uppercase transition-colors hover:bg-black hover:text-paper flex items-center gap-1" title="Reprint Receipt">
+  <button onClick={(e) => { e.stopPropagation(); handleReprint(order); }} className="p-1 px-3 bg-mist text-ink border border-slate rounded text-[10px] font-bold uppercase transition-colors hover:bg-black hover:text-paper flex items-center gap-1" title="Reprint Receipt">
     <Printer className="w-3 h-3" />
   </button>
   {isPending && (
-  <button onClick={() => handleUpdateStatus(order.order_id, 'cooking')} className="p-1 px-3 bg-mist text-ink rounded text-[10px] font-bold uppercase transition-colors hover:bg-black hover:text-paper">
+  <button onClick={() => handleUpdateStatus(order.order_id, 'cooking', order)} className="p-1 px-3 bg-mist text-ink rounded text-[10px] font-bold uppercase transition-colors hover:bg-black hover:text-paper">
   {t('admin.btnAcceptCook')}
   </button>
   )}

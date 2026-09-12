@@ -280,12 +280,7 @@ router.patch('/:id/status', authenticate, requireAdmin, async (req, res) => {
     }
 
     if (status === 'cooking') {
-      try {
-        const printPayload = generatePrintPayload(order);
-        await printCustomerReceipt(printPayload);
-      } catch (printErr) {
-        console.error("🖨️ Print job generation failed:", printErr);
-      }
+      // Printing is now handled by the frontend browser dialog
     }
 
     if (status === 'delivered' || status === 'completed' || status === 'picked_up') {
@@ -305,49 +300,7 @@ router.patch('/:id/status', authenticate, requireAdmin, async (req, res) => {
   }
 });
 
-// POST /api/orders/test-print — Admin only
-router.post('/test-print', authenticate, requireAdmin, async (req, res) => {
-  try {
-    const success = await testConnection();
-    if (success) {
-      res.json({ message: 'Test print successful' });
-    } else {
-      res.status(500).json({ error: 'Printer is offline or not configured correctly.' });
-    }
-  } catch (err) {
-    console.error('[Test Print Error]:', err);
-    res.status(500).json({ error: 'Failed to test printer connection.', details: err.message });
-  }
-});
 
-// POST /api/orders/:id/reprint — Admin only
-router.post('/:id/reprint', authenticate, requireAdmin, async (req, res) => {
-  try {
-    const order = await prisma.orders.findUnique({
-      where: { order_id: req.params.id },
-      include: {
-        orderitems: { include: { menuitems: { select: { name: true, price: true } } } },
-        users: { select: { full_name: true, email: true, phone_number: true, address: true } },
-      }
-    });
-
-    if (!order) {
-      return res.status(404).json({ error: 'Order not found.' });
-    }
-
-    const printPayload = generatePrintPayload(order);
-    const receiptSuccess = await printCustomerReceipt(printPayload);
-
-    if (receiptSuccess) {
-      res.json({ message: 'Reprint successful' });
-    } else {
-      res.status(500).json({ error: 'Printer is offline. Reprint failed.' });
-    }
-  } catch (err) {
-    console.error('[Reprint Error]:', err);
-    res.status(500).json({ error: 'Failed to reprint order.', details: err.message });
-  }
-});
 
 // DELETE /api/orders/bulk/cleanup — Admin only
 router.delete('/bulk/cleanup', authenticate, requireAdmin, async (req, res) => {
