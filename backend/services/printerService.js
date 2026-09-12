@@ -87,10 +87,7 @@ const formatItemLine = (qty, name, price, totalWidth = 42) => {
 
 // Initialize printer helper with optional interface override
 const getPrinter = (overrideInterface) => {
-  const interfaceStr = overrideInterface || process.env.PRINTER_INTERFACE;
-  if (!interfaceStr) {
-    throw new Error("PRINTER_INTERFACE not configured in .env");
-  }
+  const interfaceStr = overrideInterface || process.env.PRINTER_INTERFACE || (process.env.PRINTER_IP ? `tcp://${process.env.PRINTER_IP}:9100` : 'tcp://192.168.1.12:9100');
   const width = parseInt(process.env.PRINTER_WIDTH, 10) || 42;
 
   const config = {
@@ -114,6 +111,7 @@ const getPrinter = (overrideInterface) => {
 
 // Gets active printer instance, with automatic USB fallback if network is unreachable
 const getActivePrinter = async () => {
+  const currentInterface = process.env.PRINTER_INTERFACE || (process.env.PRINTER_IP ? `tcp://${process.env.PRINTER_IP}:9100` : 'tcp://192.168.1.12:9100');
   let printer = getPrinter();
   let isConnected = false;
 
@@ -124,8 +122,8 @@ const getActivePrinter = async () => {
   }
 
   // If network printer (tcp://) is unreachable, seamlessly fall back to USB
-  if (!isConnected && process.env.PRINTER_INTERFACE?.startsWith('tcp://')) {
-    console.warn(`[Printer] Network (${process.env.PRINTER_INTERFACE}) unreachable. Falling back to USB...`);
+  if (!isConnected && currentInterface.startsWith('tcp://')) {
+    console.warn(`[Printer] Network (${currentInterface}) unreachable. Falling back to USB...`);
     try {
       const usbPrinter = getPrinter('printer:auto');
       if (await usbPrinter.isPrinterConnected()) {
