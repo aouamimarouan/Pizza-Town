@@ -114,8 +114,8 @@ const HomeView = () => {
                 <div className="w-10 h-10 rounded-full bg-paper flex items-center justify-center border border-slate mb-4">
                    <span className="font-display font-bold text-signal-red text-xl">1</span>
                 </div>
-                <p className="text-4xl font-bold font-mono text-ink mb-2">450°C</p>
-                <p className="text-sm font-bold text-slate uppercase tracking-widest">{t('home.fact2Label', 'Four traditionnel')}</p>
+                <p className="text-4xl font-bold font-mono text-ink mb-2">{t('home.fact2Value', '100%')}</p>
+                <p className="text-sm font-bold text-slate uppercase tracking-widest">{t('home.fact2Label', 'Haute Qualité')}</p>
               </div>
               <div className="flex-1 bg-mist rounded-lg p-6 border border-slate">
                 <div className="w-10 h-10 rounded-full bg-paper flex items-center justify-center border border-slate mb-4">
@@ -251,7 +251,7 @@ const HomeView = () => {
                 items={[
                   t('home.quality1', 'Ingrédients Premium'), 
                   t('home.delivery', 'Snelle levering (tot 1 uur)'), 
-                  t('home.quality2', 'Four Traditionnel 450°C'), 
+                  t('home.quality2', 'Qualité Supérieure'), 
                   t('home.quality3', 'Service Exceptionnel'), 
                   t('home.quality4', 'Recettes Authentiques')
                 ]}
