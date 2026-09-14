@@ -86,3 +86,24 @@
     text-shadow: none !important; /* Force remove text shadows as per brief */
   }
 }
+
+/* --- Thermal Receipt Printing Rules (80mm POS) --- */
+@media print {
+  @page {
+    size: 80mm auto;
+    margin: 0mm;
+  }
+  
+  html, body {
+    width: 80mm !important;
+    max-width: 80mm !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}

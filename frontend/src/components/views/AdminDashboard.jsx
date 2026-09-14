@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import api from '../../services/api.js';
 import socket from '../../services/socket.js';
 import { playOrderNotificationSound, isSoundAlertEnabled, setSoundAlertEnabled } from '../../utils/soundAlerts.js';
+import { printReceipt, printTestReceipt } from '../../utils/printService.js';
 
 const AdminStatusBadge = ({ status }) => {
   const statusMap = {
@@ -263,31 +264,50 @@ const AdminDashboard = () => {
     };
   }, []);
 
- const handleUpdateStatus = async (id, newStatus) => {
- try {
- await api.patch(`/orders/${id}/status`, { status: newStatus });
- toast.success(t('admin.toastStatusUpdate', { status: newStatus }));
- fetchOrders(); // Refresh the list
- } catch (err) {
- toast.error(t('admin.toastStatusUpdateErr'));
- }
- };
-
-  const handleTestPrint = async () => {
+  const handleUpdateStatus = async (id, newStatus) => {
     try {
-      await api.post(`/orders/test-print`);
-      toast.success('Test print sent to printer!');
+      await api.patch(`/orders/${id}/status`, { status: newStatus });
+      toast.success(t('admin.toastStatusUpdate', { status: newStatus }));
+      fetchOrders(); // Refresh the list
+
+      // If order is accepted for cooking, automatically open print dialog for receipt
+      if (newStatus === 'cooking') {
+        const orderToPrint = orders.find(o => o.order_id === id);
+        if (orderToPrint) {
+          printReceipt(orderToPrint);
+        }
+      }
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Test print failed. Is the printer offline?');
+      toast.error(t('admin.toastStatusUpdateErr'));
     }
   };
 
-  const handleReprint = async (id) => {
+  const handleTestPrint = async () => {
     try {
-      await api.post(`/orders/${id}/reprint`);
-      toast.success('Reprint sent to printer!');
+      await printTestReceipt();
+      toast.success('Testbon geopend voor afdrukken!');
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Reprint failed. Is the printer offline?');
+      console.error('Test print error:', err);
+      toast.error('Kan testbon niet openen.');
+    }
+  };
+
+  const handleReprint = async (orderOrId) => {
+    try {
+      const orderToPrint = typeof orderOrId === 'object' && orderOrId !== null
+        ? orderOrId
+        : orders.find(o => o.order_id === orderOrId);
+
+      if (!orderToPrint) {
+        toast.error('Bestelling niet gevonden om af te drukken.');
+        return;
+      }
+
+      await printReceipt(orderToPrint);
+      toast.success('Bon geopend voor afdrukken!');
+    } catch (err) {
+      console.error('Print error:', err);
+      toast.error('Afdrukken mislukt.');
     }
   };
 
@@ -733,8 +753,9 @@ const AdminDashboard = () => {
   </td>
   <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
   <div className="flex justify-end gap-2">
-  <button onClick={(e) => { e.stopPropagation(); handleReprint(order.order_id); }} className="p-1 px-3 bg-mist text-ink border border-slate rounded text-[10px] font-bold uppercase transition-colors hover:bg-black hover:text-paper flex items-center gap-1" title="Reprint Receipt">
+  <button onClick={(e) => { e.stopPropagation(); handleReprint(order); }} className="p-1 px-3 bg-mist text-ink border border-slate rounded text-[10px] font-bold uppercase transition-colors hover:bg-black hover:text-paper flex items-center gap-1" title="Bon Afdrukken">
     <Printer className="w-3 h-3" />
+    <span>Bon</span>
   </button>
   {isPending && (
   <button onClick={() => handleUpdateStatus(order.order_id, 'cooking')} className="p-1 px-3 bg-mist text-ink rounded text-[10px] font-bold uppercase transition-colors hover:bg-black hover:text-paper">
@@ -934,7 +955,16 @@ const AdminDashboard = () => {
 
   {/* Ticket Footer */}
   <div className="bg-paper p-4 border-t border-slate flex justify-between items-center text-xs">
-    <span className="italic text-slate text-[10px] uppercase tracking-[0.2em]">*** End of Kitchen Ticket ***</span>
+    <div className="flex items-center gap-2">
+      <button 
+        onClick={() => handleReprint(order)}
+        className="px-3 py-1.5 bg-ink text-paper hover:bg-signal-red rounded text-[11px] font-bold uppercase transition-colors flex items-center gap-1.5"
+        title="Afdrukken op thermische printer"
+      >
+        <Printer className="w-3.5 h-3.5" /> Bon Afdrukken
+      </button>
+      <span className="italic text-slate text-[10px] uppercase tracking-[0.2em] hidden sm:inline">*** Einde Keukenbon ***</span>
+    </div>
     <button 
       onClick={() => setOrderToDelete(order)}
       className="px-3 py-1.5 bg-red-500/10 hover:bg-signal-red hover:text-white text-signal-red rounded border border-red-500/20 text-[11px] font-bold uppercase transition-colors flex items-center gap-1.5"
