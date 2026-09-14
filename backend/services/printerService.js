@@ -313,9 +313,19 @@ export const printCustomerReceipt = async (orderData) => {
       }
       printer.drawLine();
       
+      const deliveryType = (orderData.deliveryType || '').toLowerCase();
+      const isDineIn = ['dine_in', 'dine-in', 'restaurant', 'eat_in', 'sur_place', 'ter_plaatse'].includes(deliveryType);
+      const tvaRate = isDineIn ? 0.12 : 0.06;
+      const totalNum = parseFloat(orderData.total);
+      const baseHt = totalNum / (1 + tvaRate);
+      const tvaAmount = totalNum - baseHt;
+
       printer.bold(true);
-      printer.leftRight('TOTAAL', `€ ${parseFloat(orderData.total).toFixed(2)}`);
+      printer.leftRight('TOTAAL (INCL. BTW)', `€ ${totalNum.toFixed(2)}`);
       printer.bold(false);
+      printer.drawLine();
+      printer.leftRight(`Netto (excl. BTW)`, `€ ${baseHt.toFixed(2)}`);
+      printer.leftRight(`BTW (${isDineIn ? '12%' : '6%'})`, `€ ${tvaAmount.toFixed(2)}`);
       printer.drawLine();
 
       if (orderData.notes) {

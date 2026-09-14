@@ -6,7 +6,17 @@ export const ReceiptTemplate = ({ order, onClose, showPrintButton = true }) => {
   if (!order) return null;
 
   const items = order.items || order.orderitems || [];
-  const isTakeaway = (order.delivery_type || '').toLowerCase() === 'takeaway';
+  const deliveryType = (order.delivery_type || '').toLowerCase();
+  const isDineIn = ['dine_in', 'dine-in', 'restaurant', 'eat_in', 'sur_place', 'ter_plaatse', 'ter plaatse'].includes(deliveryType);
+  const isTakeaway = deliveryType === 'takeaway';
+  const isDelivery = !isDineIn && !isTakeaway;
+
+  // Belgian HoReCa VAT rules:
+  // - Delivery & Takeaway: 6% TVA on food
+  // - Dine-in (Eat in restaurant): 12% TVA
+  const tvaRate = isDineIn ? 0.12 : 0.06;
+  const tvaPercentStr = isDineIn ? '12%' : '6%';
+
   const customerName = order.users?.full_name || order.customer_name || 'Klant';
   const customerPhone = order.users?.phone_number || order.phone || '';
   const customerAddress = order.delivery_address || order.users?.address || '';
@@ -16,6 +26,19 @@ export const ReceiptTemplate = ({ order, onClose, showPrintButton = true }) => {
   const totalPrice = parseFloat(order.total_price || 0);
   const deliveryFee = parseFloat(order.delivery_fee || 0);
   const subtotal = Math.max(0, totalPrice - deliveryFee);
+
+  const baseHt = totalPrice / (1 + tvaRate);
+  const tvaAmount = totalPrice - baseHt;
+
+  let badgeText = '★ BEZORGING ★';
+  let timingText = 'LEVERTIJD: CA. 45-60 MIN • BTW 6%';
+  if (isDineIn) {
+    badgeText = '★ TER PLAATSE (RESTAURANT) ★';
+    timingText = 'ETEN IN RESTAURANT • BTW 12%';
+  } else if (isTakeaway) {
+    badgeText = '★ AFHALEN ★';
+    timingText = `AFHAALTIJD: ${order.pickup_time && order.pickup_time.toLowerCase() !== 'asap' ? order.pickup_time : 'ZO SNEL MOGELIJK'} • BTW 6%`;
+  }
 
   const handlePrint = (e) => {
     if (e) e.stopPropagation();
@@ -57,12 +80,10 @@ export const ReceiptTemplate = ({ order, onClose, showPrintButton = true }) => {
           <div className="text-[10px] text-neutral-600">Tel: 02 269 71 76</div>
           <div className="my-2 border-t border-dashed border-neutral-400"></div>
           <div className="inline-block border-2 border-black px-2 py-0.5 font-black text-xs uppercase tracking-wide">
-            {isTakeaway ? '★ AFHALEN ★' : '★ BEZORGING ★'}
+            {badgeText}
           </div>
           <div className="font-bold text-[11px] mt-1">
-            {isTakeaway 
-              ? `AFHAALTIJD: ${order.pickup_time && order.pickup_time.toLowerCase() !== 'asap' ? order.pickup_time : 'ZO SNEL MOGELIJK'}`
-              : 'LEVERTIJD: CA. 45-60 MIN'}
+            {timingText}
           </div>
         </div>
 
@@ -141,10 +162,26 @@ export const ReceiptTemplate = ({ order, onClose, showPrintButton = true }) => {
 
         <div className="border-t-2 border-black"></div>
         <div className="flex justify-between font-black text-sm">
-          <span>TOTAAL</span>
+          <span>TOTAAL (INCL. BTW)</span>
           <span>€{totalPrice.toFixed(2)}</span>
         </div>
         <div className="border-t-2 border-black"></div>
+
+        {/* TVA Breakdown */}
+        <div className="text-[10.5px] font-bold space-y-1">
+          <div className="flex justify-between border-b border-black pb-1">
+            <span>BTW TARIEF</span>
+            <span>NETTO (EXCL.)</span>
+            <span>BTW BEDRAG</span>
+          </div>
+          <div className="flex justify-between font-normal text-neutral-800">
+            <span>{tvaPercentStr} ({isDineIn ? 'Restaurant' : isTakeaway ? 'Afhalen' : 'Levering'})</span>
+            <span>€{baseHt.toFixed(2)}</span>
+            <span>€{tvaAmount.toFixed(2)}</span>
+          </div>
+        </div>
+
+        <div className="border-t border-dashed border-neutral-400"></div>
 
         {notes && (
           <div className="border border-black p-2 bg-neutral-50 text-[10px]">

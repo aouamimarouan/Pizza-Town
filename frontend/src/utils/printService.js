@@ -204,7 +204,17 @@ const getReceiptStyles = () => `
  */
 export const generateReceiptHtml = (order) => {
   const items = order.items || order.orderitems || [];
-  const isTakeaway = (order.delivery_type || '').toLowerCase() === 'takeaway';
+  const deliveryType = (order.delivery_type || '').toLowerCase();
+  const isDineIn = ['dine_in', 'dine-in', 'restaurant', 'eat_in', 'sur_place', 'ter_plaatse', 'ter plaatse'].includes(deliveryType);
+  const isTakeaway = deliveryType === 'takeaway';
+  const isDelivery = !isDineIn && !isTakeaway;
+
+  // Belgian HoReCa VAT rules:
+  // - Delivery & Takeaway: 6% TVA on food
+  // - Dine-in (Eat in restaurant): 12% TVA
+  const tvaRate = isDineIn ? 0.12 : 0.06;
+  const tvaPercentStr = isDineIn ? '12%' : '6%';
+
   const customerName = order.users?.full_name || order.customer_name || 'Klant';
   const customerPhone = order.users?.phone_number || order.phone || '';
   const customerAddress = order.delivery_address || order.users?.address || '';
@@ -214,6 +224,22 @@ export const generateReceiptHtml = (order) => {
   const totalPrice = parseFloat(order.total_price || 0);
   const deliveryFee = parseFloat(order.delivery_fee || 0);
   const subtotal = Math.max(0, totalPrice - deliveryFee);
+
+  // In Belgium all prices are TTC (inclusive of TVA)
+  // Base HT = Total / (1 + rate)
+  // Montant TVA = Total - Base HT
+  const baseHt = totalPrice / (1 + tvaRate);
+  const tvaAmount = totalPrice - baseHt;
+
+  let badgeText = '★ BEZORGING ★';
+  let timingText = 'LEVERTIJD: CA. 45-60 MIN';
+  if (isDineIn) {
+    badgeText = '★ TER PLAATSE (RESTAURANT) ★';
+    timingText = 'ETEN IN RESTAURANT • BTW 12%';
+  } else if (isTakeaway) {
+    badgeText = '★ AFHALEN ★';
+    timingText = `AFHAALTIJD: ${order.pickup_time && order.pickup_time.toLowerCase() !== 'asap' ? order.pickup_time : 'ZO SNEL MOGELIJK'}`;
+  }
 
   let itemsHtml = '';
   items.forEach((item) => {
@@ -294,11 +320,9 @@ export const generateReceiptHtml = (order) => {
         <div class="subtitle">${RESTAURANT_INFO.address}</div>
         <div class="subtitle">Tel: ${RESTAURANT_INFO.phone}</div>
         <div class="divider"></div>
-        <div class="badge">${isTakeaway ? '★ AFHALEN ★' : '★ BEZORGING ★'}</div>
+        <div class="badge">${badgeText}</div>
         <div class="timing-box">
-          ${isTakeaway 
-            ? `AFHAALTIJD: ${order.pickup_time && order.pickup_time.toLowerCase() !== 'asap' ? order.pickup_time : 'ZO SNEL MOGELIJK'}`
-            : 'LEVERTIJD: CA. 45-60 MIN'}
+          ${timingText}
         </div>
       </div>
 
@@ -314,7 +338,8 @@ export const generateReceiptHtml = (order) => {
       <div class="customer-box">
         <div>Klant: <strong>${customerName}</strong></div>
         ${customerPhone ? `<div>Tel: <strong>${customerPhone}</strong></div>` : ''}
-        ${customerAddress && customerAddress !== 'N/A' ? `<div>Adres: <strong>${customerAddress}</strong></div>` : ''}
+        ${!isDineIn && customerAddress && customerAddress !== 'N/A' ? `<div>Adres: <strong>${customerAddress}</strong></div>` : ''}
+        ${isDineIn ? `<div>Plaats: <strong>In Restaurant (Tafel)</strong></div>` : ''}
       </div>
 
       <div class="divider-thick"></div>
@@ -343,11 +368,27 @@ export const generateReceiptHtml = (order) => {
       <div class="divider-thick"></div>
 
       <div class="flex-between total-row">
-        <span>TOTAAL</span>
+        <span>TOTAAL (INCL. BTW)</span>
         <span>${formatPrice(totalPrice)}</span>
       </div>
 
       <div class="divider-thick"></div>
+
+      <!-- Belgian Legal TVA / BTW Breakdown Box -->
+      <div style="font-size: 13px; font-weight: 800; margin: 6px 0;">
+        <div class="flex-between" style="border-bottom: 2px solid #000; padding-bottom: 3px; margin-bottom: 4px;">
+          <span>BTW TARIEF</span>
+          <span>NETTO (EXCL.)</span>
+          <span>BTW BEDRAG</span>
+        </div>
+        <div class="flex-between">
+          <span>${tvaPercentStr} (${isDineIn ? 'Restaurant' : isTakeaway ? 'Afhalen' : 'Levering'})</span>
+          <span>${formatPrice(baseHt)}</span>
+          <span>${formatPrice(tvaAmount)}</span>
+        </div>
+      </div>
+
+      <div class="divider"></div>
 
       ${notes ? `
         <div class="notes-box">
@@ -388,9 +429,23 @@ export const generateTestReceiptHtml = () => {
         <div class="divider-thick"></div>
         <div class="badge">TEST GESLAAGD</div>
         <div class="divider"></div>
-        <p style="margin: 10px 0; font-size: 14px; font-weight: 800;">
-          De thermische printer is correct gekoppeld en print met verhoogde dikte en scherpte.
+        <p style="margin: 8px 0; font-size: 13.5px; font-weight: 800;">
+          Thermische printer gereed. BTW regimes actief:
         </p>
+        <div style="font-size: 13px; font-weight: 800; margin: 8px 0; text-align: left;">
+          <div class="flex-between" style="border-bottom: 1.5px solid #000; padding-bottom: 2px; margin-bottom: 4px;">
+            <span>REGIME</span>
+            <span>BTW TARIEF</span>
+          </div>
+          <div class="flex-between">
+            <span>• Afhalen & Bezorging</span>
+            <span>6% BTW</span>
+          </div>
+          <div class="flex-between">
+            <span>• Ter Plaatse (Restaurant)</span>
+            <span>12% BTW</span>
+          </div>
+        </div>
         <div class="divider"></div>
         <div style="font-size: 13px; font-weight: 800;">Datum: ${formatDateTime(new Date())}</div>
         <div style="font-size: 13px; font-weight: 800;">Formaat: 80mm Thermische Rol</div>

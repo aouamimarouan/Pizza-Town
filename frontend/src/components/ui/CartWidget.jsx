@@ -463,7 +463,7 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
                 <div className="flex p-1 bg-paper border border-slate rounded-md mb-2">
                   <button
                     onClick={() => setOrderMode('delivery')}
-                    className={`flex-1 py-2 text-sm font-bold font-sans rounded-sm transition-colors duration-100 ${
+                    className={`flex-1 py-2 text-xs sm:text-sm font-bold font-sans rounded-sm transition-colors duration-100 ${
                       orderMode === 'delivery' ? 'bg-ink text-paper' : 'text-slate hover:text-ink'
                     }`}
                   >
@@ -471,16 +471,26 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
                   </button>
                   <button
                     onClick={() => setOrderMode('takeaway')}
-                    className={`flex-1 py-2 text-sm font-bold font-sans rounded-sm transition-colors duration-100 ${
+                    className={`flex-1 py-2 text-xs sm:text-sm font-bold font-sans rounded-sm transition-colors duration-100 ${
                       orderMode === 'takeaway' ? 'bg-ink text-paper' : 'text-slate hover:text-ink'
                     }`}
                   >
                     Takeaway
                   </button>
+                  <button
+                    onClick={() => setOrderMode('dine_in')}
+                    className={`flex-1 py-2 text-xs sm:text-sm font-bold font-sans rounded-sm transition-colors duration-100 ${
+                      orderMode === 'dine_in' ? 'bg-ink text-paper' : 'text-slate hover:text-ink'
+                    }`}
+                  >
+                    Ter Plaatse
+                  </button>
                 </div>
                 <p className="text-xs text-slate font-sans text-center">
                   {orderMode === 'delivery' 
                     ? t('cart.deliveryEstimateWithFee', { fee: deliveryFee.toFixed(2), defaultValue: `Geschatte levertijd: 45-60 min (tot 1 uur) • Bezorgkosten: €${deliveryFee.toFixed(2)}` }) 
+                    : orderMode === 'dine_in'
+                    ? 'Geschatte bereidingstijd: 15-20 min • Eten in restaurant'
                     : t('cart.pickupEstimate', 'Geschatte afhaaltijd: 15-20 min')}
                 </p>
               </div>
@@ -530,98 +540,100 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
                     <div className="bg-mist border border-slate rounded-md p-4">
                       <div className="flex items-center text-ink font-bold font-sans text-sm mb-1">
                         <Store className="w-4 h-4 mr-2 text-signal-red" />
-                        {t('cart.pickupStoreAddressLabel', 'Afhaallocatie')}
+                        {orderMode === 'dine_in' ? 'Restaurant Locatie (Ter Plaatse)' : t('cart.pickupStoreAddressLabel', 'Afhaallocatie')}
                       </div>
                       <p className="text-sm font-sans text-ink font-bold">Pizza Town</p>
                       <p className="text-xs font-sans text-slate mt-0.5">Stationsstraat 14, 1861 Meise</p>
                       <div className="mt-2 inline-flex items-center text-[11px] font-mono font-medium text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                        Open: 11:00 - 23:00
+                        {orderMode === 'dine_in' ? 'Tafelbediening • BTW 12%' : 'Open: 11:00 - 23:00 • BTW 6%'}
                       </div>
                     </div>
 
-                    {/* Pickup Timing Card */}
-                    <div className="bg-mist border border-slate rounded-md p-4 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center text-ink font-bold font-sans text-sm">
-                          <Clock className="w-4 h-4 mr-2 text-ink" />
-                          {t('cart.pickupTimeLabel', 'Afhaaltijd')}
-                        </div>
-                        <span className="text-xs font-mono font-bold text-signal-red">
-                          {pickupTimingType === 'asap' ? t('cart.asap', 'Zo snel mogelijk') : (selectedPickupTime || '—')}
-                        </span>
-                      </div>
-
-                      {/* As Soon As Possible vs Specific Time Toggle */}
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setPickupTimingType('asap')}
-                          className={`py-2 px-3 rounded-md text-xs font-sans font-bold text-center border transition-all ${
-                            pickupTimingType === 'asap'
-                              ? 'bg-ink text-paper border-ink shadow-xs'
-                              : 'bg-paper text-slate border-slate hover:text-ink hover:border-ink/50'
-                          }`}
-                        >
-                          {t('cart.asap', 'Zo snel mogelijk (~15-20 min)')}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setPickupTimingType('scheduled');
-                            if (!selectedPickupTime && availablePickupSlots.length > 0) {
-                              setSelectedPickupTime(availablePickupSlots[0]);
-                            }
-                          }}
-                          className={`py-2 px-3 rounded-md text-xs font-sans font-bold text-center border transition-all ${
-                            pickupTimingType === 'scheduled'
-                              ? 'bg-ink text-paper border-ink shadow-xs'
-                              : 'bg-paper text-slate border-slate hover:text-ink hover:border-ink/50'
-                          }`}
-                        >
-                          {t('cart.choosePickupTime', 'Kies afhaaltijd')}
-                        </button>
-                      </div>
-
-                      {/* Time slot picker */}
-                      {pickupTimingType === 'scheduled' && (
-                        <div className="pt-2 border-t border-slate/30 space-y-2 animate-in fade-in duration-200">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-slate font-medium">
-                              {t('cart.pickupReadyAt', 'Klaar voor afhaling om')}:
-                            </span>
-                            <span className="font-mono font-bold text-ink">
-                              {selectedPickupTime ? `${selectedPickupTime} uur` : 'Kies een tijdstip'}
-                            </span>
+                    {/* Pickup Timing Card (Takeaway only) */}
+                    {orderMode === 'takeaway' && (
+                      <div className="bg-mist border border-slate rounded-md p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center text-ink font-bold font-sans text-sm">
+                            <Clock className="w-4 h-4 mr-2 text-ink" />
+                            {t('cart.pickupTimeLabel', 'Afhaaltijd')}
                           </div>
-
-                          {availablePickupSlots.length > 0 ? (
-                            <div className="max-h-36 overflow-y-auto custom-scrollbar grid grid-cols-4 gap-1.5 p-1 bg-paper border border-slate rounded-md">
-                              {availablePickupSlots.map(slot => {
-                                const isSelected = selectedPickupTime === slot;
-                                return (
-                                  <button
-                                    key={slot}
-                                    type="button"
-                                    onClick={() => setSelectedPickupTime(slot)}
-                                    className={`py-1.5 px-1 rounded text-xs font-mono font-bold transition-all text-center ${
-                                      isSelected
-                                        ? 'bg-signal-red text-white shadow-xs'
-                                        : 'text-ink hover:bg-mist'
-                                    }`}
-                                  >
-                                    {slot}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          ) : (
-                            <p className="text-xs text-signal-red font-sans">
-                              Geen tijdsloten meer beschikbaar voor vandaag.
-                            </p>
-                          )}
+                          <span className="text-xs font-mono font-bold text-signal-red">
+                            {pickupTimingType === 'asap' ? t('cart.asap', 'Zo snel mogelijk') : (selectedPickupTime || '—')}
+                          </span>
                         </div>
-                      )}
-                    </div>
+
+                        {/* As Soon As Possible vs Specific Time Toggle */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setPickupTimingType('asap')}
+                            className={`py-2 px-3 rounded-md text-xs font-sans font-bold text-center border transition-all ${
+                              pickupTimingType === 'asap'
+                                ? 'bg-ink text-paper border-ink shadow-xs'
+                                : 'bg-paper text-slate border-slate hover:text-ink hover:border-ink/50'
+                            }`}
+                          >
+                            {t('cart.asap', 'Zo snel mogelijk (~15-20 min)')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPickupTimingType('scheduled');
+                              if (!selectedPickupTime && availablePickupSlots.length > 0) {
+                                setSelectedPickupTime(availablePickupSlots[0]);
+                              }
+                            }}
+                            className={`py-2 px-3 rounded-md text-xs font-sans font-bold text-center border transition-all ${
+                              pickupTimingType === 'scheduled'
+                                ? 'bg-ink text-paper border-ink shadow-xs'
+                                : 'bg-paper text-slate border-slate hover:text-ink hover:border-ink/50'
+                            }`}
+                          >
+                            {t('cart.choosePickupTime', 'Kies afhaaltijd')}
+                          </button>
+                        </div>
+
+                        {/* Time slot picker */}
+                        {pickupTimingType === 'scheduled' && (
+                          <div className="pt-2 border-t border-slate/30 space-y-2 animate-in fade-in duration-200">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-slate font-medium">
+                                {t('cart.pickupReadyAt', 'Klaar voor afhaling om')}:
+                              </span>
+                              <span className="text-signal-red font-mono font-bold">
+                                {selectedPickupTime || 'Selecteer'}
+                              </span>
+                            </div>
+
+                            {availablePickupSlots.length > 0 ? (
+                              <div className="grid grid-cols-4 gap-1.5 max-h-36 overflow-y-auto custom-scrollbar p-1 bg-paper border border-slate rounded-md">
+                                {availablePickupSlots.map(slot => {
+                                  const isSelected = selectedPickupTime === slot;
+                                  return (
+                                    <button
+                                      key={slot}
+                                      type="button"
+                                      onClick={() => setSelectedPickupTime(slot)}
+                                      className={`py-1.5 px-1 rounded text-xs font-mono font-bold transition-all text-center ${
+                                        isSelected
+                                          ? 'bg-signal-red text-white shadow-xs'
+                                          : 'text-ink hover:bg-mist'
+                                      }`}
+                                    >
+                                      {slot}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-signal-red font-sans">
+                                Geen tijdsloten meer beschikbaar voor vandaag.
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 

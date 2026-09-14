@@ -821,11 +821,15 @@ const AdminDashboard = () => {
  <div className="bg-emerald-500/20 text-signal-red px-2 py-0.5 rounded uppercase font-bold">{order.delivery_type}</div>
  {order.delivery_type === 'takeaway' ? (
    <div className="bg-amber-500/20 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded uppercase font-bold">
-     Afhaaltijd: {order.pickup_time && order.pickup_time !== 'ASAP' ? order.pickup_time : 'Zo snel mogelijk'}
+     Afhaaltijd: {order.pickup_time && order.pickup_time !== 'ASAP' ? order.pickup_time : 'Zo snel mogelijk'} • BTW 6%
+   </div>
+ ) : order.delivery_type === 'dine_in' ? (
+   <div className="bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded uppercase font-bold">
+     Ter Plaatse (Restaurant) • BTW 12%
    </div>
  ) : (
    <div className="bg-blue-500/10 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded uppercase font-bold">
-     Levertijd: 45-60 min
+     Levertijd: 45-60 min • BTW 6%
    </div>
  )}
  </div>
