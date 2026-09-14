@@ -25,6 +25,29 @@ const EXTRA_TOPPINGS = [
 
 const TOPPING_PRICE = 1.0;
 
+export const PASTA_TYPES = [
+  { id: 'spaghetti', name: 'Spaghetti', labelKey: 'pastaSpaghetti', fallback: 'Spaghetti' },
+  { id: 'penne', name: 'Penne', labelKey: 'pastaPenne', fallback: 'Penne' },
+];
+
+export const isPastaCustomizable = (item) => {
+  if (!item) return false;
+  const cat = (item.category || '').toLowerCase();
+  const name = (item.name || '').toLowerCase();
+  return (cat === 'pastas' || cat === 'pasta') && !name.includes('lasag');
+};
+
+export const isCustomizable = (item) => {
+  if (!item) return false;
+  if (item.category === 'Pizzas' || item.category === 'Half-Half Pizzas') return true;
+  if (isPastaCustomizable(item)) return true;
+  if (item.category === 'Menu Deals') {
+    const config = DEAL_CONFIGS[item.name];
+    return config && config.components && config.components.length > 0;
+  }
+  return false;
+};
+
 export const DEAL_CONFIGS = {
   'Deal 1': {
     components: [
@@ -144,6 +167,10 @@ const ItemCustomizationModal = ({ item, allMenuItems = [], onClose, handleAddToC
     });
   }
 
+  const isPasta = isPastaCustomizable(item);
+  const initPastaType = item.customizations?.pastaType || 'Spaghetti';
+  const [selectedPastaType, setSelectedPastaType] = useState(initPastaType);
+
   const [selectedCrust, setSelectedCrust] = useState(initCrust);
   const [selectedSize, setSelectedSize] = useState(initSize);
   const [selectedToppings, setSelectedToppings] = useState(initToppings);
@@ -171,11 +198,13 @@ const ItemCustomizationModal = ({ item, allMenuItems = [], onClose, handleAddToC
 
   const totalPrice = useMemo(() => {
     let price = isPizza ? selectedSize.price : (item.price || 0);
-    price += selectedCrust.price;
+    if (isPizza) {
+      price += selectedCrust.price;
+    }
     
     if (isHalfHalf) {
       price += (halfHalfSelections.left.length + halfHalfSelections.right.length) * TOPPING_PRICE;
-    } else {
+    } else if (isPizza) {
       price += selectedToppings.length * TOPPING_PRICE;
     }
 
@@ -229,6 +258,9 @@ const ItemCustomizationModal = ({ item, allMenuItems = [], onClose, handleAddToC
           size: selectedSize,
           crust: selectedCrust,
           halfHalf: halfHalfSelections
+        } : isPasta ? {
+          pastaType: selectedPastaType,
+          toppings: selectedToppings
         } : {
           size: isPizza ? selectedSize : null,
           crust: selectedCrust,
@@ -244,8 +276,6 @@ const ItemCustomizationModal = ({ item, allMenuItems = [], onClose, handleAddToC
     } catch (err) {
       console.error('Failed to add customized item to cart:', err);
     } finally {
-      // Small delay for the fade out effect could be handled in CSS/state, 
-      // but simple close is usually fine if we have an unmount animation.
       onClose();
     }
   };
@@ -279,7 +309,7 @@ const ItemCustomizationModal = ({ item, allMenuItems = [], onClose, handleAddToC
         </div>
 
         {/* Scrollable Content */}
-        <div className="flex-grow overflow-y-auto custom-scrollbar relative">
+        <div className="grow overflow-y-auto custom-scrollbar relative">
           
           {isPizza && !isDeal && !isHalfHalf && (
             <LivePizzaDiagram size={selectedSize} crust={selectedCrust} toppings={selectedToppings} />
@@ -417,11 +447,58 @@ const ItemCustomizationModal = ({ item, allMenuItems = [], onClose, handleAddToC
                             </div>
                           </div>
                         )}
+
+                        {comp.type === 'pasta' && selection && isPastaCustomizable(selection.item) && (
+                          <div className="mt-6 pt-6 border-t border-mist space-y-3">
+                            <h5 className="text-sm font-bold font-sans text-ink">{t('modal.pastaTypeSelection', 'Kies pastasoort')}</h5>
+                            <div className="grid grid-cols-2 gap-3">
+                              {PASTA_TYPES.map(pt => (
+                                <SelectableTile
+                                  key={pt.id}
+                                  title={t(`modal.${pt.labelKey}`, pt.fallback)}
+                                  selected={(selection.customizations?.pastaType || 'Spaghetti').toLowerCase() === pt.id.toLowerCase() || (selection.customizations?.pastaType || 'Spaghetti').toLowerCase() === pt.name.toLowerCase()}
+                                  onClick={() => setSelectedSubItems(prev => ({
+                                    ...prev,
+                                    [idx]: {
+                                      ...prev[idx],
+                                      customizations: { ...(prev[idx].customizations || {}), pastaType: pt.name }
+                                    }
+                                  }))}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
                 })}
               </div>
+            )}
+
+            {/* Pasta Type Selection (Spaghetti or Penne) */}
+            {isPasta && !isDeal && (
+              <section>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-bold font-sans text-ink uppercase tracking-wider">
+                    {t('modal.pastaTypeSelection', 'Kies pastasoort')} <span className="text-slate font-normal italic ml-2">(Verplicht)</span>
+                  </h3>
+                  <span className="text-xs font-mono font-bold text-signal-red uppercase bg-signal-red/10 px-2 py-0.5 rounded">
+                    {selectedPastaType}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {PASTA_TYPES.map((pt) => (
+                    <SelectableTile
+                      key={pt.id}
+                      title={t(`modal.${pt.labelKey}`, pt.fallback)}
+                      priceText={t('modal.included', 'Inbegrepen')}
+                      selected={selectedPastaType.toLowerCase() === pt.id.toLowerCase() || selectedPastaType.toLowerCase() === pt.name.toLowerCase()}
+                      onClick={() => setSelectedPastaType(pt.name)}
+                    />
+                  ))}
+                </div>
+              </section>
             )}
 
             {/* Size Selection */}
@@ -460,8 +537,8 @@ const ItemCustomizationModal = ({ item, allMenuItems = [], onClose, handleAddToC
               </section>
             )}
 
-            {/* Extra Toppings */}
-            {!isDeal && (
+            {/* Extra Toppings for Pizzas */}
+            {isPizza && !isDeal && (
               <section>
                 <h3 className="text-sm font-bold font-sans text-ink mb-4">
                   {isHalfHalf ? `Add Toppings to ${activeHalf.toUpperCase()} HALF (+€${TOPPING_PRICE.toFixed(2)})` : t('modal.extraToppings', { price: TOPPING_PRICE.toFixed(2) })}

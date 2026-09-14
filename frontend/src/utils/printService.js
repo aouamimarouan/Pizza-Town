@@ -261,6 +261,10 @@ export const generateReceiptHtml = (order) => {
     const cust = item.customizations || {};
 
     let detailsHtml = '';
+    // Pasta Type
+    if (cust.pastaType) {
+      detailsHtml += `<div>• Pastasoort: <strong>${cust.pastaType.toUpperCase()}</strong></div>`;
+    }
     // Format / Size
     if (cust.size) {
       const sizeName = cust.size.name || cust.size.id || cust.size;
@@ -280,6 +284,9 @@ export const generateReceiptHtml = (order) => {
       cust.subItems.forEach((sub) => {
         detailsHtml += `<div class="subitem">  - ${sub.quantity > 1 ? `${sub.quantity}x ` : ''}${sub.name}</div>`;
         if (sub.customizations) {
+          if (sub.customizations.pastaType) {
+            detailsHtml += `<div style="padding-left: 12px;">> Pastasoort: <strong>${sub.customizations.pastaType.toUpperCase()}</strong></div>`;
+          }
           if (sub.customizations.size) {
             detailsHtml += `<div style="padding-left: 12px;">> Formaat: <strong>${sub.customizations.size.name || sub.customizations.size.id}</strong></div>`;
           }

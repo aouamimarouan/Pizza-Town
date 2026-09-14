@@ -269,6 +269,10 @@
     "confirmBtn": "Bevestigen & Aan winkelwagen toevoegen",
     "deliveryNote": "Werkelijke bezorgkosten kunnen variëren afhankelijk van uw locatie",
     "lblSizeSelection": "Kies maat (Verplicht)",
+    "pastaTypeSelection": "Kies pastasoort",
+    "pastaSpaghetti": "Spaghetti",
+    "pastaPenne": "Penne",
+    "included": "Inbegrepen",
     "sizeSmall": "Klein",
     "sizeMedium": "Medium",
     "sizeLarge": "Groot"

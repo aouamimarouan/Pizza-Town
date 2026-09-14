@@ -269,6 +269,10 @@
     "confirmBtn": "Confirmer et ajouter",
     "deliveryNote": "Le prix de livraison peut varier selon votre emplacement",
     "lblSizeSelection": "Choisissez la taille (Requis)",
+    "pastaTypeSelection": "Choisissez le type de pâtes",
+    "pastaSpaghetti": "Spaghetti",
+    "pastaPenne": "Penne",
+    "included": "Inclus",
     "sizeSmall": "Petit",
     "sizeMedium": "Moyen",
     "sizeLarge": "Grand"

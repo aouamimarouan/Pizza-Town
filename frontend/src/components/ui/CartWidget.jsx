@@ -4,17 +4,8 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api.js';
-import ItemCustomizationModal, { DEAL_CONFIGS } from './ItemCustomizationModal';
+import ItemCustomizationModal, { DEAL_CONFIGS, isCustomizable } from './ItemCustomizationModal';
 import Stepper, { Step } from './Stepper';
-
-const isCustomizable = (item) => {
-  if (item.category === 'Pizzas') return true;
-  if (item.category === 'Menu Deals') {
-    const config = DEAL_CONFIGS[item.name];
-    return config && config.components && config.components.length > 0;
-  }
-  return false;
-};
 
 const SUGGESTION_CATEGORIES = [
   { id: 'Desserts', labelKey: 'catDesserts', fallback: 'Desserts' },
@@ -260,6 +251,9 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
                         
                         {item.customizations && (
                           <div className="text-sm text-slate mt-1 space-y-0.5 ml-2 border-l-2 border-mist pl-2">
+                            {item.customizations.pastaType && (
+                              <p className="font-semibold text-signal-red">Pasta: {item.customizations.pastaType}</p>
+                            )}
                             {item.customizations.size && (
                               <p>Size: {item.customizations.size.name.replace('size', '')}</p>
                             )}
@@ -286,6 +280,9 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
                             {item.customizations.subItems && item.customizations.subItems.map((sub, idx) => (
                               <div key={idx} className="mt-1">
                                  <p className="font-medium text-slate">• {sub.name}</p>
+                                 {sub.customizations?.pastaType && (
+                                   <p className="pl-3 text-xs font-semibold text-signal-red">- Pasta: {sub.customizations.pastaType}</p>
+                                 )}
                                  {sub.customizations?.crust && (
                                    <p className="pl-3 text-xs">- {sub.customizations.crust.name}</p>
                                  )}

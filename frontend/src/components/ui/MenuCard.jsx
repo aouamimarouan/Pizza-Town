@@ -1,33 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DEAL_CONFIGS } from './ItemCustomizationModal';
-
-// Helper to safely highlight text without dangerouslySetInnerHTML if possible, 
-// but using dangerouslySetInnerHTML is easiest for simple substring matches if sanitized.
-// We'll just use a simple regex split for React nodes to be safe.
-const HighlightedText = ({ text, highlight }) => {
-  if (!highlight.trim()) {
-    return <span>{text}</span>;
-  }
-  const regex = new RegExp(`(${highlight})`, 'gi');
-  const parts = text.split(regex);
-  return (
-    <span>
-      {parts.map((part, i) => 
-        regex.test(part) ? <span key={i} className="bg-mist text-signal-red px-0.5 rounded-sm">{part}</span> : <span key={i}>{part}</span>
-      )}
-    </span>
-  );
-};
-
-const isCustomizable = (item) => {
-  if (item.category === 'Pizzas') return true;
-  if (item.category === 'Menu Deals') {
-    const config = DEAL_CONFIGS[item.name];
-    return config && config.components && config.components.length > 0;
-  }
-  return false;
-};
+import { DEAL_CONFIGS, isCustomizable } from './ItemCustomizationModal';
 
 // Reliable category fallback photos so no card is ever empty or broken
 const CATEGORY_FALLBACKS = {

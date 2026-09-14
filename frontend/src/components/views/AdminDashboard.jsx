@@ -735,9 +735,18 @@ const AdminDashboard = () => {
   {orders
   .filter(o => {
     if (!searchQuery) return true;
-    const q = searchQuery.toLowerCase();
+    const q = searchQuery.toLowerCase().trim();
+    const rawQ = q.replace(/[^\d+]/g, '');
+    const userPhone = (o.users?.phone_number || '').toLowerCase();
+    const rawUserPhone = userPhone.replace(/[^\d+]/g, '');
+    const deliveryPhone = (o.delivery_address?.phone || '').toLowerCase();
+    const rawDeliveryPhone = deliveryPhone.replace(/[^\d+]/g, '');
     return o.order_id?.toLowerCase().includes(q) || 
            o.users?.full_name?.toLowerCase().includes(q) ||
+           o.users?.email?.toLowerCase().includes(q) ||
+           userPhone.includes(q) ||
+           (rawQ && rawUserPhone && rawUserPhone.includes(rawQ)) ||
+           (rawQ && rawDeliveryPhone && rawDeliveryPhone.includes(rawQ)) ||
            o.status?.toLowerCase().includes(q);
   })
   .map((order) => {
@@ -960,6 +969,15 @@ const AdminDashboard = () => {
  
  {/* Item Customizations */}
  <div className="ml-6 space-y-1.5 border-l-2 border-slate pl-4">
+ {/* Pasta Type */}
+ {cust?.pastaType && (
+ <div className="text-xs font-bold text-signal-red">
+   <span className="uppercase bg-red-100 text-signal-red px-1.5 py-0.5 rounded mr-2 font-mono">
+     Pastasoort: {cust.pastaType}
+   </span>
+ </div>
+ )}
+
  {/* Pizza Size & Crust */}
  {(cust?.size || cust?.crust) && (
  <div className="text-xs font-bold text-stone-800 ">
@@ -985,6 +1003,11 @@ const AdminDashboard = () => {
  </div>
  {sub.customizations && (
  <div className="ml-5 pl-3 border-l border-stone-300 mt-1 space-y-1">
+ {sub.customizations.pastaType && (
+   <div className="text-[10px] font-bold text-signal-red uppercase font-mono">
+     Pastasoort: {sub.customizations.pastaType}
+   </div>
+ )}
  {sub.customizations.size && <div className="text-[10px] font-bold text-slate uppercase">{t(`modal.${sub.customizations.size.name}`) || sub.customizations.size.name}</div>}
  {sub.customizations.crust && <div className="text-[10px] text-slate italic">[{sub.customizations.crust.name}]</div>}
  {sub.customizations.toppings?.map((st, stIdx) => (
@@ -1273,9 +1296,14 @@ const AdminDashboard = () => {
  {users
  .filter(user => {
    if (!searchQuery) return true;
-   const q = searchQuery.toLowerCase();
+   const q = searchQuery.toLowerCase().trim();
+   const rawQ = q.replace(/[^\d+]/g, '');
+   const phone = (user.phone_number || '').toLowerCase();
+   const rawPhone = phone.replace(/[^\d+]/g, '');
    return user.full_name?.toLowerCase().includes(q) || 
           user.email?.toLowerCase().includes(q) ||
+          phone.includes(q) ||
+          (rawQ && rawPhone && rawPhone.includes(rawQ)) ||
           user.role?.toLowerCase().includes(q);
  })
  .map((user) => (
@@ -1331,9 +1359,14 @@ const AdminDashboard = () => {
  {reservations
  .filter(res => {
    if (!searchQuery) return true;
-   const q = searchQuery.toLowerCase();
+   const q = searchQuery.toLowerCase().trim();
+   const rawQ = q.replace(/[^\d+]/g, '');
+   const phone = (res.phone_number || '').toLowerCase();
+   const rawPhone = phone.replace(/[^\d+]/g, '');
    return res.full_name?.toLowerCase().includes(q) || 
-          res.phone_number?.toLowerCase().includes(q) ||
+          res.email?.toLowerCase().includes(q) ||
+          phone.includes(q) ||
+          (rawQ && rawPhone && rawPhone.includes(rawQ)) ||
           res.status?.toLowerCase().includes(q);
  })
  .map((res) => {

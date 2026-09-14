@@ -192,6 +192,10 @@ export const generatePrintPayload = (order) => {
       const cust = item.customizations || {};
       const extras = [...(cust.extras || [])];
       
+      if (cust.pastaType) {
+        extras.push({ name: `Pastasoort: ${cust.pastaType}` });
+      }
+
       if (cust.toppings && Array.isArray(cust.toppings)) {
         cust.toppings.forEach(t => extras.push({ name: t }));
       }
@@ -288,6 +292,7 @@ export const printCustomerReceipt = async (orderData) => {
               printer.println(`   - ${sub.quantity || 1}x ${sub.name}`);
               const cust = sub.customizations;
               if (cust) {
+                if (cust.pastaType) printer.println(`     > Pastasoort: ${cust.pastaType}`);
                 if (cust.size) printer.println(`     > Formaat: ${cust.size.id.toUpperCase()}`);
                 if (cust.crust) printer.println(`     > Bodem: ${cust.crust.name}`);
                 if (cust.toppings && cust.toppings.length > 0) {
@@ -419,6 +424,7 @@ export const printKitchenTicket = async (orderData) => {
               printer.println(`   - ${sub.quantity || 1}x ${sub.name}`);
               const cust = sub.customizations;
               if (cust) {
+                if (cust.pastaType) printer.println(`     [Pastasoort: ${cust.pastaType}]`);
                 if (cust.size) printer.println(`     [Formaat: ${cust.size.id.toUpperCase()}]`);
                 if (cust.crust) printer.println(`     [Bodem: ${cust.crust.name}]`);
                 if (cust.toppings && cust.toppings.length > 0) {

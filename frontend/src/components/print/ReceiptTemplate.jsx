@@ -130,6 +130,9 @@ export const ReceiptTemplate = ({ order, onClose, showPrintButton = true }) => {
                   <span className="font-bold flex-1 pr-2">{qty}x {name}</span>
                   <span className="font-bold whitespace-nowrap">€{price.toFixed(2)}</span>
                 </div>
+                {cust.pastaType && (
+                  <div className="text-[10px] text-neutral-800 font-bold pl-3">• Pastasoort: {cust.pastaType}</div>
+                )}
                 {cust.size && (
                   <div className="text-[10px] text-neutral-600 pl-3">• Formaat: {cust.size.name || cust.size.id || cust.size}</div>
                 )}
@@ -142,6 +145,9 @@ export const ReceiptTemplate = ({ order, onClose, showPrintButton = true }) => {
                 {cust.subItems?.map((sub, sIdx) => (
                   <div key={sIdx} className="text-[10px] pl-3 font-medium text-neutral-700">
                     - {sub.quantity > 1 ? `${sub.quantity}x ` : ''}{sub.name}
+                    {sub.customizations?.pastaType && (
+                      <div className="pl-2 font-bold text-neutral-800">• Pastasoort: {sub.customizations.pastaType}</div>
+                    )}
                   </div>
                 ))}
                 {cust.extras?.map((extra, eIdx) => (

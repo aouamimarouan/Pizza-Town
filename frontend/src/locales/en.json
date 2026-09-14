@@ -269,6 +269,10 @@
     "confirmBtn": "Confirm & Add to Cart",
     "deliveryNote": "Actual delivery price might vary based on your location",
     "lblSizeSelection": "Choose size (Required)",
+    "pastaTypeSelection": "Choose pasta type",
+    "pastaSpaghetti": "Spaghetti",
+    "pastaPenne": "Penne",
+    "included": "Included",
     "sizeSmall": "Small",
     "sizeMedium": "Medium",
     "sizeLarge": "Large"
