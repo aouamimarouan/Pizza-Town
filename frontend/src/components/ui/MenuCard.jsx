@@ -27,6 +27,33 @@ const resolveImageUrl = (path) => {
   return encodeURI(cleanPath);
 };
 
+const HighlightedText = ({ text = '', highlight = '' }) => {
+  if (!text) return null;
+  if (!highlight || !highlight.trim()) {
+    return <span>{text}</span>;
+  }
+  try {
+    const escaped = highlight.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escaped})`, 'gi');
+    const parts = String(text).split(regex);
+    return (
+      <span>
+        {parts.map((part, i) =>
+          regex.test(part) ? (
+            <span key={i} className="bg-amber-200/80 text-signal-red px-0.5 rounded-sm font-semibold">
+              {part}
+            </span>
+          ) : (
+            <span key={i}>{part}</span>
+          )
+        )}
+      </span>
+    );
+  } catch (e) {
+    return <span>{text}</span>;
+  }
+};
+
 const MenuCard = ({ item, handleAddToCart, openModal, searchQuery = '', priority = false }) => {
   const { t } = useTranslation();
   const [isLoaded, setIsLoaded] = useState(false);
