@@ -167,21 +167,13 @@ export const ReceiptTemplate = ({ order, onClose, showPrintButton = true }) => {
         </div>
         <div className="border-t-2 border-black"></div>
 
-        {/* TVA Breakdown */}
-        <div className="text-[10.5px] font-bold space-y-1">
-          <div className="flex justify-between border-b border-black pb-1">
-            <span>BTW TARIEF</span>
-            <span>NETTO (EXCL.)</span>
-            <span>BTW BEDRAG</span>
-          </div>
-          <div className="flex justify-between font-normal text-neutral-800">
-            <span>{tvaPercentStr} ({isDineIn ? 'Restaurant' : isTakeaway ? 'Afhalen' : 'Levering'})</span>
-            <span>€{baseHt.toFixed(2)}</span>
-            <span>€{tvaAmount.toFixed(2)}</span>
-          </div>
+        {/* TVA / BTW Line (Single line matching POS photo) */}
+        <div className="flex justify-between font-bold text-xs py-0.5">
+          <span>BTW, {tvaPercentStr}</span>
+          <span>€{tvaAmount.toFixed(2).replace('.', ',')}</span>
         </div>
 
-        <div className="border-t border-dashed border-neutral-400"></div>
+        <div className="border-t border-black"></div>
 
         {notes && (
           <div className="border border-black p-2 bg-neutral-50 text-[10px]">

@@ -16,7 +16,7 @@ const RESTAURANT_INFO = {
  */
 const formatPrice = (val) => {
   const num = parseFloat(val);
-  return isNaN(num) ? '€ 0.00' : `€ ${num.toFixed(2)}`;
+  return isNaN(num) ? '€0,00' : `€${num.toFixed(2).replace('.', ',')}`;
 };
 
 /**
@@ -374,18 +374,10 @@ export const generateReceiptHtml = (order) => {
 
       <div class="divider-thick"></div>
 
-      <!-- Belgian Legal TVA / BTW Breakdown Box -->
-      <div style="font-size: 13px; font-weight: 800; margin: 6px 0;">
-        <div class="flex-between" style="border-bottom: 2px solid #000; padding-bottom: 3px; margin-bottom: 4px;">
-          <span>BTW TARIEF</span>
-          <span>NETTO (EXCL.)</span>
-          <span>BTW BEDRAG</span>
-        </div>
-        <div class="flex-between">
-          <span>${tvaPercentStr} (${isDineIn ? 'Restaurant' : isTakeaway ? 'Afhalen' : 'Levering'})</span>
-          <span>${formatPrice(baseHt)}</span>
-          <span>${formatPrice(tvaAmount)}</span>
-        </div>
+      <!-- Belgian TVA / BTW Line (Single line matching POS standard) -->
+      <div class="flex-between bold" style="font-size: 14.5px; margin: 6px 0;">
+        <span>BTW, ${tvaPercentStr}</span>
+        <span>${formatPrice(tvaAmount)}</span>
       </div>
 
       <div class="divider"></div>
@@ -429,22 +421,10 @@ export const generateTestReceiptHtml = () => {
         <div class="divider-thick"></div>
         <div class="badge">TEST GESLAAGD</div>
         <div class="divider"></div>
-        <p style="margin: 8px 0; font-size: 13.5px; font-weight: 800;">
-          Thermische printer gereed. BTW regimes actief:
-        </p>
-        <div style="font-size: 13px; font-weight: 800; margin: 8px 0; text-align: left;">
-          <div class="flex-between" style="border-bottom: 1.5px solid #000; padding-bottom: 2px; margin-bottom: 4px;">
-            <span>REGIME</span>
-            <span>BTW TARIEF</span>
-          </div>
-          <div class="flex-between">
-            <span>• Afhalen & Bezorging</span>
-            <span>6% BTW</span>
-          </div>
-          <div class="flex-between">
-            <span>• Ter Plaatse (Restaurant)</span>
-            <span>12% BTW</span>
-          </div>
+        <div class="divider"></div>
+        <div class="flex-between bold" style="font-size: 14.5px; margin: 8px 0;">
+          <span>BTW, 6%</span>
+          <span>€1,87</span>
         </div>
         <div class="divider"></div>
         <div style="font-size: 13px; font-weight: 800;">Datum: ${formatDateTime(new Date())}</div>

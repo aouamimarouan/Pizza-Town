@@ -323,9 +323,7 @@ export const printCustomerReceipt = async (orderData) => {
       printer.bold(true);
       printer.leftRight('TOTAAL (INCL. BTW)', `€ ${totalNum.toFixed(2)}`);
       printer.bold(false);
-      printer.drawLine();
-      printer.leftRight(`Netto (excl. BTW)`, `€ ${baseHt.toFixed(2)}`);
-      printer.leftRight(`BTW (${isDineIn ? '12%' : '6%'})`, `€ ${tvaAmount.toFixed(2)}`);
+      printer.leftRight(`BTW, ${isDineIn ? '12%' : '6%'}`, `€${tvaAmount.toFixed(2).replace('.', ',')}`);
       printer.drawLine();
 
       if (orderData.notes) {
