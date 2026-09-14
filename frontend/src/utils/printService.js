@@ -1,6 +1,7 @@
 /**
  * Browser-based POS Thermal Receipt Printing Service for Pizza Town
  * Formatted specifically for 80mm thermal receipt paper (Epson TM-m30II)
+ * Optimized for heavy thickness, maximum contrast, and deep black thermal printhead burning.
  */
 
 const RESTAURANT_INFO = {
@@ -38,6 +39,7 @@ const formatDateTime = (dateStr) => {
 
 /**
  * Generate CSS styles for thermal receipt printing
+ * Uses heavy typography, text-stroke for ink density, and zero gray dithering
  */
 const getReceiptStyles = () => `
   @page {
@@ -48,20 +50,25 @@ const getReceiptStyles = () => `
     box-sizing: border-box;
     margin: 0;
     padding: 0;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
   body {
-    font-family: 'Courier New', Courier, 'Lucida Console', Monaco, monospace;
-    font-size: 13px;
-    font-weight: 500;
+    /* Thick, solid sans-serif prevents thin serif stem fading on thermal printheads */
+    font-family: Arial, "Helvetica Neue", Helvetica, "Segoe UI", sans-serif;
+    font-size: 14px;
+    font-weight: 700;
     line-height: 1.35;
-    color: #000;
-    background: #fff;
+    color: #000000 !important;
+    background: #ffffff !important;
     width: 80mm;
     max-width: 80mm;
     margin: 0 auto;
-    padding: 4mm 4mm 22mm 4mm; /* Extra bottom padding ensures the physical blade does not cut through text */
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+    padding: 4mm 5mm 24mm 5mm;
+    /* Extra micro-stroke to reinforce font stem thickness for thermal heads */
+    -webkit-text-stroke: 0.25px #000000;
+    text-rendering: geometricPrecision;
   }
   .center {
     text-align: center;
@@ -73,35 +80,49 @@ const getReceiptStyles = () => `
     text-align: right;
   }
   .bold {
-    font-weight: 900;
+    font-weight: 900 !important;
   }
   .title {
-    font-size: 19px;
-    font-weight: 900;
+    font-size: 24px;
+    font-weight: 900 !important;
     letter-spacing: 1px;
-    margin-bottom: 2px;
+    margin-bottom: 3px;
+    -webkit-text-stroke: 0.5px #000000;
   }
   .subtitle {
-    font-size: 11px;
-    color: #333;
-    margin-bottom: 4px;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 2px;
   }
   .badge {
     display: inline-block;
-    border: 2px solid #000;
-    padding: 3px 8px;
-    font-size: 15px;
-    font-weight: 900;
-    margin: 6px 0;
+    border: 3px solid #000000;
+    padding: 4px 10px;
+    font-size: 17px;
+    font-weight: 900 !important;
+    margin: 7px 0;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
+    -webkit-text-stroke: 0.4px #000000;
+  }
+  .timing-box {
+    font-size: 15px;
+    font-weight: 900 !important;
+    margin-top: 3px;
+    margin-bottom: 4px;
+    -webkit-text-stroke: 0.3px #000000;
   }
   .divider {
-    border-top: 1px dashed #000;
-    margin: 6px 0;
+    border-top: 2px solid #000000;
+    margin: 8px 0;
   }
   .divider-double {
-    border-top: 2px solid #000;
-    margin: 6px 0;
+    border-top: 3px double #000000;
+    margin: 8px 0;
+  }
+  .divider-thick {
+    border-top: 3px solid #000000;
+    margin: 8px 0;
   }
   .flex-between {
     display: flex;
@@ -110,56 +131,71 @@ const getReceiptStyles = () => `
   }
   .flex-between span:first-child {
     flex: 1;
-    padding-right: 6px;
+    padding-right: 8px;
     word-break: break-word;
   }
   .flex-between span:last-child {
     white-space: nowrap;
     text-align: right;
+    font-weight: 800;
   }
   .order-meta {
-    font-size: 12px;
-    margin-bottom: 4px;
+    font-size: 13px;
+    font-weight: 800;
+    margin-bottom: 5px;
   }
   .customer-box {
     margin: 6px 0;
-    font-size: 12px;
+    font-size: 13.5px;
+    font-weight: 800;
+    line-height: 1.4;
   }
   .item-row {
-    margin: 5px 0;
+    margin: 7px 0;
   }
   .item-name {
-    font-weight: 700;
-    font-size: 13px;
+    font-weight: 900 !important;
+    font-size: 15px;
+    -webkit-text-stroke: 0.3px #000000;
+  }
+  .item-price {
+    font-weight: 900 !important;
+    font-size: 15px;
   }
   .item-customizations {
-    padding-left: 14px;
-    font-size: 11px;
-    color: #222;
-  }
-  .subitem {
-    font-weight: 600;
+    padding-left: 12px;
+    font-size: 12.5px;
+    font-weight: 700;
+    line-height: 1.35;
     margin-top: 2px;
   }
+  .subitem {
+    font-weight: 800;
+    margin-top: 3px;
+    font-size: 13px;
+  }
   .total-row {
-    font-size: 16px;
-    font-weight: 900;
-    margin-top: 4px;
+    font-size: 19px;
+    font-weight: 900 !important;
+    margin-top: 6px;
+    -webkit-text-stroke: 0.4px #000000;
   }
   .notes-box {
-    border: 1px solid #000;
-    padding: 4px;
-    margin: 6px 0;
-    font-size: 12px;
-    background: #f9f9f9;
+    border: 2px solid #000000;
+    padding: 6px 8px;
+    margin: 8px 0;
+    font-size: 13px;
+    font-weight: 800;
   }
   .footer {
     text-align: center;
-    font-size: 11px;
-    margin-top: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    margin-top: 12px;
+    line-height: 1.4;
   }
   .cut-space {
-    height: 18mm;
+    height: 20mm;
   }
 `;
 
@@ -207,7 +243,7 @@ export const generateReceiptHtml = (order) => {
     }
     // Toppings
     if (cust.toppings && Array.isArray(cust.toppings) && cust.toppings.length > 0) {
-      detailsHtml += `<div>• Toppings: ${cust.toppings.join(', ')}</div>`;
+      detailsHtml += `<div>• Toppings: <strong>${cust.toppings.join(', ')}</strong></div>`;
     }
     // Deal sub items
     if (cust.subItems && Array.isArray(cust.subItems)) {
@@ -215,13 +251,13 @@ export const generateReceiptHtml = (order) => {
         detailsHtml += `<div class="subitem">  - ${sub.quantity > 1 ? `${sub.quantity}x ` : ''}${sub.name}</div>`;
         if (sub.customizations) {
           if (sub.customizations.size) {
-            detailsHtml += `<div style="padding-left: 10px;">> Formaat: ${sub.customizations.size.name || sub.customizations.size.id}</div>`;
+            detailsHtml += `<div style="padding-left: 12px;">> Formaat: <strong>${sub.customizations.size.name || sub.customizations.size.id}</strong></div>`;
           }
           if (sub.customizations.crust) {
-            detailsHtml += `<div style="padding-left: 10px;">> Bodem: ${sub.customizations.crust.name || sub.customizations.crust}</div>`;
+            detailsHtml += `<div style="padding-left: 12px;">> Bodem: <strong>${sub.customizations.crust.name || sub.customizations.crust}</strong></div>`;
           }
           if (sub.customizations.toppings?.length) {
-            detailsHtml += `<div style="padding-left: 10px;">> Toppings: ${sub.customizations.toppings.join(', ')}</div>`;
+            detailsHtml += `<div style="padding-left: 12px;">> Toppings: <strong>${sub.customizations.toppings.join(', ')}</strong></div>`;
           }
         }
       });
@@ -229,7 +265,7 @@ export const generateReceiptHtml = (order) => {
     // Extras
     if (cust.extras && Array.isArray(cust.extras)) {
       cust.extras.forEach((extra) => {
-        detailsHtml += `<div>+ ${extra.name || extra}</div>`;
+        detailsHtml += `<div>+ <strong>${extra.name || extra}</strong></div>`;
       });
     }
 
@@ -237,7 +273,7 @@ export const generateReceiptHtml = (order) => {
       <div class="item-row">
         <div class="flex-between">
           <span class="item-name">${qty}x ${itemName}</span>
-          <span class="bold">${formatPrice(itemTotal)}</span>
+          <span class="item-price">${formatPrice(itemTotal)}</span>
         </div>
         ${detailsHtml ? `<div class="item-customizations">${detailsHtml}</div>` : ''}
       </div>
@@ -259,7 +295,7 @@ export const generateReceiptHtml = (order) => {
         <div class="subtitle">Tel: ${RESTAURANT_INFO.phone}</div>
         <div class="divider"></div>
         <div class="badge">${isTakeaway ? '★ AFHALEN ★' : '★ BEZORGING ★'}</div>
-        <div class="bold" style="font-size: 13px; margin-top: 2px;">
+        <div class="timing-box">
           ${isTakeaway 
             ? `AFHAALTIJD: ${order.pickup_time && order.pickup_time.toLowerCase() !== 'asap' ? order.pickup_time : 'ZO SNEL MOGELIJK'}`
             : 'LEVERTIJD: CA. 45-60 MIN'}
@@ -270,7 +306,7 @@ export const generateReceiptHtml = (order) => {
 
       <div class="order-meta">
         <div class="flex-between">
-          <span>Bestelling: <strong>#${orderShortId}</strong></span>
+          <span>Bestelling: <strong style="font-size: 15px;">#${orderShortId}</strong></span>
           <span>${formatDateTime(order.created_at)}</span>
         </div>
       </div>
@@ -281,37 +317,37 @@ export const generateReceiptHtml = (order) => {
         ${customerAddress && customerAddress !== 'N/A' ? `<div>Adres: <strong>${customerAddress}</strong></div>` : ''}
       </div>
 
-      <div class="divider-double"></div>
-      <div class="flex-between bold" style="font-size: 12px; margin-bottom: 4px;">
+      <div class="divider-thick"></div>
+      <div class="flex-between bold" style="font-size: 13px; margin-bottom: 4px;">
         <span>ARTIKEL</span>
         <span>PRIJS</span>
       </div>
       <div class="divider"></div>
 
-      ${itemsHtml || '<div class="center">Geen artikelen</div>'}
+      ${itemsHtml || '<div class="center bold">Geen artikelen</div>'}
 
       <div class="divider"></div>
 
-      <div class="flex-between">
+      <div class="flex-between" style="font-size: 14px;">
         <span>Subtotaal</span>
         <span>${formatPrice(subtotal)}</span>
       </div>
 
       ${deliveryFee > 0 ? `
-        <div class="flex-between">
+        <div class="flex-between" style="font-size: 14px;">
           <span>Bezorgkosten</span>
           <span>${formatPrice(deliveryFee)}</span>
         </div>
       ` : ''}
 
-      <div class="divider-double"></div>
+      <div class="divider-thick"></div>
 
       <div class="flex-between total-row">
         <span>TOTAAL</span>
         <span>${formatPrice(totalPrice)}</span>
       </div>
 
-      <div class="divider-double"></div>
+      <div class="divider-thick"></div>
 
       ${notes ? `
         <div class="notes-box">
@@ -321,9 +357,9 @@ export const generateReceiptHtml = (order) => {
       ` : ''}
 
       <div class="footer">
-        <div class="bold">Bedankt voor uw bestelling!</div>
-        <div>Smakelijk eten!</div>
-        <div style="font-size: 9px; margin-top: 6px; color: #666;">*** Pizza Town Meise ***</div>
+        <div class="bold" style="font-size: 14px;">Bedankt voor uw bestelling!</div>
+        <div style="font-size: 13px;">Smakelijk eten!</div>
+        <div style="font-size: 11px; margin-top: 6px; font-weight: 800;">*** Pizza Town Meise ***</div>
       </div>
 
       <div class="cut-space"></div>
@@ -349,15 +385,17 @@ export const generateTestReceiptHtml = () => {
         <div class="title">${RESTAURANT_INFO.name}</div>
         <div class="subtitle">${RESTAURANT_INFO.address}</div>
         <div class="subtitle">Tel: ${RESTAURANT_INFO.phone}</div>
-        <div class="divider-double"></div>
+        <div class="divider-thick"></div>
         <div class="badge">TEST GESLAAGD</div>
         <div class="divider"></div>
-        <p style="margin: 8px 0;">De thermische printer is correct gekoppeld en klaar om bestellingen te ontvangen.</p>
+        <p style="margin: 10px 0; font-size: 14px; font-weight: 800;">
+          De thermische printer is correct gekoppeld en print met verhoogde dikte en scherpte.
+        </p>
         <div class="divider"></div>
-        <div style="font-size: 11px;">Datum: ${formatDateTime(new Date())}</div>
-        <div style="font-size: 11px;">Breedte: 80mm (Standaard POS)</div>
-        <div class="divider-double"></div>
-        <div class="bold">Pizza Town Online Systeem</div>
+        <div style="font-size: 13px; font-weight: 800;">Datum: ${formatDateTime(new Date())}</div>
+        <div style="font-size: 13px; font-weight: 800;">Formaat: 80mm Thermische Rol</div>
+        <div class="divider-thick"></div>
+        <div class="bold" style="font-size: 15px;">Pizza Town Online Systeem</div>
       </div>
       <div class="cut-space"></div>
     </body>

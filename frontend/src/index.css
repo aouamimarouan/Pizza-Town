@@ -101,6 +101,10 @@
     color: #000000 !important;
     margin: 0 !important;
     padding: 0 !important;
+    font-weight: 700 !important;
+    -webkit-text-stroke: 0.25px #000000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   .no-print {
