@@ -306,24 +306,24 @@ export const printCustomerReceipt = async (orderData) => {
       }
       printer.drawLine();
 
-      printer.leftRight('Subtotaal', `€ ${parseFloat(orderData.subtotal).toFixed(2)}`);
-      
-      if (parseFloat(orderData.deliveryFee) > 0) {
-        printer.leftRight('Bezorgkosten', `€ ${parseFloat(orderData.deliveryFee).toFixed(2)}`);
-      }
-      printer.drawLine();
-      
+      const subtotalNum = parseFloat(orderData.subtotal);
+      const deliveryFeeNum = parseFloat(orderData.deliveryFee || 0);
       const deliveryType = (orderData.deliveryType || '').toLowerCase();
       const isDineIn = ['dine_in', 'dine-in', 'restaurant', 'eat_in', 'sur_place', 'ter_plaatse'].includes(deliveryType);
       const tvaRate = isDineIn ? 0.12 : 0.06;
-      const totalNum = parseFloat(orderData.total);
-      const baseHt = totalNum / (1 + tvaRate);
-      const tvaAmount = totalNum - baseHt;
+      const tvaAmount = subtotalNum * tvaRate;
+      const totalNum = subtotalNum + deliveryFeeNum + tvaAmount;
 
-      printer.bold(true);
-      printer.leftRight('TOTAAL (INCL. BTW)', `€ ${totalNum.toFixed(2)}`);
-      printer.bold(false);
+      printer.leftRight('Subtotaal', `€${subtotalNum.toFixed(2).replace('.', ',')}`);
+      if (deliveryFeeNum > 0) {
+        printer.leftRight('Bezorgkosten', `€${deliveryFeeNum.toFixed(2).replace('.', ',')}`);
+      }
       printer.leftRight(`BTW, ${isDineIn ? '12%' : '6%'}`, `€${tvaAmount.toFixed(2).replace('.', ',')}`);
+      printer.drawLine();
+      
+      printer.bold(true);
+      printer.leftRight('TOTAAL', `€${totalNum.toFixed(2).replace('.', ',')}`);
+      printer.bold(false);
       printer.drawLine();
 
       if (orderData.notes) {

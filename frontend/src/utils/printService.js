@@ -221,15 +221,19 @@ export const generateReceiptHtml = (order) => {
   const orderShortId = (order.order_id || '').split('-')[0].toUpperCase();
   const notes = order.delivery_notes || order.notes || '';
   
-  const totalPrice = parseFloat(order.total_price || 0);
-  const deliveryFee = parseFloat(order.delivery_fee || 0);
-  const subtotal = Math.max(0, totalPrice - deliveryFee);
+  let itemsSubtotal = 0;
+  items.forEach((item) => {
+    const qty = parseInt(item.quantity) || 1;
+    if (item.subtotal) {
+      itemsSubtotal += parseFloat(item.subtotal);
+    } else if (item.price || item.menuitems?.price) {
+      itemsSubtotal += parseFloat(item.price || item.menuitems?.price) * qty;
+    }
+  });
 
-  // In Belgium all prices are TTC (inclusive of TVA)
-  // Base HT = Total / (1 + rate)
-  // Montant TVA = Total - Base HT
-  const baseHt = totalPrice / (1 + tvaRate);
-  const tvaAmount = totalPrice - baseHt;
+  const deliveryFee = parseFloat(order.delivery_fee || 0);
+  const tvaAmount = itemsSubtotal * tvaRate;
+  const totalPrice = itemsSubtotal + deliveryFee + tvaAmount;
 
   let badgeText = '★ BEZORGING ★';
   let timingText = 'LEVERTIJD: CA. 45-60 MIN';
@@ -355,7 +359,7 @@ export const generateReceiptHtml = (order) => {
 
       <div class="flex-between" style="font-size: 14px;">
         <span>Subtotaal</span>
-        <span>${formatPrice(subtotal)}</span>
+        <span>${formatPrice(itemsSubtotal)}</span>
       </div>
 
       ${deliveryFee > 0 ? `
@@ -365,22 +369,19 @@ export const generateReceiptHtml = (order) => {
         </div>
       ` : ''}
 
-      <div class="divider-thick"></div>
-
-      <div class="flex-between total-row">
-        <span>TOTAAL (INCL. BTW)</span>
-        <span>${formatPrice(totalPrice)}</span>
-      </div>
-
-      <div class="divider-thick"></div>
-
-      <!-- Belgian TVA / BTW Line (Single line matching POS standard) -->
-      <div class="flex-between bold" style="font-size: 14.5px; margin: 6px 0;">
+      <div class="flex-between bold" style="font-size: 14px; margin: 3px 0;">
         <span>BTW, ${tvaPercentStr}</span>
         <span>${formatPrice(tvaAmount)}</span>
       </div>
 
-      <div class="divider"></div>
+      <div class="divider-thick"></div>
+
+      <div class="flex-between total-row">
+        <span>TOTAAL</span>
+        <span>${formatPrice(totalPrice)}</span>
+      </div>
+
+      <div class="divider-thick"></div>
 
       ${notes ? `
         <div class="notes-box">

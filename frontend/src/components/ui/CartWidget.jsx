@@ -106,7 +106,9 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
 
   const subtotal = cart.reduce((sum, item) => sum + ((item.totalPrice || item.price) * item.quantity), 0);
   const deliveryFee = orderMode === 'delivery' ? 3.50 : 0;
-  const total = subtotal + deliveryFee;
+  const tvaRate = orderMode === 'dine_in' ? 0.12 : 0.06;
+  const tvaAmount = subtotal * tvaRate;
+  const total = subtotal + deliveryFee + tvaAmount;
 
   const handlePlaceOrder = async () => {
     if (orderMode === 'delivery' && !address.trim()) {
@@ -688,6 +690,11 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
                             <Store className="w-3.5 h-3.5 text-signal-red" />
                             Afhalen
                           </>
+                        ) : orderMode === 'dine_in' ? (
+                          <>
+                            <Store className="w-3.5 h-3.5 text-signal-red" />
+                            Ter Plaatse
+                          </>
                         ) : (
                           <>
                             <MapPin className="w-3.5 h-3.5 text-signal-red" />
@@ -698,17 +705,19 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
                       <span className="text-xs font-mono font-bold text-signal-red">
                         {orderMode === 'takeaway'
                           ? (pickupTimingType === 'asap' ? t('cart.asap', 'Zo snel mogelijk (~15-20 min)') : `Klaar om ${selectedPickupTime}`)
+                          : orderMode === 'dine_in'
+                          ? 'Tafelbediening'
                           : t('cart.deliveryEstimateSummary', 'Geschatte levertijd: 45-60 min (tot 1 uur)')}
                       </span>
                     </div>
-                    {orderMode === 'takeaway' ? (
+                    {orderMode === 'delivery' ? (
                       <div className="pt-1 border-t border-slate/30">
-                        <p className="text-sm font-sans font-bold text-ink">Pizza Town</p>
-                        <p className="text-xs font-sans text-slate">Stationsstraat 14, 1861 Meise</p>
+                        <p className="text-sm font-sans font-bold text-ink">{address}</p>
                       </div>
                     ) : (
                       <div className="pt-1 border-t border-slate/30">
-                        <p className="text-sm font-sans font-bold text-ink">{address}</p>
+                        <p className="text-sm font-sans font-bold text-ink">Pizza Town</p>
+                        <p className="text-xs font-sans text-slate">Stationsstraat 14, 1861 Meise</p>
                       </div>
                     )}
                     <p className="text-xs font-sans text-slate">Tel: {phone}</p>
@@ -720,9 +729,15 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
                       <span>{t('cart.subtotal', 'Subtotal')}</span>
                       <span className="font-mono text-ink">€{subtotal.toFixed(2)}</span>
                     </div>
+                    {orderMode === 'delivery' && (
+                      <div className="flex justify-between text-slate font-sans text-sm">
+                        <span>{t('cart.deliveryFee', 'Delivery Fee')}</span>
+                        <span className="font-mono text-ink">€{deliveryFee.toFixed(2)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-slate font-sans text-sm">
-                      <span>{t('cart.deliveryFee', 'Delivery Fee')}</span>
-                      <span className="font-mono text-ink">{orderMode === 'delivery' ? `€${deliveryFee.toFixed(2)}` : '—'}</span>
+                      <span>BTW ({orderMode === 'dine_in' ? '12%' : '6%'})</span>
+                      <span className="font-mono text-ink">€{tvaAmount.toFixed(2)}</span>
                     </div>
                     <div className="h-px bg-slate w-full my-2"></div>
                     <div className="flex justify-between font-bold text-ink text-lg">

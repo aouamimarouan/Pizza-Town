@@ -23,12 +23,19 @@ export const ReceiptTemplate = ({ order, onClose, showPrintButton = true }) => {
   const orderShortId = (order.order_id || '').split('-')[0].toUpperCase();
   const notes = order.delivery_notes || order.notes || '';
   
-  const totalPrice = parseFloat(order.total_price || 0);
-  const deliveryFee = parseFloat(order.delivery_fee || 0);
-  const subtotal = Math.max(0, totalPrice - deliveryFee);
+  let itemsSubtotal = 0;
+  items.forEach((item) => {
+    const qty = parseInt(item.quantity) || 1;
+    if (item.subtotal) {
+      itemsSubtotal += parseFloat(item.subtotal);
+    } else if (item.price || item.menuitems?.price) {
+      itemsSubtotal += parseFloat(item.price || item.menuitems?.price) * qty;
+    }
+  });
 
-  const baseHt = totalPrice / (1 + tvaRate);
-  const tvaAmount = totalPrice - baseHt;
+  const deliveryFee = parseFloat(order.delivery_fee || 0);
+  const tvaAmount = itemsSubtotal * tvaRate;
+  const totalPrice = itemsSubtotal + deliveryFee + tvaAmount;
 
   let badgeText = '★ BEZORGING ★';
   let timingText = 'LEVERTIJD: CA. 45-60 MIN • BTW 6%';
@@ -150,30 +157,26 @@ export const ReceiptTemplate = ({ order, onClose, showPrintButton = true }) => {
         <div className="space-y-1 text-[11px]">
           <div className="flex justify-between">
             <span>Subtotaal</span>
-            <span>€{subtotal.toFixed(2)}</span>
+            <span>€{itemsSubtotal.toFixed(2).replace('.', ',')}</span>
           </div>
           {deliveryFee > 0 && (
             <div className="flex justify-between">
               <span>Bezorgkosten</span>
-              <span>€{deliveryFee.toFixed(2)}</span>
+              <span>€{deliveryFee.toFixed(2).replace('.', ',')}</span>
             </div>
           )}
+          <div className="flex justify-between font-bold">
+            <span>BTW, {tvaPercentStr}</span>
+            <span>€{tvaAmount.toFixed(2).replace('.', ',')}</span>
+          </div>
         </div>
 
         <div className="border-t-2 border-black"></div>
         <div className="flex justify-between font-black text-sm">
-          <span>TOTAAL (INCL. BTW)</span>
-          <span>€{totalPrice.toFixed(2)}</span>
+          <span>TOTAAL</span>
+          <span>€{totalPrice.toFixed(2).replace('.', ',')}</span>
         </div>
         <div className="border-t-2 border-black"></div>
-
-        {/* TVA / BTW Line (Single line matching POS photo) */}
-        <div className="flex justify-between font-bold text-xs py-0.5">
-          <span>BTW, {tvaPercentStr}</span>
-          <span>€{tvaAmount.toFixed(2).replace('.', ',')}</span>
-        </div>
-
-        <div className="border-t border-black"></div>
 
         {notes && (
           <div className="border border-black p-2 bg-neutral-50 text-[10px]">
