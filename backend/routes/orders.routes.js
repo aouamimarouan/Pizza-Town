@@ -203,18 +203,7 @@ router.get('/', authenticate, async (req, res) => {
       orderBy: { created_at: 'desc' },
     });
 
-    let reasonMap = {};
-    try {
-      const rawReasons = await prisma.$queryRawUnsafe("SELECT order_id, cancellation_reason FROM orders WHERE status = 'cancelled' AND cancellation_reason IS NOT NULL;");
-      reasonMap = Object.fromEntries(rawReasons.map(r => [r.order_id, r.cancellation_reason]));
-    } catch (e) {
-      // fallback
-    }
-
-    res.json(orders.map(o => ({
-      ...sanitizeOrder(o),
-      cancellation_reason: reasonMap[o.order_id] || o.cancellation_reason || null
-    })));
+    res.json(orders.map(o => sanitizeOrder(o)));
   } catch (err) {
     console.error('[Order GET error]:', err);
     res.status(500).json({ error: 'Internal server error.', details: err.message });
