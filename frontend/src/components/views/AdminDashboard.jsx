@@ -17,6 +17,7 @@ const AdminStatusBadge = ({ status }) => {
   const statusMap = {
     'pending': { color: 'text-signal-red', label: 'New' },
     'cancelled': { color: 'text-signal-red', label: 'Cancelled' },
+    'declined': { color: 'text-signal-red', label: 'Declined' },
     'confirmed': { color: 'text-[#4F6B45]', label: 'Confirmed' },
     'cooking': { color: 'text-[#B8860B]', label: 'Preparing' }, // Amber
     'ready_for_pickup': { color: 'text-[#B8860B]', label: 'Ready' },
@@ -151,21 +152,57 @@ const AdminDashboard = () => {
     }
   };
 
- const fetchOrders = async () => {
- setIsOrdersLoading(true);
- try {
- const res = await api.get('/orders');
- setOrders(res.data);
- } catch (err) {
- toast.error(t('admin.toastLoadOrdersErr'));
- } finally {
- setIsOrdersLoading(false);
- }
- };
+  // --- Reservations State ---
+  const [reservations, setReservations] = useState([]);
+  const [isReservationsLoading, setIsReservationsLoading] = useState(true);
 
- useEffect(() => {
- if (activeAdminTab === 'orders' || activeAdminTab === 'reports') fetchOrders();
- }, [activeAdminTab]);
+  // --- Reservation Decline State ---
+  const [resToDecline, setResToDecline] = useState(null);
+  const [resDeclineReason, setResDeclineReason] = useState('');
+  const [isDecliningRes, setIsDecliningRes] = useState(false);
+
+  const RES_DECLINE_PRESETS = [
+    { id: 'fully_booked', label: 'Volgeboekt / Geen tafels beschikbaar' },
+    { id: 'closed', label: 'Buiten openingsuren / Keuken gesloten' },
+    { id: 'group_too_large', label: 'Groep te groot voor onze beschikbare tafels' },
+    { id: 'private_event', label: 'Volledig afgehuurd voor een privé-evenement' },
+    { id: 'customer_request', label: 'Klant vroeg telefonisch om annulering' },
+  ];
+
+  const fetchOrders = async () => {
+    setIsOrdersLoading(true);
+    try {
+      const res = await api.get('/orders');
+      setOrders(res.data);
+    } catch (err) {
+      toast.error(t('admin.toastLoadOrdersErr'));
+    } finally {
+      setIsOrdersLoading(false);
+    }
+  };
+
+  const fetchReservations = async () => {
+    setIsReservationsLoading(true);
+    try {
+      const res = await api.get('/reservations');
+      setReservations(res.data);
+    } catch (err) {
+      toast.error(t('admin.toastLoadResErr'));
+    } finally {
+      setIsReservationsLoading(false);
+    }
+  };
+
+  // Initial load for both orders and reservations so alert chimes & counts are immediately ready
+  useEffect(() => {
+    fetchOrders();
+    fetchReservations();
+  }, []);
+
+  useEffect(() => {
+    if (activeAdminTab === 'orders' || activeAdminTab === 'reports') fetchOrders();
+    if (activeAdminTab === 'reservations') fetchReservations();
+  }, [activeAdminTab]);
 
   const [soundEnabled, setSoundEnabled] = useState(isSoundAlertEnabled());
 
@@ -173,14 +210,20 @@ const AdminDashboard = () => {
     return orders.filter(o => o.status === 'pending');
   }, [orders]);
 
-  // Repeated sound alert every 25 seconds while there are pending orders waiting to be accepted
+  const unacceptedReservations = React.useMemo(() => {
+    return reservations.filter(r => r.status === 'pending');
+  }, [reservations]);
+
+  const totalPendingAttention = unacceptedOrders.length + unacceptedReservations.length;
+
+  // Repeated sound alert every 25 seconds while there are pending orders or table bookings waiting to be accepted
   useEffect(() => {
     let intervalId;
-    if (unacceptedOrders.length > 0 && soundEnabled) {
+    if (totalPendingAttention > 0 && soundEnabled) {
       // Play immediately
       playOrderNotificationSound();
 
-      // Repeat chime periodically until the order is accepted or muted
+      // Repeat chime periodically until all pending orders/bookings are handled or muted
       intervalId = setInterval(() => {
         playOrderNotificationSound();
       }, 25000);
@@ -188,7 +231,7 @@ const AdminDashboard = () => {
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
-  }, [unacceptedOrders.length, soundEnabled]);
+  }, [totalPendingAttention, soundEnabled]);
 
   const handleToggleSound = () => {
     const nextState = !soundEnabled;
@@ -202,48 +245,53 @@ const AdminDashboard = () => {
     }
   };
 
- useEffect(() => {
-   socket.emit('join_admin');
+  useEffect(() => {
+    socket.emit('join_admin');
 
-   socket.on('new_order', (newOrder) => {
-     playOrderNotificationSound();
-     setOrders((prev) => {
-       const exists = prev.some(o => o.order_id === newOrder.order_id);
-       if (exists) return prev;
-       return [newOrder, ...prev];
-     });
-     
-     toast.success(t('admin.toastNewOrder'), {
-       duration: 6000,
-       position: 'top-right',
-       style: { background: '#059669', color: '#fff', fontWeight: 'bold', border: '1px solid #065f46' }
-     });
-   });
+    socket.on('new_order', (newOrder) => {
+      playOrderNotificationSound(true);
+      setOrders((prev) => {
+        const exists = prev.some(o => o.order_id === newOrder.order_id);
+        if (exists) return prev;
+        return [newOrder, ...prev];
+      });
+      
+      toast.success(t('admin.toastNewOrder'), {
+        duration: 8000,
+        position: 'top-right',
+        style: { background: '#059669', color: '#fff', fontWeight: 'bold', border: '1px solid #065f46' }
+      });
+    });
 
-   socket.on('new_reservation', (newRes) => {
-     playOrderNotificationSound();
-     setReservations((prev) => {
-       const exists = prev.some(r => r.res_id === newRes.res_id);
-       if (exists) return prev;
-       return [newRes, ...prev];
-     });
+    socket.on('new_reservation', (newRes) => {
+      playOrderNotificationSound(true);
+      setReservations((prev) => {
+        const exists = prev.some(r => r.res_id === newRes.res_id);
+        if (exists) return prev;
+        return [newRes, ...prev];
+      });
 
-     toast.success(t('admin.toastNewRes'), {
-       duration: 8000,
-       position: 'top-right',
-       style: { background: '#8b5cf6', color: '#fff', fontWeight: 'bold', border: '1px solid #7c3aed' }
-     });
-   });
+      toast.success(`Nieuwe tafelreservering: ${newRes.full_name || 'Klant'} (${newRes.guests} pers.)`, {
+        icon: '🛎️',
+        duration: 9000,
+        position: 'top-right',
+        style: { background: '#8b5cf6', color: '#fff', fontWeight: 'bold', border: '1px solid #7c3aed' }
+      });
+    });
 
-   socket.on('reservation_cancelled', (updatedRes) => {
-     setReservations((prev) => prev.map(r => r.res_id === updatedRes.res_id ? updatedRes : r));
-     toast('A reservation was cancelled by the customer.', {
-       icon: '⚠️',
-       duration: 6000,
-       position: 'top-right',
-       style: { background: '#fef2f2', color: '#991b1b', border: '1px solid #f87171' }
-     });
-   });
+    socket.on('reservation_updated', (updatedRes) => {
+      setReservations((prev) => prev.map(r => r.res_id === updatedRes.res_id ? updatedRes : r));
+    });
+
+    socket.on('reservation_cancelled', (updatedRes) => {
+      setReservations((prev) => prev.map(r => r.res_id === updatedRes.res_id ? updatedRes : r));
+      toast('Een tafelreservering is geannuleerd door de klant.', {
+        icon: '⚠️',
+        duration: 6000,
+        position: 'top-right',
+        style: { background: '#fef2f2', color: '#991b1b', border: '1px solid #f87171' }
+      });
+    });
 
     socket.on('order_deleted', ({ order_id }) => {
       setOrders(prev => prev.filter(o => o.order_id !== order_id));
@@ -258,6 +306,7 @@ const AdminDashboard = () => {
     return () => {
       socket.off('new_order');
       socket.off('new_reservation');
+      socket.off('reservation_updated');
       socket.off('reservation_cancelled');
       socket.off('order_deleted');
       socket.off('orders_bulk_deleted');
@@ -351,25 +400,6 @@ const AdminDashboard = () => {
  if (activeAdminTab === 'users') fetchUsers();
  }, [activeAdminTab]);
 
- // --- Reservations State ---
- const [reservations, setReservations] = useState([]);
- const [isReservationsLoading, setIsReservationsLoading] = useState(true);
-
- const fetchReservations = async () => {
- setIsReservationsLoading(true);
- try {
- const res = await api.get('/reservations');
- setReservations(res.data);
- } catch (err) {
- toast.error(t('admin.toastLoadResErr'));
- } finally {
- setIsReservationsLoading(false);
- }
- };
-
- useEffect(() => {
- if (activeAdminTab === 'reservations') fetchReservations();
- }, [activeAdminTab]);
  
  const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
  const [editingItem, setEditingItem] = useState(null);
@@ -450,80 +480,109 @@ const AdminDashboard = () => {
  }
  };
 
- const handleConfirmReservation = async (id) => {
- try {
- await api.patch(`/reservations/${id}/status`, { status: 'confirmed' });
- toast.success(t('admin.toastResConfirmed'));
- fetchReservations();
- } catch (err) {
- toast.error(t('admin.toastResConfirmErr'));
- }
- };
+  const handleConfirmReservation = async (id) => {
+    try {
+      await api.patch(`/reservations/${id}/status`, { status: 'confirmed' });
+      toast.success(t('admin.toastResConfirmed', 'Reservering bevestigd! Klant heeft een bevestigingsmail ontvangen.'), { icon: '✅' });
+      fetchReservations();
+    } catch (err) {
+      toast.error(t('admin.toastResConfirmErr', 'Reservering bevestigen mislukt.'));
+    }
+  };
 
- const handleDeleteMenuItem = async (id) => {
- if(window.confirm(t('admin.confirmDelete'))) {
- try {
- await api.delete(`/menu/${id}`);
- toast.success(t('admin.toastItemDeleted'));
- fetchMenuItems();
- } catch (err) {
- toast.error(t('admin.toastItemDeleteErr'));
- }
- }
- };
+  const handleOpenDeclineResModal = (res) => {
+    setResToDecline(res);
+    setResDeclineReason('');
+  };
+
+  const handleConfirmDeclineReservation = async () => {
+    if (!resToDecline) return;
+    setIsDecliningRes(true);
+    try {
+      await api.patch(`/reservations/${resToDecline.res_id}/status`, {
+        status: 'declined',
+        reason: resDeclineReason.trim() || 'Helaas is er geen tafel beschikbaar op het gekozen tijdstip.'
+      });
+      toast.success('Reservering afgewezen en e-mail verzonden naar klant.', { icon: '✉️' });
+      setResToDecline(null);
+      setResDeclineReason('');
+      fetchReservations();
+    } catch (err) {
+      console.error('Decline reservation error:', err);
+      toast.error('Reservering afwijzen mislukt.');
+    } finally {
+      setIsDecliningRes(false);
+    }
+  };
+
+  const handleDeleteMenuItem = async (id) => {
+    if (window.confirm(t('admin.confirmDelete'))) {
+      try {
+        await api.delete(`/menu/${id}`);
+        toast.success(t('admin.toastItemDeleted'));
+        fetchMenuItems();
+      } catch (err) {
+        toast.error(t('admin.toastItemDeleteErr'));
+      }
+    }
+  };
 
   const tabs = [
-  { id: 'reports', label: 'Dashboard', icon: BarChart3 },
-  { id: 'orders', label: t('admin.tabOrders'), icon: ShoppingBag },
-  { id: 'reservations', label: t('admin.tabRes'), icon: ConciergeBell },
-  { id: 'users', label: t('admin.tabUsers'), icon: Users },
-  { id: 'menu', label: t('admin.tabMenu'), icon: Pizza },
-  { id: 'audit', label: t('admin.tabAudit'), icon: Settings },
-  { id: 'reviews', label: 'Client Reviews', icon: Star },
- ];
+    { id: 'reports', label: 'Dashboard', icon: BarChart3 },
+    { id: 'orders', label: t('admin.tabOrders'), icon: ShoppingBag, badge: unacceptedOrders.length },
+    { id: 'reservations', label: t('admin.tabRes'), icon: ConciergeBell, badge: unacceptedReservations.length },
+    { id: 'users', label: t('admin.tabUsers'), icon: Users },
+    { id: 'menu', label: t('admin.tabMenu'), icon: Pizza },
+    { id: 'audit', label: t('admin.tabAudit'), icon: Settings },
+    { id: 'reviews', label: 'Client Reviews', icon: Star },
+  ];
 
- return (
- <div className="flex h-screen bg-paper transition-colors font-sans text-slate overflow-hidden">
- 
+  return (
+    <div className="flex h-screen bg-paper transition-colors font-sans text-slate overflow-hidden">
 
-  {/* SIDEBAR */}
-  <div className="w-16 md:w-20 bg-mist border-r border-slate flex flex-col items-center py-6 gap-6 z-20 shrink-0">
-    {tabs.map((tab) => {
-      const Icon = tab.icon;
-      const isActive = activeAdminTab === tab.id;
-      return (
-        <button
-          key={tab.id}
-          title={tab.label}
-          onClick={() => { setActiveAdminTab(tab.id); setSearchQuery(''); }}
-          className={`p-3 rounded-md transition-all duration-200 ${
-            isActive ? 'bg-ink text-paper' : 'text-slate hover:text-ink'
-          }`}
-        >
-          <Icon className="w-5 h-5" />
-        </button>
-      )
-    })}
-  </div>
-
-  {/* MAIN WORKSPACE */}
-  <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
-    
-    {/* TOP BAR */}
-    <header className="h-16 bg-paper border-b border-slate flex items-center justify-between px-6 z-10 shrink-0">
-      <div className="flex items-center gap-4">
-        <button onClick={() => window.location.href = '/'} className="text-slate hover:text-ink"><ArrowLeft className="w-5 h-5"/></button>
-        <h1 className="font-bold text-ink uppercase tracking-widest text-sm">Pizza Town</h1>
+      {/* SIDEBAR */}
+      <div className="w-16 md:w-20 bg-mist border-r border-slate flex flex-col items-center py-6 gap-6 z-20 shrink-0">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeAdminTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              title={tab.label}
+              onClick={() => { setActiveAdminTab(tab.id); setSearchQuery(''); }}
+              className={`p-3 rounded-md transition-all duration-200 relative ${
+                isActive ? 'bg-ink text-paper' : 'text-slate hover:text-ink'
+              }`}
+            >
+              <Icon className="w-5 h-5" />
+              {tab.badge > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 bg-signal-red text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-paper">
+                  {tab.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
-      <div className="flex items-center gap-4">
-        <div className="relative cursor-pointer text-slate hover:text-ink" title="Notifications">
-          <BellRing className="w-5 h-5" />
-          {unacceptedOrders.length > 0 && (
-            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-signal-red rounded-full border-2 border-paper"></span>
-          )}
-        </div>
-      </div>
-    </header>
+
+      {/* MAIN WORKSPACE */}
+      <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
+        
+        {/* TOP BAR */}
+        <header className="h-16 bg-paper border-b border-slate flex items-center justify-between px-6 z-10 shrink-0">
+          <div className="flex items-center gap-4">
+            <button onClick={() => window.location.href = '/'} className="text-slate hover:text-ink"><ArrowLeft className="w-5 h-5"/></button>
+            <h1 className="font-bold text-ink uppercase tracking-widest text-sm">Pizza Town</h1>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="relative cursor-pointer text-slate hover:text-ink" title="Notifications">
+              <BellRing className="w-5 h-5" />
+              {totalPendingAttention > 0 && (
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-signal-red rounded-full border-2 border-paper"></span>
+              )}
+            </div>
+          </div>
+        </header>
 
     {/* NEW ORDER BANNER */}
     {unacceptedOrders.length > 0 && activeAdminTab === 'orders' && (
@@ -1279,36 +1338,73 @@ const AdminDashboard = () => {
  })
  .map((res) => {
  const isPending = res.status === 'pending';
+ const isConfirmed = res.status === 'confirmed';
  const isCancelled = res.status === 'cancelled';
- const needsAttention = isPending || isCancelled;
+ const isDeclined = res.status === 'declined';
+ const needsAttention = isPending;
+
  return (
- <tr key={res.res_id} className="hover:bg-mist transition-colors group">
- <td className="p-3 text-center">
- {needsAttention && <Flag className="w-4 h-4 text-signal-red inline" />}
+ <tr key={res.res_id} className={`hover:bg-mist transition-colors group ${isPending ? 'bg-amber-500/5' : ''}`}>
+ <td className="p-4 text-slate">
+   <div className="font-bold text-ink flex items-center gap-2">
+     {needsAttention && (
+       <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded bg-signal-red text-white text-[10px] font-bold uppercase tracking-wider animate-pulse">
+         Nieuw
+       </span>
+     )}
+     {res.full_name}
+   </div>
+   <div className="text-xs text-slate mt-0.5 flex flex-wrap items-center gap-x-2">
+     <span>{res.phone_number}</span>
+     {res.email && <span className="text-slate/70">• {res.email}</span>}
+   </div>
  </td>
- <td className="p-3 text-slate">
- <div className="font-medium text-ink">{res.full_name}</div>
- <div className="text-xs text-slate mt-1">{res.phone_number}</div>
+ <td className="p-4 text-slate">
+   <div className="font-medium text-ink">
+     {new Date(res.res_date).toLocaleDateString('nl-BE', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+   </div>
+   <div className="text-xs font-mono font-bold text-signal-red mt-0.5">
+     {new Date(res.res_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+   </div>
  </td>
- <td className="p-3 text-slate">
- <div>{new Date(res.res_date).toLocaleDateString()}</div>
- <div className="text-xs text-slate mt-1 font-mono">{new Date(res.res_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+ <td className="p-4 text-center">
+   <span className="inline-flex items-center px-2.5 py-1 rounded bg-mist border border-slate font-mono font-bold text-ink text-xs">
+     {res.guests} pers.
+   </span>
  </td>
- <td className="p-3 text-center text-ink font-mono font-bold">
- {res.guests}
+ <td className="p-4">
+   <AdminStatusBadge status={res.status} />
  </td>
- <td className="p-3">
- <AdminStatusBadge status={res.status} />
- </td>
- <td className="p-3 text-right">
- {isPending && (
- <button 
- onClick={() => handleConfirmReservation(res.res_id)}
- className="p-1 px-3 bg-[#4F6B45] text-white rounded text-[10px] font-bold uppercase hover:opacity-90 transition-opacity"
- >
- {t('admin.btnConfirm')}
- </button>
- )}
+ <td className="p-4 text-right">
+   <div className="flex items-center justify-end gap-2">
+     {isPending && (
+       <>
+         <button 
+           onClick={() => handleConfirmReservation(res.res_id)}
+           className="px-3 py-1.5 bg-[#4F6B45] hover:bg-[#3e5436] text-white rounded text-xs font-bold uppercase transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer"
+           title="Tafelreservering accepteren"
+         >
+           <CheckCircle className="w-3.5 h-3.5" /> Accepteren
+         </button>
+         <button 
+           onClick={() => handleOpenDeclineResModal(res)}
+           className="px-3 py-1.5 bg-signal-red/10 hover:bg-signal-red hover:text-white text-signal-red rounded border border-signal-red/30 text-xs font-bold uppercase transition-colors cursor-pointer"
+           title="Tafelreservering weigeren"
+         >
+           Weigeren
+         </button>
+       </>
+     )}
+     {isConfirmed && (
+       <button 
+         onClick={() => handleOpenDeclineResModal(res)}
+         className="px-2.5 py-1 bg-mist hover:bg-red-500/10 text-slate hover:text-signal-red rounded border border-slate text-[11px] font-bold uppercase transition-colors cursor-pointer"
+         title="Reservering alsnog annuleren"
+       >
+         Annuleren
+       </button>
+     )}
+   </div>
  </td>
  </tr>
  )})}
@@ -1820,6 +1916,88 @@ const AdminDashboard = () => {
           >
             {isDeletingBulk ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
             {t('admin.btnConfirmDelete', 'Permanent Verwijderen')} ({matchingBulkOrders.length})
+          </button>
+        </div>
+      </div>
+    </div>
+  )}
+
+  {/* RESERVATION DECLINE MODAL */}
+  {resToDecline && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+      <div className="bg-paper border border-slate rounded-xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-200">
+        <div className="flex items-start justify-between border-b border-slate pb-4">
+          <div>
+            <h3 className="font-bold text-ink text-base flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-signal-red" />
+              Tafelreservering Weigeren
+            </h3>
+            <p className="text-xs text-slate mt-1">
+              Voor <strong>{resToDecline.full_name}</strong> ({resToDecline.guests} personen op {new Date(resToDecline.res_date).toLocaleDateString('nl-BE')}). De klant ontvangt automatisch een e-mail met de toelichting.
+            </p>
+          </div>
+          <button 
+            onClick={() => setResToDecline(null)}
+            className="text-slate hover:text-ink p-1 rounded-md transition-colors cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Preset Reasons */}
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-slate uppercase tracking-wider block">
+            Selecteer een reden
+          </label>
+          <div className="grid grid-cols-1 gap-1.5 max-h-48 overflow-y-auto custom-scrollbar">
+            {RES_DECLINE_PRESETS.map((preset) => (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={() => setResDeclineReason(preset.label)}
+                className={`text-left text-xs px-3 py-2 rounded-md border transition-all cursor-pointer ${
+                  resDeclineReason === preset.label
+                    ? 'border-signal-red bg-signal-red/10 font-bold text-signal-red'
+                    : 'border-slate hover:border-ink/50 bg-paper text-slate hover:text-ink'
+                }`}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Custom explanation */}
+        <div className="space-y-1.5">
+          <label className="text-xs font-bold text-slate uppercase tracking-wider block">
+            Aangepaste toelichting (optioneel)
+          </label>
+          <textarea
+            rows={2}
+            value={resDeclineReason}
+            onChange={(e) => setResDeclineReason(e.target.value)}
+            placeholder="Typ een reden voor de klant..."
+            className="w-full bg-mist/50 border border-slate rounded-md p-2.5 text-xs text-ink font-sans focus:outline-none focus:border-ink resize-none"
+          />
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex justify-end gap-3 pt-2 border-t border-slate">
+          <button
+            type="button"
+            onClick={() => { setResDeclineReason(''); setResToDecline(null); }}
+            className="px-4 py-2 text-xs font-bold text-slate hover:text-ink transition-colors cursor-pointer"
+          >
+            Annuleren
+          </button>
+          <button
+            type="button"
+            onClick={handleConfirmDeclineReservation}
+            disabled={isDecliningRes}
+            className="px-4 py-2 bg-signal-red text-white rounded-md text-xs font-bold hover:bg-red-700 transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+          >
+            {isDecliningRes && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+            Reservering Weigeren
           </button>
         </div>
       </div>

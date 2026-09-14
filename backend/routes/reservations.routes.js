@@ -62,7 +62,7 @@ router.post('/', async (req, res) => {
 
     // Notify admins
     if (req.io) {
-      req.io.to('admin').emit('new_reservation', reservation);
+      req.io.emit('new_reservation', reservation);
     }
 
     res.status(201).json(reservation);
@@ -144,7 +144,8 @@ router.patch('/:id/cancel', authenticate, async (req, res) => {
 
     // Notify admins
     if (req.io) {
-      req.io.to('admin_room').emit('reservation_cancelled', updatedRes);
+      req.io.emit('reservation_cancelled', updatedRes);
+      req.io.emit('reservation_updated', updatedRes);
     }
 
     res.json(updatedRes);
@@ -165,10 +166,13 @@ router.patch('/:id/status', authenticate, requireAdmin, async (req, res) => {
     });
 
     // Notify user if confirmed
-    if (req.io && status === 'confirmed') {
-      const room = reservation.user_id ? `user_${reservation.user_id}` : null;
-      if (room) {
-        req.io.to(room).emit('reservation_confirmed', reservation);
+    if (req.io) {
+      req.io.emit('reservation_updated', reservation);
+      if (status === 'confirmed') {
+        const room = reservation.user_id ? `user_${reservation.user_id}` : null;
+        if (room) {
+          req.io.to(room).emit('reservation_confirmed', reservation);
+        }
       }
     }
 
