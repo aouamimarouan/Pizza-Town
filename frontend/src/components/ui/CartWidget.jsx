@@ -106,9 +106,9 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
 
   const subtotal = cart.reduce((sum, item) => sum + ((item.totalPrice || item.price) * item.quantity), 0);
   const deliveryFee = orderMode === 'delivery' ? 3.50 : 0;
-  const tvaRate = 0.06; // 6% BTW for delivery and takeaway
-  const tvaAmount = subtotal * tvaRate;
-  const total = subtotal + deliveryFee + tvaAmount;
+  const tvaRate = 0.06; // 6% BTW for delivery and takeaway (inbegrepen in prijzen)
+  const tvaAmount = subtotal - (subtotal / (1 + tvaRate));
+  const total = subtotal + deliveryFee;
 
   const handlePlaceOrder = async () => {
     if (orderMode === 'delivery' && !address.trim()) {
@@ -719,7 +719,7 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
                       </div>
                     )}
                     <div className="flex justify-between text-slate font-sans text-sm">
-                      <span>BTW (6%)</span>
+                      <span>{t('cart.vatIncluded', 'Waarvan BTW (6%)')}</span>
                       <span className="font-mono text-ink">€{tvaAmount.toFixed(2)}</span>
                     </div>
                     <div className="h-px bg-slate w-full my-2"></div>

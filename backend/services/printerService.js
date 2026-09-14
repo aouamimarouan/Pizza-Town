@@ -311,8 +311,8 @@ export const printCustomerReceipt = async (orderData) => {
       const deliveryType = (orderData.deliveryType || '').toLowerCase();
       const isDineIn = ['dine_in', 'dine-in', 'restaurant', 'eat_in', 'sur_place', 'ter_plaatse'].includes(deliveryType);
       const tvaRate = isDineIn ? 0.12 : 0.06;
-      const tvaAmount = subtotalNum * tvaRate;
-      const totalNum = subtotalNum + deliveryFeeNum + tvaAmount;
+      const tvaAmount = subtotalNum - (subtotalNum / (1 + tvaRate));
+      const totalNum = subtotalNum + deliveryFeeNum;
 
       printer.leftRight('Subtotaal', `€${subtotalNum.toFixed(2).replace('.', ',')}`);
       if (deliveryFeeNum > 0) {

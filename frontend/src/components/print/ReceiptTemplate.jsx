@@ -34,8 +34,8 @@ export const ReceiptTemplate = ({ order, onClose, showPrintButton = true }) => {
   });
 
   const deliveryFee = parseFloat(order.delivery_fee || 0);
-  const tvaAmount = itemsSubtotal * tvaRate;
-  const totalPrice = itemsSubtotal + deliveryFee + tvaAmount;
+  const tvaAmount = itemsSubtotal - (itemsSubtotal / (1 + tvaRate));
+  const totalPrice = itemsSubtotal + deliveryFee;
 
   let badgeText = '★ BEZORGING ★';
   let timingText = 'LEVERTIJD: CA. 45-60 MIN • BTW 6%';

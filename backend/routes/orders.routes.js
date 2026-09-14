@@ -119,8 +119,8 @@ router.post('/', authenticate, async (req, res) => {
 
     const isDineIn = ['dine_in', 'dine-in', 'restaurant', 'eat_in', 'sur_place', 'ter_plaatse'].includes((delivery_type || '').toLowerCase());
     const tva_rate = isDineIn ? 0.12 : 0.06;
-    const tva_amount = parseFloat((items_total * tva_rate).toFixed(2));
-    const total_price = items_total + delivery_fee + tva_amount;
+    const tva_amount = parseFloat((items_total - (items_total / (1 + tva_rate))).toFixed(2));
+    const total_price = parseFloat((items_total + delivery_fee).toFixed(2));
 
     // Create order + order items in a single transaction
     const order = await prisma.$transaction(async (tx) => {
