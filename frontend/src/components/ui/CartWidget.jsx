@@ -106,7 +106,7 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
 
   const subtotal = cart.reduce((sum, item) => sum + ((item.totalPrice || item.price) * item.quantity), 0);
   const deliveryFee = orderMode === 'delivery' ? 3.50 : 0;
-  const tvaRate = orderMode === 'dine_in' ? 0.12 : 0.06;
+  const tvaRate = 0.06; // 6% BTW for delivery and takeaway
   const tvaAmount = subtotal * tvaRate;
   const total = subtotal + deliveryFee + tvaAmount;
 
@@ -465,7 +465,7 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
                 <div className="flex p-1 bg-paper border border-slate rounded-md mb-2">
                   <button
                     onClick={() => setOrderMode('delivery')}
-                    className={`flex-1 py-2 text-xs sm:text-sm font-bold font-sans rounded-sm transition-colors duration-100 ${
+                    className={`flex-1 py-2 text-sm font-bold font-sans rounded-sm transition-colors duration-100 ${
                       orderMode === 'delivery' ? 'bg-ink text-paper' : 'text-slate hover:text-ink'
                     }`}
                   >
@@ -473,26 +473,16 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
                   </button>
                   <button
                     onClick={() => setOrderMode('takeaway')}
-                    className={`flex-1 py-2 text-xs sm:text-sm font-bold font-sans rounded-sm transition-colors duration-100 ${
+                    className={`flex-1 py-2 text-sm font-bold font-sans rounded-sm transition-colors duration-100 ${
                       orderMode === 'takeaway' ? 'bg-ink text-paper' : 'text-slate hover:text-ink'
                     }`}
                   >
                     Takeaway
                   </button>
-                  <button
-                    onClick={() => setOrderMode('dine_in')}
-                    className={`flex-1 py-2 text-xs sm:text-sm font-bold font-sans rounded-sm transition-colors duration-100 ${
-                      orderMode === 'dine_in' ? 'bg-ink text-paper' : 'text-slate hover:text-ink'
-                    }`}
-                  >
-                    Ter Plaatse
-                  </button>
                 </div>
                 <p className="text-xs text-slate font-sans text-center">
                   {orderMode === 'delivery' 
                     ? t('cart.deliveryEstimateWithFee', { fee: deliveryFee.toFixed(2), defaultValue: `Geschatte levertijd: 45-60 min (tot 1 uur) • Bezorgkosten: €${deliveryFee.toFixed(2)}` }) 
-                    : orderMode === 'dine_in'
-                    ? 'Geschatte bereidingstijd: 15-20 min • Eten in restaurant'
                     : t('cart.pickupEstimate', 'Geschatte afhaaltijd: 15-20 min')}
                 </p>
               </div>
@@ -542,12 +532,12 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
                     <div className="bg-mist border border-slate rounded-md p-4">
                       <div className="flex items-center text-ink font-bold font-sans text-sm mb-1">
                         <Store className="w-4 h-4 mr-2 text-signal-red" />
-                        {orderMode === 'dine_in' ? 'Restaurant Locatie (Ter Plaatse)' : t('cart.pickupStoreAddressLabel', 'Afhaallocatie')}
+                        {t('cart.pickupStoreAddressLabel', 'Afhaallocatie')}
                       </div>
                       <p className="text-sm font-sans text-ink font-bold">Pizza Town</p>
                       <p className="text-xs font-sans text-slate mt-0.5">Stationsstraat 14, 1861 Meise</p>
                       <div className="mt-2 inline-flex items-center text-[11px] font-mono font-medium text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                        {orderMode === 'dine_in' ? 'Tafelbediening • BTW 12%' : 'Open: 11:00 - 23:00 • BTW 6%'}
+                        Open: 11:00 - 23:00
                       </div>
                     </div>
 
@@ -690,11 +680,6 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
                             <Store className="w-3.5 h-3.5 text-signal-red" />
                             Afhalen
                           </>
-                        ) : orderMode === 'dine_in' ? (
-                          <>
-                            <Store className="w-3.5 h-3.5 text-signal-red" />
-                            Ter Plaatse
-                          </>
                         ) : (
                           <>
                             <MapPin className="w-3.5 h-3.5 text-signal-red" />
@@ -705,8 +690,6 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
                       <span className="text-xs font-mono font-bold text-signal-red">
                         {orderMode === 'takeaway'
                           ? (pickupTimingType === 'asap' ? t('cart.asap', 'Zo snel mogelijk (~15-20 min)') : `Klaar om ${selectedPickupTime}`)
-                          : orderMode === 'dine_in'
-                          ? 'Tafelbediening'
                           : t('cart.deliveryEstimateSummary', 'Geschatte levertijd: 45-60 min (tot 1 uur)')}
                       </span>
                     </div>
@@ -736,7 +719,7 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
                       </div>
                     )}
                     <div className="flex justify-between text-slate font-sans text-sm">
-                      <span>BTW ({orderMode === 'dine_in' ? '12%' : '6%'})</span>
+                      <span>BTW (6%)</span>
                       <span className="font-mono text-ink">€{tvaAmount.toFixed(2)}</span>
                     </div>
                     <div className="h-px bg-slate w-full my-2"></div>
