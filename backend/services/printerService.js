@@ -123,9 +123,9 @@ const getActivePrinter = async () => {
     isConnected = false;
   }
 
-  // If network printer (tcp://) is unreachable, seamlessly fall back to USB
-  if (!isConnected && process.env.PRINTER_INTERFACE?.startsWith('tcp://')) {
-    console.warn(`[Printer] Network (${process.env.PRINTER_INTERFACE}) unreachable. Falling back to USB...`);
+  // If network printer (tcp://) is unreachable, seamlessly fall back to USB (Windows local dev only)
+  if (!isConnected && process.platform === 'win32' && process.env.PRINTER_INTERFACE?.startsWith('tcp://')) {
+    console.warn(`[Printer] Network (${process.env.PRINTER_INTERFACE}) unreachable. Falling back to local Windows USB...`);
     try {
       const usbPrinter = getPrinter('printer:auto');
       if (await usbPrinter.isPrinterConnected()) {
