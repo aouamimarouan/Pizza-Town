@@ -76,6 +76,11 @@ const MenuCard = ({ item, handleAddToCart, openModal, searchQuery = '', priority
           decoding="async"
           onLoad={() => setIsLoaded(true)}
           onError={(e) => {
+            if (!e.currentTarget.dataset.triedFallback && item.name?.toLowerCase().includes('jerry')) {
+              e.currentTarget.dataset.triedFallback = 'true';
+              e.currentTarget.src = '/images/desserts/Ben-and-Jerry.jpg';
+              return;
+            }
             setIsLoaded(true);
             e.currentTarget.onerror = null;
             e.currentTarget.src = getCategoryFallback(item.category);

@@ -408,6 +408,11 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
                                 alt={item.name} 
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" 
                                 onError={(e) => { 
+                                  if (!e.currentTarget.dataset.triedFallback && item.name?.toLowerCase().includes('jerry')) {
+                                    e.currentTarget.dataset.triedFallback = 'true';
+                                    e.currentTarget.src = '/images/desserts/Ben-and-Jerry.jpg';
+                                    return;
+                                  }
                                   e.currentTarget.onerror = null;
                                   e.currentTarget.src = 'https://images.unsplash.com/photo-1628840042765-356cda07504e?q=80&w=200&auto=format&fit=crop'; 
                                 }}
