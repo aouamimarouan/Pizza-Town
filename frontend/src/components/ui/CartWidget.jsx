@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../services/api.js';
 import ItemCustomizationModal, { DEAL_CONFIGS, isCustomizable } from './ItemCustomizationModal';
 import Stepper, { Step } from './Stepper';
+import { resolveImageUrl } from '../../utils/imageUrl';
 
 const SUGGESTION_CATEGORIES = [
   { id: 'Desserts', labelKey: 'catDesserts', fallback: 'Desserts' },
@@ -403,7 +404,7 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
                           >
                             <div className="relative w-full h-20 bg-mist overflow-hidden border-b border-slate">
                               <img 
-                                src={item.image_url ? encodeURI(item.image_url.startsWith('/') ? item.image_url : `/${item.image_url}`) : 'https://images.unsplash.com/photo-1628840042765-356cda07504e?q=80&w=200&auto=format&fit=crop'} 
+                                src={resolveImageUrl(item.image_url, item.category)} 
                                 alt={item.name} 
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" 
                                 onError={(e) => { 

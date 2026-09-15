@@ -103,3 +103,11 @@ model reviews {
   orders     orders   @relation(fields: [order_id], references: [order_id], onDelete: Cascade)
   users      users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 }
+
+model item_images {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mime_type  String   @default("image/webp") @db.VarChar(50)
+  data       Bytes
+  created_at DateTime @default(now()) @db.Timestamp(6)
+}
+

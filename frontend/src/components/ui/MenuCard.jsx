@@ -1,31 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DEAL_CONFIGS, isCustomizable } from './ItemCustomizationModal';
-
-// Reliable category fallback photos so no card is ever empty or broken
-const CATEGORY_FALLBACKS = {
-  'Drinks': 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=600&auto=format&fit=crop&q=80',
-  'Pizzas': 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&auto=format&fit=crop&q=80',
-  'Pastas': 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=600&auto=format&fit=crop&q=80',
-  'Desserts': 'https://images.unsplash.com/photo-1551024506-0bccd828d307?w=600&auto=format&fit=crop&q=80',
-  'Salads': 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&auto=format&fit=crop&q=80',
-  'Starters': 'https://images.unsplash.com/photo-1541529086526-db283c563270?w=600&auto=format&fit=crop&q=80',
-  'Menu Deals': 'https://images.unsplash.com/photo-1544982503-9f984c14501a?w=600&auto=format&fit=crop&q=80',
-  'Sauces': 'https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=600&auto=format&fit=crop&q=80',
-};
-
-const getCategoryFallback = (category) => {
-  return CATEGORY_FALLBACKS[category] || 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&auto=format&fit=crop&q=80';
-};
-
-const resolveImageUrl = (path) => {
-  if (!path) return null;
-  if (path.startsWith('http://') || path.startsWith('https://')) {
-    return encodeURI(path);
-  }
-  const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  return encodeURI(cleanPath);
-};
+import { resolveImageUrl, getCategoryFallback } from '../../utils/imageUrl';
 
 const HighlightedText = ({ text = '', highlight = '' }) => {
   if (!text) return null;

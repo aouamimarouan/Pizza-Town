@@ -3,6 +3,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import sharp from 'sharp';
+import prisma from '../lib/prisma.js';
+import { authenticate, requireAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -11,6 +13,86 @@ const __dirname = path.dirname(__filename);
 
 // The original images are in frontend/public/images
 const imagesBasePath = path.join(__dirname, '..', '..', 'frontend', 'public', 'images');
+
+/**
+ * POST /api/images/upload
+ * Admin-only: Uploads, optimizes with sharp, and persists an image to the database.
+ */
+router.post('/upload', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const { image } = req.body;
+    if (!image || typeof image !== 'string') {
+      return res.status(400).json({ error: 'Afbeelding data (Base64) is verplicht.' });
+    }
+
+    // Extract base64 content
+    const matches = image.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    const base64Data = matches ? matches[2] : image;
+    const inputBuffer = Buffer.from(base64Data, 'base64');
+
+    if (inputBuffer.length === 0) {
+      return res.status(400).json({ error: 'Ongeldig afbeeldingsbestand.' });
+    }
+
+    // Optimize with sharp (Resize max 800x800, convert to high-quality compressed WebP)
+    const optimizedBuffer = await sharp(inputBuffer)
+      .resize({ width: 800, height: 800, fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: 82 })
+      .toBuffer();
+
+    // Persist to PostgreSQL database (survives all server restarts & redeploys)
+    const record = await prisma.item_images.create({
+      data: {
+        mime_type: 'image/webp',
+        data: optimizedBuffer,
+      },
+    });
+
+    const imageUrl = `/api/images/uploaded/${record.id}`;
+    res.status(201).json({ url: imageUrl, id: record.id });
+  } catch (err) {
+    console.error('[Image upload error]:', err);
+    res.status(500).json({ error: 'Uploaden van afbeelding mislukt.', details: err.message });
+  }
+});
+
+/**
+ * GET /api/images/uploaded/:id
+ * Public: Stream persistent image directly from database with caching headers.
+ */
+router.get('/uploaded/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { w } = req.query;
+
+    const record = await prisma.item_images.findUnique({
+      where: { id },
+    });
+
+    if (!record || !record.data) {
+      return res.status(404).json({ error: 'Afbeelding niet gevonden.' });
+    }
+
+    let outputBuffer = record.data;
+
+    // Optional dynamic resize if ?w= is requested
+    const width = w ? parseInt(w, 10) : null;
+    if (width && !isNaN(width)) {
+      outputBuffer = await sharp(record.data)
+        .resize({ width, withoutEnlargement: true })
+        .webp({ quality: 80 })
+        .toBuffer();
+    }
+
+    res.setHeader('Content-Type', record.mime_type || 'image/webp');
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.send(outputBuffer);
+  } catch (err) {
+    console.error('[Serve uploaded image error]:', err);
+    res.status(500).json({ error: 'Kan afbeelding niet laden.' });
+  }
+});
 
 router.get('/:category/:filename', async (req, res) => {
   try {
@@ -60,3 +142,4 @@ router.get('/:category/:filename', async (req, res) => {
 });
 
 export default router;
+

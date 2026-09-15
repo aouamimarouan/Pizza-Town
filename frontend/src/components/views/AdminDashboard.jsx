@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { 
- ShoppingBag, Pizza, Users, ConciergeBell, Activity, Search,
- CheckCircle, Receipt, MapPin, AlertCircle, Plus, Edit2, Trash2, X, Loader2,
+  ShoppingBag, Pizza, Users, ConciergeBell, Activity, Search,
+  CheckCircle, Receipt, MapPin, AlertCircle, Plus, Edit2, Trash2, X, Loader2,
   ChevronDown, ChevronUp, Printer, Clock, BarChart3, Calendar, BellRing,
-  ArrowLeft, LogOut, Flag, Settings, Bike, Utensils, Mail, Star, Volume2, VolumeX
+  ArrowLeft, LogOut, Flag, Settings, Bike, Utensils, Mail, Star, Volume2, VolumeX,
+  Upload, Image as ImageIcon, Link as LinkIcon
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import toast from 'react-hot-toast';
@@ -12,6 +13,7 @@ import api from '../../services/api.js';
 import socket from '../../services/socket.js';
 import { playOrderNotificationSound, isSoundAlertEnabled, setSoundAlertEnabled } from '../../utils/soundAlerts.js';
 import { printReceipt, printTestReceipt } from '../../utils/printService.js';
+import { resolveImageUrl, getCategoryFallback } from '../../utils/imageUrl.js';
 
 const AdminStatusBadge = ({ status }) => {
   const statusMap = {
@@ -401,84 +403,141 @@ const AdminDashboard = () => {
  }, [activeAdminTab]);
 
  
- const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
- const [editingItem, setEditingItem] = useState(null);
- const [menuForm, setMenuForm] = useState({ name: '', category: 'Pizzas', price: '', description: '' });
- const [isSaving, setIsSaving] = useState(false);
+  const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
+  const [menuForm, setMenuForm] = useState({ name: '', category: 'Pizzas', price: '', description: '', image_url: '' });
+  const [imageMode, setImageMode] = useState('upload'); // 'upload' | 'url'
+  const [pendingImageBase64, setPendingImageBase64] = useState(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
- // --- Audit Logs State ---
- const [auditLogs, setAuditLogs] = useState([]);
- const [isAuditLogsLoading, setIsAuditLogsLoading] = useState(true);
+  // --- Audit Logs State ---
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [isAuditLogsLoading, setIsAuditLogsLoading] = useState(true);
 
- const fetchAuditLogs = async () => {
- setIsAuditLogsLoading(true);
- try {
- const res = await api.get('/audit-logs');
- setAuditLogs(res.data);
- } catch (err) {
- toast.error(t('admin.toastLoadAuditErr'));
- } finally {
- setIsAuditLogsLoading(false);
- }
- };
+  const fetchAuditLogs = async () => {
+  setIsAuditLogsLoading(true);
+  try {
+  const res = await api.get('/audit-logs');
+  setAuditLogs(res.data);
+  } catch (err) {
+  toast.error(t('admin.toastLoadAuditErr'));
+  } finally {
+  setIsAuditLogsLoading(false);
+  }
+  };
 
- useEffect(() => {
- if (activeAdminTab === 'audit') fetchAuditLogs();
- }, [activeAdminTab]);
- 
- // --- Reviews State ---
- const [reviews, setReviews] = useState([]);
- const [isReviewsLoading, setIsReviewsLoading] = useState(true);
+  useEffect(() => {
+  if (activeAdminTab === 'audit') fetchAuditLogs();
+  }, [activeAdminTab]);
+  
+  // --- Reviews State ---
+  const [reviews, setReviews] = useState([]);
+  const [isReviewsLoading, setIsReviewsLoading] = useState(true);
 
- const fetchReviews = async () => {
-   setIsReviewsLoading(true);
-   try {
-     const res = await api.get('/reviews');
-     setReviews(res.data);
-   } catch (err) {
-     toast.error('Error loading reviews');
-   } finally {
-     setIsReviewsLoading(false);
-   }
- };
+  const fetchReviews = async () => {
+    setIsReviewsLoading(true);
+    try {
+      const res = await api.get('/reviews');
+      setReviews(res.data);
+    } catch (err) {
+      toast.error('Error loading reviews');
+    } finally {
+      setIsReviewsLoading(false);
+    }
+  };
 
- useEffect(() => {
-   if (activeAdminTab === 'reviews') fetchReviews();
- }, [activeAdminTab]);
+  useEffect(() => {
+    if (activeAdminTab === 'reviews') fetchReviews();
+  }, [activeAdminTab]);
 
- const categories = ['Menu Deals', 'Starters', 'Pizzas', 'Pastas', 'Salads', 'Desserts', 'Drinks', 'Sauces'];
+  const categories = ['Menu Deals', 'Starters', 'Pizzas', 'Pastas', 'Salads', 'Desserts', 'Drinks', 'Sauces'];
 
- const openMenuModal = (item = null) => {
- if (item) {
- setEditingItem(item.item_id);
- setMenuForm({ name: item.name, category: item.category, price: item.price, description: item.description || '' });
- } else {
- setEditingItem(null);
- setMenuForm({ name: '', category: 'Pizzas', price: '', description: '' });
- }
- setIsMenuModalOpen(true);
- };
+  const openMenuModal = (item = null) => {
+    if (item) {
+      setEditingItem(item.item_id);
+      setMenuForm({ 
+        name: item.name, 
+        category: item.category, 
+        price: item.price, 
+        description: item.description || '',
+        image_url: item.image_url || ''
+      });
+      setImagePreviewUrl(item.image_url || '');
+    } else {
+      setEditingItem(null);
+      setMenuForm({ 
+        name: '', 
+        category: 'Pizzas', 
+        price: '', 
+        description: '',
+        image_url: '' 
+      });
+      setImagePreviewUrl('');
+    }
+    setPendingImageBase64(null);
+    setImageMode('upload');
+    setIsMenuModalOpen(true);
+  };
 
- const handleSaveMenuItem = async (e) => {
- e.preventDefault();
- setIsSaving(true);
- try {
- const payload = { ...menuForm, price: parseFloat(menuForm.price) };
- if (editingItem) {
- await api.put(`/menu/${editingItem}`, payload);
- toast.success(t('admin.toastMenuUpdated'));
- } else {
- await api.post('/menu', payload);
- toast.success(t('admin.toastMenuCreated'));
- }
- setIsMenuModalOpen(false);
- fetchMenuItems();
- } catch (err) {
- toast.error(t('admin.toastMenuSaveErr'));
- } finally {
- setIsSaving(false);
- }
- };
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Het bestand is te groot (maximaal 10MB).');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result;
+      setPendingImageBase64(base64);
+      setImagePreviewUrl(base64);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemovePhoto = () => {
+    setPendingImageBase64(null);
+    setImagePreviewUrl('');
+    setMenuForm(prev => ({ ...prev, image_url: '' }));
+  };
+
+  const handleSaveMenuItem = async (e) => {
+    e.preventDefault();
+    setIsSaving(true);
+    try {
+      let finalImageUrl = menuForm.image_url || null;
+
+      // If a local photo file was selected, upload it to the backend first
+      if (pendingImageBase64) {
+        const uploadRes = await api.post('/images/upload', { image: pendingImageBase64 });
+        finalImageUrl = uploadRes.data.url;
+      }
+
+      const payload = { 
+        ...menuForm, 
+        price: parseFloat(menuForm.price),
+        image_url: finalImageUrl
+      };
+
+      if (editingItem) {
+        await api.put(`/menu/${editingItem}`, payload);
+        toast.success(t('admin.toastMenuUpdated', 'Menu-item succesvol bijgewerkt!'));
+      } else {
+        await api.post('/menu', payload);
+        toast.success(t('admin.toastMenuCreated', 'Menu-item succesvol toegevoegd!'));
+      }
+      setIsMenuModalOpen(false);
+      fetchMenuItems();
+    } catch (err) {
+      console.error('Menu save error:', err);
+      toast.error(err.response?.data?.error || t('admin.toastMenuSaveErr', 'Opslaan van menu-item mislukt.'));
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleConfirmReservation = async (id) => {
     try {
@@ -1251,9 +1310,24 @@ const AdminDashboard = () => {
  .map((item) => (
  <tr key={item.item_id} className="hover:bg-mist transition-colors group">
  <td className="p-4 text-slate">
- <div className="font-medium text-slate">{item.name}</div>
- <div className="text-xs text-slate mt-1 max-w-[250px] truncate">{item.description}</div>
- </td>
+    <div className="flex items-center gap-3">
+      <div className="w-12 h-12 rounded-md overflow-hidden bg-mist border border-slate/40 shrink-0 relative shadow-xs">
+        <img 
+          src={resolveImageUrl(item.image_url, item.category)} 
+          alt={item.name}
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = getCategoryFallback(item.category);
+          }}
+        />
+      </div>
+      <div>
+        <div className="font-bold text-ink">{item.name}</div>
+        <div className="text-xs text-slate mt-0.5 max-w-[250px] truncate">{item.description}</div>
+      </div>
+    </div>
+  </td>
  <td className="p-4">
  <span className="px-2 py-1 bg-stone-800 text-slate rounded text-xs border border-slate">
  {item.category}
@@ -1573,89 +1647,180 @@ const AdminDashboard = () => {
  </div>
  </main>
 
- {/* --- MENU ITEM MODAL --- */}
- {isMenuModalOpen && (
- <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
- <div className="bg-paper border border-slate rounded-md w-full max-w-md shadow-sm overflow-hidden">
- <div className="p-5 border-b border-slate flex justify-between items-center bg-paper">
- <h3 className="text-lg font-bold text-ink">
- {editingItem ? t('admin.editMenuItem') : t('admin.addMenuItem')}
- </h3>
- <button onClick={() => setIsMenuModalOpen(false)} className="text-slate hover:text-ink transition-colors">
- <X className="w-5 h-5" />
- </button>
- </div>
- 
- <form onSubmit={handleSaveMenuItem} className="p-6 space-y-4">
- <div>
- <label className="block text-xs font-semibold text-slate uppercase tracking-wider mb-2">{t('admin.lblItemName')}</label>
- <input 
- type="text" 
- required
- value={menuForm.name}
- onChange={(e) => setMenuForm({...menuForm, name: e.target.value})}
- className="w-full bg-paper border border-slate text-ink rounded-md px-4 py-2.5 focus:outline-none focus:border-emerald-500 transition-colors"
- placeholder={t('admin.plhItemName')}
- />
- </div>
+  {/* --- MENU ITEM MODAL --- */}
+  {isMenuModalOpen && (
+  <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-150">
+  <div className="bg-paper border border-slate rounded-lg w-full max-w-lg shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
+  <div className="p-5 border-b border-slate flex justify-between items-center bg-paper shrink-0">
+  <div>
+    <h3 className="text-lg font-bold text-ink">
+      {editingItem ? t('admin.editMenuItem') : t('admin.addMenuItem')}
+    </h3>
+    <p className="text-xs text-slate mt-0.5">Beheer details en foto van dit gerecht</p>
+  </div>
+  <button onClick={() => setIsMenuModalOpen(false)} className="text-slate hover:text-ink transition-colors p-1.5 rounded-sm hover:bg-mist">
+  <X className="w-5 h-5" />
+  </button>
+  </div>
+  
+  <form onSubmit={handleSaveMenuItem} className="p-6 space-y-5 overflow-y-auto custom-scrollbar flex-1">
+  <div>
+  <label className="block text-xs font-semibold text-slate uppercase tracking-wider mb-2">{t('admin.lblItemName')}</label>
+  <input 
+  type="text" 
+  required
+  value={menuForm.name}
+  onChange={(e) => setMenuForm({...menuForm, name: e.target.value})}
+  className="w-full bg-paper border border-slate text-ink rounded-md px-4 py-2.5 focus:outline-none focus:border-signal-red transition-colors"
+  placeholder={t('admin.plhItemName')}
+  />
+  </div>
 
- <div className="grid grid-cols-2 gap-4">
- <div>
- <label className="block text-xs font-semibold text-slate uppercase tracking-wider mb-2">{t('admin.lblCategory')}</label>
- <select 
- value={menuForm.category}
- onChange={(e) => setMenuForm({...menuForm, category: e.target.value})}
- className="w-full bg-paper border border-slate text-ink rounded-md px-4 py-2.5 focus:outline-none focus:border-emerald-500 transition-colors appearance-none"
- >
- {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
- </select>
- </div>
- <div>
- <label className="block text-xs font-semibold text-slate uppercase tracking-wider mb-2">{t('admin.lblPrice')}</label>
- <input 
- type="number" 
- step="0.01"
- required
- value={menuForm.price}
- onChange={(e) => setMenuForm({...menuForm, price: e.target.value})}
- className="w-full bg-paper border border-slate text-ink rounded-md px-4 py-2.5 focus:outline-none focus:border-emerald-500 transition-colors font-mono"
- placeholder={t('admin.plhPrice')}
- />
- </div>
- </div>
+  <div className="grid grid-cols-2 gap-4">
+  <div>
+  <label className="block text-xs font-semibold text-slate uppercase tracking-wider mb-2">{t('admin.lblCategory')}</label>
+  <select 
+  value={menuForm.category}
+  onChange={(e) => setMenuForm({...menuForm, category: e.target.value})}
+  className="w-full bg-paper border border-slate text-ink rounded-md px-4 py-2.5 focus:outline-none focus:border-signal-red transition-colors appearance-none"
+  >
+  {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+  </select>
+  </div>
+  <div>
+  <label className="block text-xs font-semibold text-slate uppercase tracking-wider mb-2">{t('admin.lblPrice')}</label>
+  <input 
+  type="number" 
+  step="0.01"
+  required
+  value={menuForm.price}
+  onChange={(e) => setMenuForm({...menuForm, price: e.target.value})}
+  className="w-full bg-paper border border-slate text-ink rounded-md px-4 py-2.5 focus:outline-none focus:border-signal-red transition-colors font-mono"
+  placeholder={t('admin.plhPrice')}
+  />
+  </div>
+  </div>
 
- <div>
- <label className="block text-xs font-semibold text-slate uppercase tracking-wider mb-2">{t('admin.lblDesc')}</label>
- <textarea 
- rows="3"
- value={menuForm.description}
- onChange={(e) => setMenuForm({...menuForm, description: e.target.value})}
- className="w-full bg-paper border border-slate text-ink rounded-md px-4 py-2.5 focus:outline-none focus:border-emerald-500 transition-colors resize-none"
- placeholder={t('admin.plhDesc')}
- ></textarea>
- </div>
+  <div>
+  <label className="block text-xs font-semibold text-slate uppercase tracking-wider mb-2">{t('admin.lblDesc')}</label>
+  <textarea 
+  rows="2"
+  value={menuForm.description}
+  onChange={(e) => setMenuForm({...menuForm, description: e.target.value})}
+  className="w-full bg-paper border border-slate text-ink rounded-md px-4 py-2.5 focus:outline-none focus:border-signal-red transition-colors resize-none"
+  placeholder={t('admin.plhDesc')}
+  ></textarea>
+  </div>
 
- <div className="pt-4 flex justify-end gap-3">
- <button 
- type="button" 
- onClick={() => setIsMenuModalOpen(false)}
- className="px-4 py-2 rounded-md font-semibold text-slate hover:text-ink transition-colors"
- >
- {t('admin.btnCancel')}
- </button>
- <button 
- type="submit"
- disabled={isSaving}
- className="flex items-center gap-2 px-6 py-2 bg-signal-red hover:bg-ink text-paper rounded-md font-semibold transition-colors shadow-lg disabled:opacity-50"
- >
- {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
- {editingItem ? t('admin.btnSaveChanges') : t('admin.btnCreateItem')}
- </button>
- </div>
- </form>
- </div>
- </div>
- )}
+  {/* --- DISH PHOTO MANAGEMENT SECTION --- */}
+  <div className="pt-2 border-t border-slate/30">
+    <div className="flex items-center justify-between mb-2">
+      <label className="block text-xs font-semibold text-slate uppercase tracking-wider">
+        Foto van het gerecht / Dish Photo
+      </label>
+      {(imagePreviewUrl || menuForm.image_url) && (
+        <button
+          type="button"
+          onClick={handleRemovePhoto}
+          className="text-xs text-signal-red hover:underline font-bold"
+        >
+          Foto resetten
+        </button>
+      )}
+    </div>
+
+    {/* Live Preview */}
+    <div className="mb-3 relative w-full h-44 rounded-lg overflow-hidden border border-slate bg-mist flex items-center justify-center group shadow-xs">
+      <img
+        src={imagePreviewUrl || resolveImageUrl(menuForm.image_url, menuForm.category)}
+        alt={menuForm.name || "Voorbeeld"}
+        className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-[1.01]"
+        onError={(e) => {
+          e.currentTarget.onerror = null;
+          e.currentTarget.src = getCategoryFallback(menuForm.category);
+        }}
+      />
+      <div className="absolute top-2 right-2 bg-ink/85 backdrop-blur-sm text-paper text-[10px] font-mono font-bold px-2.5 py-0.5 rounded shadow-sm">
+        {imagePreviewUrl || menuForm.image_url ? 'Aangepaste foto' : 'Standaard categorie foto'}
+      </div>
+    </div>
+
+    {/* Segmented Mode Toggle */}
+    <div className="flex rounded-md border border-slate/50 p-1 bg-mist/60 mb-3 gap-1">
+      <button
+        type="button"
+        onClick={() => setImageMode('upload')}
+        className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold rounded transition-colors ${
+          imageMode === 'upload' ? 'bg-paper text-ink shadow-xs border border-slate/30' : 'text-slate hover:text-ink'
+        }`}
+      >
+        <Upload className="w-3.5 h-3.5" />
+        Foto Uploaden (Bestand)
+      </button>
+      <button
+        type="button"
+        onClick={() => setImageMode('url')}
+        className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold rounded transition-colors ${
+          imageMode === 'url' ? 'bg-paper text-ink shadow-xs border border-slate/30' : 'text-slate hover:text-ink'
+        }`}
+      >
+        <LinkIcon className="w-3.5 h-3.5" />
+        Afbeeldingslink (URL)
+      </button>
+    </div>
+
+    {/* Upload File Mode */}
+    {imageMode === 'upload' ? (
+      <label className="border-2 border-dashed border-slate/60 hover:border-signal-red rounded-lg p-5 flex flex-col items-center justify-center cursor-pointer transition-colors bg-mist/20 hover:bg-mist/40 text-center">
+        <Upload className="w-7 h-7 text-signal-red mb-2" />
+        <span className="text-xs font-bold text-ink">Klik om een foto te kiezen of sleep hierheen</span>
+        <span className="text-[11px] text-slate mt-1">JPG, PNG of WebP (tot 10MB) • Automatisch geoptimaliseerd</span>
+        <input
+          type="file"
+          accept="image/png,image/jpeg,image/jpg,image/webp"
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+      </label>
+    ) : (
+      <div>
+        <input
+          type="url"
+          value={menuForm.image_url || ''}
+          onChange={(e) => {
+            setPendingImageBase64(null);
+            setImagePreviewUrl(e.target.value);
+            setMenuForm({ ...menuForm, image_url: e.target.value });
+          }}
+          className="w-full bg-paper border border-slate text-ink rounded-md px-4 py-2.5 text-xs focus:outline-none focus:border-signal-red transition-colors font-mono"
+          placeholder="https://images.unsplash.com/photo-..."
+        />
+        <p className="text-[11px] text-slate mt-1.5">Plak een directe webafbeeldingslink (begint met http:// of https://)</p>
+      </div>
+    )}
+  </div>
+
+  <div className="pt-4 border-t border-slate/30 flex justify-end gap-3 sticky bottom-0 bg-paper py-2">
+  <button 
+  type="button" 
+  onClick={() => setIsMenuModalOpen(false)}
+  className="px-4 py-2 rounded-md font-semibold text-slate hover:text-ink transition-colors text-sm"
+  >
+  {t('admin.btnCancel')}
+  </button>
+  <button 
+  type="submit"
+  disabled={isSaving}
+  className="flex items-center gap-2 px-6 py-2 bg-signal-red hover:bg-ink text-paper rounded-md font-semibold transition-colors shadow-sm disabled:opacity-50 text-sm"
+  >
+  {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+  {isSaving ? 'Bezig met opslaan...' : (editingItem ? t('admin.btnSaveChanges') : t('admin.btnCreateItem'))}
+  </button>
+  </div>
+  </form>
+  </div>
+  </div>
+  )}
 
   {/* ORDER CANCELLATION MODAL */}
   {orderToCancel && (
