@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DEAL_CONFIGS, isCustomizable } from './ItemCustomizationModal';
+import { resolveImageUrl } from '../../utils/imageUrl';
 
 // Reliable category fallback photos so no card is ever empty or broken
 const CATEGORY_FALLBACKS = {
@@ -16,15 +17,6 @@ const CATEGORY_FALLBACKS = {
 
 const getCategoryFallback = (category) => {
   return CATEGORY_FALLBACKS[category] || 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&auto=format&fit=crop&q=80';
-};
-
-const resolveImageUrl = (path) => {
-  if (!path) return null;
-  if (path.startsWith('http://') || path.startsWith('https://')) {
-    return encodeURI(path);
-  }
-  const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  return encodeURI(cleanPath);
 };
 
 const HighlightedText = ({ text = '', highlight = '' }) => {
