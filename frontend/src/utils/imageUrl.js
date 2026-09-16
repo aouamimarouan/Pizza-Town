@@ -16,7 +16,12 @@ export const resolveImageUrl = (path) => {
 
   // Prepend backend URL for API routes (uploaded images, dynamic image endpoint)
   if (trimmed.startsWith('/api/') || trimmed.startsWith('api/')) {
-    const rawBackend = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+    let rawBackend = import.meta.env.VITE_BACKEND_URL;
+    if (!rawBackend) {
+      const isBrowser = typeof window !== 'undefined';
+      const isLocalhost = isBrowser && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+      rawBackend = isLocalhost ? 'http://localhost:5000' : 'https://app-736fedd4-3a26-44ac-a5cc-6b340c821ab3.cleverapps.io';
+    }
     const backendUrl = rawBackend.replace(/\/$/, '');
     const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
     return `${backendUrl}${cleanPath}`;

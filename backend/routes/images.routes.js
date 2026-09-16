@@ -31,20 +31,23 @@ router.get('/uploaded/:id', async (req, res) => {
       return res.status(404).json({ error: 'Afbeelding niet gevonden.' });
     }
 
-    let outputBuffer = record.data;
+    // Convert Prisma Uint8Array to Node Buffer so Express sends raw binary image instead of JSON
+    let outputBuffer = Buffer.isBuffer(record.data) ? record.data : Buffer.from(record.data);
 
     // Optional dynamic resize if ?w= is requested
     const width = w ? parseInt(w, 10) : null;
     if (width && !isNaN(width)) {
-      outputBuffer = await sharp(record.data)
+      outputBuffer = await sharp(outputBuffer)
         .resize({ width, withoutEnlargement: true })
         .webp({ quality: 80 })
         .toBuffer();
     }
 
     res.setHeader('Content-Type', record.mime_type || 'image/webp');
+    res.setHeader('Content-Length', outputBuffer.length);
     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('Access-Control-Allow-Origin', '*');
     res.send(outputBuffer);
   } catch (err) {
     console.error('[Serve uploaded image error]:', err);
