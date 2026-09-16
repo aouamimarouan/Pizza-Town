@@ -9,7 +9,7 @@ dotenv.config();
  * by capping the Prisma client pool size.
  */
 const getDatabaseUrl = () => {
-  let url = process.env.DATABASE_URL || '';
+  let url = process.env.DATABASE_URL || process.env.POSTGRESQL_ADDON_URI || '';
   if (!url) return url;
 
   // If connection_limit is not already configured in DATABASE_URL, append safe connection pool limits
