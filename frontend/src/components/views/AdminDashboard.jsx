@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
  ShoppingBag, Pizza, Users, ConciergeBell, Activity, Search,
  CheckCircle, Receipt, MapPin, AlertCircle, Plus, Edit2, Trash2, X, Loader2,
   ChevronDown, ChevronUp, Printer, Clock, BarChart3, Calendar, BellRing,
-  ArrowLeft, LogOut, Flag, Settings, Bike, Utensils, Mail, Star, Volume2, VolumeX
+  ArrowLeft, LogOut, Flag, Settings, Bike, Utensils, Mail, Star, Volume2, VolumeX,
+  Upload, Image as ImageIcon
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import toast from 'react-hot-toast';
@@ -12,6 +13,7 @@ import api from '../../services/api.js';
 import socket from '../../services/socket.js';
 import { playOrderNotificationSound, isSoundAlertEnabled, setSoundAlertEnabled } from '../../utils/soundAlerts.js';
 import { printReceipt, printTestReceipt } from '../../utils/printService.js';
+import { resolveImageUrl } from '../../utils/imageUrl.js';
 
 const AdminStatusBadge = ({ status }) => {
   const statusMap = {
@@ -401,84 +403,166 @@ const AdminDashboard = () => {
  }, [activeAdminTab]);
 
  
- const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
- const [editingItem, setEditingItem] = useState(null);
- const [menuForm, setMenuForm] = useState({ name: '', category: 'Pizzas', price: '', description: '' });
- const [isSaving, setIsSaving] = useState(false);
+  const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
+  const [menuForm, setMenuForm] = useState({
+    name: '',
+    category: 'Pizzas',
+    price: '',
+    description: '',
+    image_url: '',
+    imagePreview: '',
+    imageFile: null
+  });
+  const fileInputRef = useRef(null);
+  const [isSaving, setIsSaving] = useState(false);
 
- // --- Audit Logs State ---
- const [auditLogs, setAuditLogs] = useState([]);
- const [isAuditLogsLoading, setIsAuditLogsLoading] = useState(true);
+  // --- Audit Logs State ---
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [isAuditLogsLoading, setIsAuditLogsLoading] = useState(true);
 
- const fetchAuditLogs = async () => {
- setIsAuditLogsLoading(true);
- try {
- const res = await api.get('/audit-logs');
- setAuditLogs(res.data);
- } catch (err) {
- toast.error(t('admin.toastLoadAuditErr'));
- } finally {
- setIsAuditLogsLoading(false);
- }
- };
+  const fetchAuditLogs = async () => {
+  setIsAuditLogsLoading(true);
+  try {
+  const res = await api.get('/audit-logs');
+  setAuditLogs(res.data);
+  } catch (err) {
+  toast.error(t('admin.toastLoadAuditErr'));
+  } finally {
+  setIsAuditLogsLoading(false);
+  }
+  };
 
- useEffect(() => {
- if (activeAdminTab === 'audit') fetchAuditLogs();
- }, [activeAdminTab]);
- 
- // --- Reviews State ---
- const [reviews, setReviews] = useState([]);
- const [isReviewsLoading, setIsReviewsLoading] = useState(true);
+  useEffect(() => {
+  if (activeAdminTab === 'audit') fetchAuditLogs();
+  }, [activeAdminTab]);
+  
+  // --- Reviews State ---
+  const [reviews, setReviews] = useState([]);
+  const [isReviewsLoading, setIsReviewsLoading] = useState(true);
 
- const fetchReviews = async () => {
-   setIsReviewsLoading(true);
-   try {
-     const res = await api.get('/reviews');
-     setReviews(res.data);
-   } catch (err) {
-     toast.error('Error loading reviews');
-   } finally {
-     setIsReviewsLoading(false);
-   }
- };
+  const fetchReviews = async () => {
+    setIsReviewsLoading(true);
+    try {
+      const res = await api.get('/reviews');
+      setReviews(res.data);
+    } catch (err) {
+      toast.error('Error loading reviews');
+    } finally {
+      setIsReviewsLoading(false);
+    }
+  };
 
- useEffect(() => {
-   if (activeAdminTab === 'reviews') fetchReviews();
- }, [activeAdminTab]);
+  useEffect(() => {
+    if (activeAdminTab === 'reviews') fetchReviews();
+  }, [activeAdminTab]);
 
- const categories = ['Menu Deals', 'Starters', 'Pizzas', 'Pastas', 'Salads', 'Desserts', 'Drinks', 'Sauces'];
+  const categories = ['Menu Deals', 'Starters', 'Pizzas', 'Pastas', 'Salads', 'Desserts', 'Drinks', 'Sauces'];
 
- const openMenuModal = (item = null) => {
- if (item) {
- setEditingItem(item.item_id);
- setMenuForm({ name: item.name, category: item.category, price: item.price, description: item.description || '' });
- } else {
- setEditingItem(null);
- setMenuForm({ name: '', category: 'Pizzas', price: '', description: '' });
- }
- setIsMenuModalOpen(true);
- };
+  const openMenuModal = (item = null) => {
+    if (item) {
+      setEditingItem(item.item_id);
+      setMenuForm({
+        name: item.name,
+        category: item.category,
+        price: item.price,
+        description: item.description || '',
+        image_url: item.image_url || '',
+        imagePreview: item.image_url ? resolveImageUrl(item.image_url) : '',
+        imageFile: null
+      });
+    } else {
+      setEditingItem(null);
+      setMenuForm({
+        name: '',
+        category: 'Pizzas',
+        price: '',
+        description: '',
+        image_url: '',
+        imagePreview: '',
+        imageFile: null
+      });
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    setIsMenuModalOpen(true);
+  };
 
- const handleSaveMenuItem = async (e) => {
- e.preventDefault();
- setIsSaving(true);
- try {
- const payload = { ...menuForm, price: parseFloat(menuForm.price) };
- if (editingItem) {
- await api.put(`/menu/${editingItem}`, payload);
- toast.success(t('admin.toastMenuUpdated'));
- } else {
- await api.post('/menu', payload);
- toast.success(t('admin.toastMenuCreated'));
- }
- setIsMenuModalOpen(false);
- fetchMenuItems();
- } catch (err) {
- toast.error(t('admin.toastMenuSaveErr'));
- } finally {
- setIsSaving(false);
- }
- };
+  const handleImageFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 8 * 1024 * 1024) {
+      toast.error('Afbeelding is te groot (maximaal 8MB)');
+      return;
+    }
+
+    const preview = URL.createObjectURL(file);
+    setMenuForm(prev => ({
+      ...prev,
+      imageFile: file,
+      imagePreview: preview
+    }));
+  };
+
+  const handleRemoveImage = () => {
+    setMenuForm(prev => ({
+      ...prev,
+      image_url: '',
+      imagePreview: '',
+      imageFile: null
+    }));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleSaveMenuItem = async (e) => {
+    e.preventDefault();
+    setIsSaving(true);
+    try {
+      let finalImageUrl = menuForm.image_url;
+
+      // If a new local image file was selected by the admin, upload it to database
+      if (menuForm.imageFile) {
+        const base64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(menuForm.imageFile);
+        });
+
+        const uploadRes = await api.post('/images/upload', { image: base64 });
+        if (uploadRes.data?.url) {
+          finalImageUrl = uploadRes.data.url;
+        }
+      }
+
+      const payload = {
+        name: menuForm.name,
+        category: menuForm.category,
+        price: parseFloat(menuForm.price),
+        description: menuForm.description,
+        image_url: finalImageUrl || null
+      };
+
+      if (editingItem) {
+        await api.put(`/menu/${editingItem}`, payload);
+        toast.success(t('admin.toastMenuUpdated', 'Menu-item bijgewerkt'));
+      } else {
+        await api.post('/menu', payload);
+        toast.success(t('admin.toastMenuCreated', 'Menu-item aangemaakt'));
+      }
+      setIsMenuModalOpen(false);
+      fetchMenuItems();
+    } catch (err) {
+      console.error('Save menu item error:', err);
+      toast.error(t('admin.toastMenuSaveErr', 'Opslaan van menu-item mislukt'));
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleConfirmReservation = async (id) => {
     try {
@@ -1250,10 +1334,25 @@ const AdminDashboard = () => {
  })
  .map((item) => (
  <tr key={item.item_id} className="hover:bg-mist transition-colors group">
- <td className="p-4 text-slate">
- <div className="font-medium text-slate">{item.name}</div>
- <div className="text-xs text-slate mt-1 max-w-[250px] truncate">{item.description}</div>
- </td>
+  <td className="p-4 text-slate">
+    <div className="flex items-center gap-3">
+      {item.image_url ? (
+        <img
+          src={resolveImageUrl(item.image_url)}
+          alt={item.name}
+          className="w-10 h-10 rounded-md object-cover border border-slate shrink-0 bg-paper"
+        />
+      ) : (
+        <div className="w-10 h-10 rounded-md border border-dashed border-slate flex items-center justify-center text-slate shrink-0 bg-mist">
+          <ImageIcon className="w-4 h-4 opacity-40" />
+        </div>
+      )}
+      <div>
+        <div className="font-medium text-slate">{item.name}</div>
+        <div className="text-xs text-slate mt-1 max-w-[250px] truncate">{item.description}</div>
+      </div>
+    </div>
+  </td>
  <td className="p-4">
  <span className="px-2 py-1 bg-stone-800 text-slate rounded text-xs border border-slate">
  {item.category}
@@ -1634,6 +1733,65 @@ const AdminDashboard = () => {
  placeholder={t('admin.plhDesc')}
  ></textarea>
  </div>
+
+  {/* --- Image Upload / Change / Delete --- */}
+  <div>
+    <label className="block text-xs font-semibold text-slate uppercase tracking-wider mb-2">
+      Afbeelding / Image
+    </label>
+    
+    <input 
+      type="file" 
+      ref={fileInputRef} 
+      accept="image/png, image/jpeg, image/webp, image/jpg" 
+      onChange={handleImageFileChange} 
+      className="hidden" 
+    />
+
+    <div className="flex items-center gap-4 p-3 bg-mist/60 border border-slate/60 rounded-md">
+      {menuForm.imagePreview ? (
+        <div className="relative w-20 h-20 rounded-md overflow-hidden bg-paper border border-slate shrink-0 shadow-xs">
+          <img 
+            src={menuForm.imagePreview} 
+            alt="Preview" 
+            className="w-full h-full object-cover" 
+          />
+        </div>
+      ) : (
+        <div className="w-20 h-20 rounded-md bg-paper border border-dashed border-slate flex flex-col items-center justify-center text-slate shrink-0">
+          <ImageIcon className="w-6 h-6 mb-1 opacity-50" />
+          <span className="text-[10px] uppercase font-semibold">Geen</span>
+        </div>
+      )}
+
+      <div className="flex-1 space-y-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-paper hover:bg-mist border border-slate text-ink text-xs font-semibold rounded-md transition-colors"
+          >
+            <Upload className="w-3.5 h-3.5" />
+            {menuForm.imagePreview ? 'Foto wijzigen' : 'Foto uploaden'}
+          </button>
+
+          {menuForm.imagePreview && (
+            <button
+              type="button"
+              onClick={handleRemoveImage}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs text-signal-red hover:bg-signal-red/10 rounded-md transition-colors font-semibold"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Verwijderen
+            </button>
+          )}
+        </div>
+        <p className="text-[11px] text-slate leading-tight">
+          Upload een foto (PNG, JPG, WebP max 8MB). De oude foto wordt automatisch uit de database verwijderd bij vervanging.
+        </p>
+      </div>
+    </div>
+  </div>
 
  <div className="pt-4 flex justify-end gap-3">
  <button 

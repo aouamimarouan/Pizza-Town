@@ -68,12 +68,36 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
   }
 });
 
+// Helper to extract uploaded item_images UUID from an image URL
+const extractUploadedImageId = (url) => {
+  if (!url || typeof url !== 'string') return null;
+  const match = url.match(/\/api\/images\/uploaded\/([0-9a-fA-F-]{36})/i);
+  return match ? match[1] : null;
+};
+
 // PUT /api/menu/:id — Admin only
 router.put('/:id', authenticate, requireAdmin, async (req, res) => {
   try {
     const { name, category, description, price, image_url, is_available } = req.body;
     if (price !== undefined && (isNaN(parseFloat(price)) || parseFloat(price) < 0)) {
        return res.status(400).json({ error: 'Price must be a non-negative number.' });
+    }
+
+    const existingItem = await prisma.menuitems.findUnique({ where: { item_id: req.params.id } });
+    if (!existingItem) return res.status(404).json({ error: 'Item not found.' });
+
+    // If image_url is changing or being removed, clean up old uploaded image from item_images in database
+    if (image_url !== undefined && image_url !== existingItem.image_url) {
+      const oldImageId = extractUploadedImageId(existingItem.image_url);
+      const newImageId = extractUploadedImageId(image_url);
+      if (oldImageId && oldImageId !== newImageId) {
+        try {
+          await prisma.item_images.delete({ where: { id: oldImageId } });
+          console.log(`[Menu Image Cleanup] Deleted replaced image ${oldImageId} from database.`);
+        } catch (cleanupErr) {
+          console.warn(`[Menu Image Cleanup Warn] Could not delete old image ${oldImageId}:`, cleanupErr.message);
+        }
+      }
     }
 
     const item = await prisma.menuitems.update({
@@ -109,6 +133,17 @@ router.delete('/:id', authenticate, requireAdmin, async (req, res) => {
     if (!item) return res.status(404).json({ error: 'Item not found.' });
 
     await prisma.menuitems.delete({ where: { item_id: req.params.id } });
+
+    // Clean up uploaded image from database if present
+    const imageId = extractUploadedImageId(item.image_url);
+    if (imageId) {
+      try {
+        await prisma.item_images.delete({ where: { id: imageId } });
+        console.log(`[Menu Image Cleanup] Deleted image ${imageId} for removed menu item ${item.item_id}`);
+      } catch (cleanupErr) {
+        console.warn(`[Menu Image Cleanup Warn] Could not delete image ${imageId}:`, cleanupErr.message);
+      }
+    }
 
     // Logging
     await logAdminAction(req.user.user_id, 'DELETE', 'MenuItem', req.params.id, item);

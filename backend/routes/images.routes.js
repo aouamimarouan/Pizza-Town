@@ -71,6 +71,11 @@ router.post('/upload', authenticate, requireAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Ongeldig afbeeldingsbestand.' });
     }
 
+    // Limit maximum raw image size to 8MB
+    if (inputBuffer.length > 8 * 1024 * 1024) {
+      return res.status(400).json({ error: 'Afbeelding is te groot (maximaal 8MB).' });
+    }
+
     const optimizedBuffer = await sharp(inputBuffer)
       .resize({ width: 800, height: 800, fit: 'inside', withoutEnlargement: true })
       .webp({ quality: 82 })
@@ -88,6 +93,24 @@ router.post('/upload', authenticate, requireAdmin, async (req, res) => {
   } catch (err) {
     console.error('[Image upload error]:', err);
     res.status(500).json({ error: 'Uploaden van afbeelding mislukt.', details: err.message });
+  }
+});
+
+/**
+ * DELETE /api/images/uploaded/:id
+ * Admin-only: Explicitly removes an uploaded image from the database.
+ */
+router.delete('/uploaded/:id', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.item_images.delete({ where: { id } });
+    res.json({ success: true, message: 'Afbeelding succesvol verwijderd.' });
+  } catch (err) {
+    if (err.code === 'P2025') {
+      return res.status(404).json({ error: 'Afbeelding niet gevonden.' });
+    }
+    console.error('[Delete image error]:', err);
+    res.status(500).json({ error: 'Verwijderen mislukt.', details: err.message });
   }
 });
 
