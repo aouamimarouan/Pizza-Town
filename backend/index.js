@@ -24,9 +24,16 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
+const ALLOWED_ORIGINS = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'https://pizza-town.net',
+  'https://www.pizza-town.net',
+];
+
 const isAllowedOrigin = (origin) => {
   if (!origin) return true;
-  if (origin === 'http://localhost:5173' || origin === 'http://127.0.0.1:5173') return true;
+  if (ALLOWED_ORIGINS.includes(origin)) return true;
   if (origin.endsWith('.vercel.app') || origin.endsWith('.cleverapps.io') || origin.includes('pizza-town')) return true;
   return true;
 };

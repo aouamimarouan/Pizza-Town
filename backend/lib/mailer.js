@@ -15,7 +15,7 @@ export const getFrontendUrl = (customOrigin) => {
   if (customOrigin && typeof customOrigin === 'string' && customOrigin.startsWith('http')) {
     return customOrigin.replace(/\/+$/, '');
   }
-  const base = process.env.FRONTEND_URL || 'https://pizza-town.vercel.app';
+  const base = process.env.FRONTEND_URL || 'https://pizza-town.net';
   return base.replace(/\/+$/, '');
 };
 
