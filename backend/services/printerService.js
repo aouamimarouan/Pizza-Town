@@ -16,11 +16,13 @@ const printQueue = new PrintQueue();
 
 import { spawn } from 'child_process';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const RAWPRINT_EXE = path.join(__dirname, '../utils/rawprint.exe');
+const LOGO_PATH = path.join(__dirname, '../assets/logo.png');
 
 // Custom driver for node-thermal-printer when communicating with Windows spooler
 const windowsSpoolerDriver = {
@@ -152,6 +154,13 @@ export const testConnection = async () => {
     }
     // Print a short test ticket in Dutch
     printer.alignCenter();
+    try {
+      if (fs.existsSync(LOGO_PATH)) {
+        await printer.printImage(LOGO_PATH);
+      }
+    } catch (imgErr) {
+      console.warn('[Printer] Could not print logo on test ticket:', imgErr.message);
+    }
     printer.println("===============================");
     printer.println("PRINTERTEST GESLAAGD");
     printer.println("===============================");
@@ -235,6 +244,16 @@ export const printCustomerReceipt = async (orderData) => {
       }
 
       printer.alignCenter();
+
+      // Print Pizza Town logo if available
+      try {
+        if (fs.existsSync(LOGO_PATH)) {
+          await printer.printImage(LOGO_PATH);
+        }
+      } catch (imgErr) {
+        console.warn('[Printer] Could not print logo image:', imgErr.message);
+      }
+
       printer.bold(true);
       printer.println('PIZZA TOWN');
       printer.bold(false);

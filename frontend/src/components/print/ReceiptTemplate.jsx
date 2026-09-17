@@ -82,6 +82,11 @@ export const ReceiptTemplate = ({ order, onClose, showPrintButton = true }) => {
       {/* Simulated Thermal Paper */}
       <div className="bg-white text-black p-4 rounded border border-neutral-300 font-mono space-y-3">
         <div className="text-center space-y-0.5">
+          <img 
+            src="/images/logo.png" 
+            alt="Pizza Town" 
+            className="w-20 h-auto mx-auto mb-1.5 object-contain" 
+          />
           <div className="font-black text-base tracking-wider">PIZZA TOWN</div>
           <div className="text-[10px] text-neutral-600">Stationsstraat 14, 1861 Meise</div>
           <div className="text-[10px] text-neutral-600">Tel: 02 269 71 76</div>
