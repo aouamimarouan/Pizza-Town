@@ -20,7 +20,9 @@ import AccountSettingsView from './components/views/AccountSettingsView';
 import ReviewSubmissionView from './components/views/ReviewSubmissionView';
 import CartWidget from './components/ui/CartWidget';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import AdminNotificationListener from './components/layout/AdminNotificationListener';
 import { logout as authLogout, getStoredUser } from './services/authService.js';
+import { unlockAudio } from './utils/soundAlerts.js';
 
 // Normalize the stored user object
 const toAppUser = (apiUser) => apiUser
@@ -111,6 +113,26 @@ function AppContent() {
     };
   }, [handleLogout]);
 
+  // Unlock audio context on first user interaction for reliable sound alerts
+  useEffect(() => {
+    const handleFirstInteraction = () => {
+      unlockAudio();
+      window.removeEventListener('click', handleFirstInteraction);
+      window.removeEventListener('touchstart', handleFirstInteraction);
+      window.removeEventListener('keydown', handleFirstInteraction);
+    };
+
+    window.addEventListener('click', handleFirstInteraction, { passive: true });
+    window.addEventListener('touchstart', handleFirstInteraction, { passive: true });
+    window.addEventListener('keydown', handleFirstInteraction, { passive: true });
+
+    return () => {
+      window.removeEventListener('click', handleFirstInteraction);
+      window.removeEventListener('touchstart', handleFirstInteraction);
+      window.removeEventListener('keydown', handleFirstInteraction);
+    };
+  }, []);
+
   const handleAddToCart = (item) => {
     if (!user.isLoggedIn) {
       alert('Please create an account or log in to place an order.');
@@ -172,6 +194,10 @@ function AppContent() {
         }} 
       >
         {(t) => {
+          if (t.type === 'custom') {
+            return resolveValue(t.message, t);
+          }
+
           // Dynamic icon and border based on type
           let Icon = null;
           let iconColor = '';
@@ -275,6 +301,9 @@ function AppContent() {
         user={user}
         handleAddToCart={handleAddToCart}
       />
+
+      {/* Global Admin Order & Reservation Notifications */}
+      <AdminNotificationListener user={user} />
     </div>
   );
 }

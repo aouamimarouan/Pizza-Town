@@ -62,6 +62,59 @@ export const setSoundAlertEnabled = (enabled) => {
 };
 
 /**
+ * Warm up / unlock the AudioContext on user interaction
+ * Guarantees audio playback will succeed when an order arrives
+ */
+export const unlockAudio = () => {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (AudioCtx) {
+      if (!audioContext || audioContext.state === 'suspended') {
+        audioContext = new AudioCtx();
+      }
+      if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+    }
+  } catch (_) {}
+};
+
+/**
+ * Request native browser notification permissions
+ */
+export const requestBrowserNotificationPermission = async () => {
+  if (typeof window !== 'undefined' && 'Notification' in window) {
+    if (Notification.permission === 'default') {
+      try {
+        await Notification.requestPermission();
+      } catch (_) {}
+    }
+  }
+};
+
+/**
+ * Display a native browser notification (even if browser tab is backgrounded)
+ */
+export const showNativeNotification = (title, options = {}) => {
+  try {
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+      const notif = new Notification(title, {
+        icon: '/favicon.png',
+        badge: '/favicon.png',
+        vibrate: [200, 100, 200],
+        ...options
+      });
+      if (options.onClickUrl) {
+        notif.onclick = () => {
+          window.focus();
+          window.location.href = options.onClickUrl;
+        };
+      }
+    }
+  } catch (_) {}
+};
+
+/**
  * Play order arrival notification sound (HTML5 audio with Web Audio API fallback)
  */
 export const playOrderNotificationSound = (force = false) => {
@@ -70,6 +123,7 @@ export const playOrderNotificationSound = (force = false) => {
   }
 
   try {
+    unlockAudio();
     const audio = new Audio('/sounds/new-order-alert.mp3');
     audio.volume = 1.0;
     const promise = audio.play();
