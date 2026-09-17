@@ -117,9 +117,24 @@ const SpecularButton = ({
     const fx = fxRef.current;
     if (!btn || !fx) return;
 
-    const dpr = window.devicePixelRatio || 1;
-    const renderer = new Renderer({ alpha: true, premultipliedAlpha: true, antialias: true, dpr });
-    const gl = renderer.gl;
+    // Skip WebGL on touch/mobile devices to save GPU contexts and avoid WebGL context loss
+    const isTouch = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    if (isTouch) return;
+
+    let renderer, gl;
+    try {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      renderer = new Renderer({ alpha: true, premultipliedAlpha: true, antialias: false, dpr });
+      gl = renderer.gl;
+      if (!gl) return;
+    } catch {
+      return;
+    }
+
+    const onContextLost = (e) => e.preventDefault();
+    gl.canvas.addEventListener('webglcontextlost', onContextLost, false);
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     gl.clearColor(0, 0, 0, 0);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
@@ -244,8 +259,13 @@ const SpecularButton = ({
       cancelAnimationFrame(raf);
       ro.disconnect();
       window.removeEventListener('pointermove', onPointerMove);
+      gl.canvas.removeEventListener('webglcontextlost', onContextLost);
       if (gl.canvas.parentNode === fx) fx.removeChild(gl.canvas);
-      gl.getExtension('WEBGL_lose_context')?.loseContext();
+      try {
+        gl.getExtension('WEBGL_lose_context')?.loseContext();
+      } catch {
+        // Ignore lose context error
+      }
     };
   }, []);
 

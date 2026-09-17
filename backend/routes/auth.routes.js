@@ -14,6 +14,7 @@ const router = Router();
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 50,
+  validate: { xForwardedForHeader: false, forwardedHeader: false },
   message: { error: 'Trop de tentatives. Veuillez réessayer plus tard.' }
 });
 
