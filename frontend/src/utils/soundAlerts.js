@@ -1,25 +1,42 @@
 // Sound notification utility for Pizza Town Admin
 let audioContext = null;
+let persistentAudio = null;
+let isAudioPrimed = false;
+
+/**
+ * Get or create the persistent preloaded HTML5 Audio instance
+ */
+export const getPersistentAudio = () => {
+  if (!persistentAudio && typeof window !== 'undefined') {
+    try {
+      persistentAudio = new Audio('/sounds/new-order-alert.mp3');
+      persistentAudio.preload = 'auto';
+    } catch (_) {}
+  }
+  return persistentAudio;
+};
 
 /**
  * Synthesize a 3-tone service bell chime using Web Audio API
  * Works instantly with zero latency, no network files required
  */
-export const playWebAudioChime = () => {
+export const playWebAudioChime = async () => {
   try {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return;
 
-    if (!audioContext || audioContext.state === 'suspended') {
+    if (!audioContext) {
       audioContext = new AudioCtx();
     }
     if (audioContext.state === 'suspended') {
-      audioContext.resume();
+      try {
+        await audioContext.resume();
+      } catch (_) {}
     }
 
     const now = audioContext.currentTime;
 
-    const playTone = (freq, startOffset, gainPeak = 0.5, duration = 1.0) => {
+    const playTone = (freq, startOffset, gainPeak = 0.6, duration = 1.0) => {
       const osc = audioContext.createOscillator();
       const gain = audioContext.createGain();
 
@@ -39,9 +56,9 @@ export const playWebAudioChime = () => {
     };
 
     // Harmonic double chime (D5: 587Hz -> A5: 880Hz -> D6: 1175Hz)
-    playTone(587.33, 0.00, 0.45, 0.9);
-    playTone(880.00, 0.22, 0.55, 1.1);
-    playTone(1174.66, 0.48, 0.65, 1.4);
+    playTone(587.33, 0.00, 0.5, 0.9);
+    playTone(880.00, 0.22, 0.6, 1.1);
+    playTone(1174.66, 0.48, 0.7, 1.4);
   } catch (err) {
     console.warn('[SoundAlerts] Web Audio playback error:', err);
   }
@@ -62,19 +79,41 @@ export const setSoundAlertEnabled = (enabled) => {
 };
 
 /**
- * Warm up / unlock the AudioContext on user interaction
- * Guarantees audio playback will succeed when an order arrives
+ * Warm up / unlock BOTH the HTML5 Audio element and the Web Audio API on user interaction
+ * Guarantees audio playback will succeed when an order arrives even in backgrounded tabs
  */
 export const unlockAudio = () => {
   try {
+    // 1. Prime persistent HTML5 Audio element on user gesture
+    const audio = getPersistentAudio();
+    if (audio && !isAudioPrimed) {
+      audio.volume = 0.001; // virtually inaudible for prime
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          audio.pause();
+          audio.currentTime = 0;
+          audio.volume = 1.0;
+          isAudioPrimed = true;
+        }).catch(() => {});
+      }
+    }
+
+    // 2. Prime Web Audio API AudioContext on user gesture
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (AudioCtx) {
-      if (!audioContext || audioContext.state === 'suspended') {
+      if (!audioContext) {
         audioContext = new AudioCtx();
       }
-      if (audioContext && audioContext.state === 'suspended') {
+      if (audioContext.state === 'suspended') {
         audioContext.resume();
       }
+      // Play a 1-sample buffer note to firmly activate the hardware audio pipeline
+      const buffer = audioContext.createBuffer(1, 1, 22050);
+      const source = audioContext.createBufferSource();
+      source.buffer = buffer;
+      source.connect(audioContext.destination);
+      source.start(0);
     }
   } catch (_) {}
 };
@@ -117,23 +156,32 @@ export const showNativeNotification = (title, options = {}) => {
 /**
  * Play order arrival notification sound (HTML5 audio with Web Audio API fallback)
  */
-export const playOrderNotificationSound = (force = false) => {
+export const playOrderNotificationSound = async (force = false) => {
   if (!force && !isSoundAlertEnabled()) {
     return;
   }
 
-  try {
-    unlockAudio();
-    const audio = new Audio('/sounds/new-order-alert.mp3');
-    audio.volume = 1.0;
-    const promise = audio.play();
-    if (promise !== undefined) {
-      promise.catch(() => {
-        // Fallback to Web Audio API synthesized chime if HTML5 audio fails or is blocked
-        playWebAudioChime();
-      });
+  let played = false;
+
+  // 1. Try persistent pre-unlocked HTML5 Audio first
+  const audio = getPersistentAudio();
+  if (audio) {
+    try {
+      audio.currentTime = 0;
+      audio.volume = 1.0;
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        await playPromise;
+        played = true;
+      }
+    } catch (e) {
+      console.warn('[SoundAlerts] HTML5 audio blocked or failed, using synthesized chime fallback:', e.message);
     }
-  } catch (e) {
-    playWebAudioChime();
+  }
+
+  // 2. If HTML5 Audio was blocked or failed, trigger synthesized Web Audio bell chime
+  if (!played) {
+    await playWebAudioChime();
   }
 };
+

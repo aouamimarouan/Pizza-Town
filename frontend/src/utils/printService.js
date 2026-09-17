@@ -85,11 +85,12 @@ const getReceiptStyles = () => `
   .receipt-logo {
     display: block;
     margin: 0 auto 6px auto;
-    width: 44mm;
-    max-width: 170px;
+    width: 46mm;
+    max-width: 175px;
     height: auto;
     object-fit: contain;
-    filter: contrast(120%);
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
   }
   .title {
     font-size: 24px;

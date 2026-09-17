@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import socket from '../../services/socket.js';
@@ -21,10 +21,40 @@ const AdminNotificationListener = ({ user }) => {
   const navigate = useNavigate();
   const locationRef = useRef(location.pathname);
 
+  const [audioReady, setAudioReady] = useState(() => {
+    if (typeof navigator !== 'undefined' && navigator.userActivation) {
+      return navigator.userActivation.hasBeenActive;
+    }
+    return false;
+  });
+
   // Keep locationRef current so socket handlers always know the exact active page
   useEffect(() => {
     locationRef.current = location.pathname;
   }, [location.pathname]);
+
+  // Unlock and mark audio as ready upon any user interaction
+  useEffect(() => {
+    if (audioReady) return;
+
+    const onUserInteraction = () => {
+      unlockAudio();
+      setAudioReady(true);
+      window.removeEventListener('pointerdown', onUserInteraction);
+      window.removeEventListener('click', onUserInteraction);
+      window.removeEventListener('keydown', onUserInteraction);
+    };
+
+    window.addEventListener('pointerdown', onUserInteraction, { passive: true });
+    window.addEventListener('click', onUserInteraction, { passive: true });
+    window.addEventListener('keydown', onUserInteraction, { passive: true });
+
+    return () => {
+      window.removeEventListener('pointerdown', onUserInteraction);
+      window.removeEventListener('click', onUserInteraction);
+      window.removeEventListener('keydown', onUserInteraction);
+    };
+  }, [audioReady]);
 
   useEffect(() => {
     if (!user?.isLoggedIn || user?.role !== 'admin') {
@@ -166,6 +196,29 @@ const AdminNotificationListener = ({ user }) => {
       socket.off('new_reservation', handleNewReservation);
     };
   }, [user?.isLoggedIn, user?.role, navigate]);
+
+  if (!user?.isLoggedIn || user?.role !== 'admin' || location.pathname.startsWith('/admin')) {
+    return null;
+  }
+
+  // If the browser autoplay policy hasn't registered a user interaction yet,
+  // show a discrete activation button so the admin can prime order sounds with 1 click
+  if (!audioReady) {
+    return (
+      <div 
+        onClick={() => {
+          unlockAudio();
+          setAudioReady(true);
+          playOrderNotificationSound(true);
+        }}
+        className="fixed bottom-4 left-4 z-50 bg-ink text-paper text-xs px-3.5 py-2 rounded-full shadow-xl border border-slate/30 flex items-center gap-2 cursor-pointer hover:bg-signal-red transition-all animate-pulse"
+        title="Klik om live ordergeluid in te schakelen"
+      >
+        <span>🔔</span>
+        <span className="font-bold">Klik om ordergeluid te activeren</span>
+      </div>
+    );
+  }
 
   return null;
 };
