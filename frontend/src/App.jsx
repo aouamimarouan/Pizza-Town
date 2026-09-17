@@ -1,23 +1,24 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Toaster, toast, resolveValue } from 'react-hot-toast';
-import { Check, AlertCircle, Info } from 'lucide-react';
+import { Check, AlertCircle, Info, Loader2 } from 'lucide-react';
 
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
-import SplashScreen from './components/layout/SplashScreen';
 import HomeView from './components/views/HomeView';
-import MenuView from './components/views/MenuView';
-import ServicesView from './components/views/ServicesView';
-import LocationView from './components/views/LocationView';
-import LoginView from './components/views/LoginView';
-import ForgotPasswordView from './components/views/ForgotPasswordView';
-import ResetPasswordView from './components/views/ResetPasswordView';
-import ReservationView from './components/views/ReservationView';
-import AdminDashboard from './components/views/AdminDashboard';
-import MyOrders from './components/views/MyOrders';
-import AccountSettingsView from './components/views/AccountSettingsView';
-import ReviewSubmissionView from './components/views/ReviewSubmissionView';
+
+// Route-based code splitting: lazy load heavy views so initial bundle is tiny
+const MenuView = lazy(() => import('./components/views/MenuView'));
+const ServicesView = lazy(() => import('./components/views/ServicesView'));
+const LocationView = lazy(() => import('./components/views/LocationView'));
+const LoginView = lazy(() => import('./components/views/LoginView'));
+const ForgotPasswordView = lazy(() => import('./components/views/ForgotPasswordView'));
+const ResetPasswordView = lazy(() => import('./components/views/ResetPasswordView'));
+const ReservationView = lazy(() => import('./components/views/ReservationView'));
+const AdminDashboard = lazy(() => import('./components/views/AdminDashboard'));
+const MyOrders = lazy(() => import('./components/views/MyOrders'));
+const AccountSettingsView = lazy(() => import('./components/views/AccountSettingsView'));
+const ReviewSubmissionView = lazy(() => import('./components/views/ReviewSubmissionView'));
 import CartWidget from './components/ui/CartWidget';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import AdminNotificationListener from './components/layout/AdminNotificationListener';
@@ -58,27 +59,6 @@ function AppContent() {
   const [user, setUser] = useState(() => toAppUser(getStoredUser()));
   const [cart, setCart] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [showSplash, setShowSplash] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    // Only show splash screen on root visit, never on direct sub-routes (login, menu, admin, etc.)
-    if (window.location.pathname !== '/') return false;
-    try {
-      const alreadyShown = sessionStorage.getItem('pizza_town_splash_shown');
-      if (alreadyShown) return false;
-      sessionStorage.setItem('pizza_town_splash_shown', 'true');
-      return true;
-    } catch {
-      return false;
-    }
-  });
-
-  const handleSplashComplete = useCallback(() => {
-    try {
-      sessionStorage.setItem('pizza_town_splash_shown', 'true');
-    } catch (_) {}
-    setShowSplash(false);
-  }, []);
-  
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -181,8 +161,7 @@ function AppContent() {
   const cartItemCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
-    <div className={`flex flex-col min-h-screen bg-paper text-ink transition-colors ${showSplash ? 'overflow-hidden h-screen' : ''}`}>
-      {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
+    <div className="flex flex-col min-h-screen bg-paper text-ink transition-colors">
       
       {/* Custom Toast Notifications */}
       <Toaster 
@@ -248,45 +227,51 @@ function AppContent() {
       />
 
       <main className="flex-grow w-full relative">
-        <Routes>
-          <Route path="/" element={<HomeView />} />
-          <Route path="/menu" element={<MenuView handleAddToCart={handleAddToCart} />} />
-          <Route path="/services" element={<ServicesView user={user} />} />
-          <Route path="/location" element={<LocationView />} />
-          <Route path="/book" element={<ReservationView />} />
-          <Route path="/login" element={user.isLoggedIn ? <Navigate to="/" /> : <LoginView onAuthSuccess={handleAuthSuccess} />} />
-          <Route path="/forgot-password" element={user.isLoggedIn ? <Navigate to="/" /> : <ForgotPasswordView />} />
-          <Route path="/reset-password" element={<ResetPasswordView />} />
-          
-          <Route path="/review/:orderId" element={
-            <ProtectedRoute user={user} allowedRoles={['customer']}>
-              <ReviewSubmissionView />
-            </ProtectedRoute>
-          } />
-          
-          {/* Protected Routes */}
-          <Route path="/orders" element={
-            <ProtectedRoute user={user} allowedRoles={['customer']}>
-              <MyOrders />
-            </ProtectedRoute>
-          } />
-          <Route path="/settings" element={
-            <ProtectedRoute user={user} allowedRoles={['customer']}>
-              <AccountSettingsView />
-            </ProtectedRoute>
-          } />
-          
-          <Route 
-            path="/admin" 
-            element={
-              <ProtectedRoute user={user} allowedRoles={['admin', 'moderator']}>
-                <AdminDashboard user={user} />
+        <Suspense fallback={
+          <div className="min-h-[50vh] flex flex-col items-center justify-center p-8">
+            <Loader2 className="w-8 h-8 text-signal-red animate-spin mb-2" />
+          </div>
+        }>
+          <Routes>
+            <Route path="/" element={<HomeView />} />
+            <Route path="/menu" element={<MenuView handleAddToCart={handleAddToCart} />} />
+            <Route path="/services" element={<ServicesView user={user} />} />
+            <Route path="/location" element={<LocationView />} />
+            <Route path="/book" element={<ReservationView />} />
+            <Route path="/login" element={user.isLoggedIn ? <Navigate to="/" /> : <LoginView onAuthSuccess={handleAuthSuccess} />} />
+            <Route path="/forgot-password" element={user.isLoggedIn ? <Navigate to="/" /> : <ForgotPasswordView />} />
+            <Route path="/reset-password" element={<ResetPasswordView />} />
+            
+            <Route path="/review/:orderId" element={
+              <ProtectedRoute user={user} allowedRoles={['customer']}>
+                <ReviewSubmissionView />
               </ProtectedRoute>
-            } 
-          />
-          
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+            } />
+            
+            {/* Protected Routes */}
+            <Route path="/orders" element={
+              <ProtectedRoute user={user} allowedRoles={['customer']}>
+                <MyOrders />
+              </ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+              <ProtectedRoute user={user} allowedRoles={['customer']}>
+                <AccountSettingsView />
+              </ProtectedRoute>
+            } />
+            
+            <Route 
+              path="/admin" 
+              element={
+                <ProtectedRoute user={user} allowedRoles={['admin', 'moderator']}>
+                  <AdminDashboard user={user} />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
       </main>
 
       {!isAdminRoute && <Footer />}

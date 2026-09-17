@@ -20,6 +20,8 @@ router.get('/', async (req, res) => {
       where: { is_available: true },
       orderBy: { category: 'asc' },
     });
+    // Cache for 60s in browser, 5m on CDN/proxies, revalidate stale up to 10m
+    res.set('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600');
     res.json(items.map(sanitizeItem));
   } catch (err) {
     console.error('[Menu GET error]:', err);
