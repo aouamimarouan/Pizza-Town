@@ -34,15 +34,16 @@ const mapDbItemToCard = (item) => ({
 
 // In-memory cache for instant 0ms switching between pages
 let memoryMenuCache = null;
+const CACHE_KEY = 'pt_menu_cache';
 
 const getCachedMenu = () => {
   if (Array.isArray(memoryMenuCache) && memoryMenuCache.length > 0) {
     return memoryMenuCache;
   }
   try {
-    const stored = sessionStorage.getItem('pt_menu_cache');
-    if (stored) {
-      const parsed = JSON.parse(stored);
+    const raw = localStorage.getItem(CACHE_KEY) || sessionStorage.getItem(CACHE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
         memoryMenuCache = parsed;
         return parsed;
@@ -75,7 +76,8 @@ const MenuView = ({ handleAddToCart }) => {
           setMenuItems(res.data);
           memoryMenuCache = res.data;
           try {
-            sessionStorage.setItem('pt_menu_cache', JSON.stringify(res.data));
+            localStorage.setItem(CACHE_KEY, JSON.stringify(res.data));
+            sessionStorage.setItem(CACHE_KEY, JSON.stringify(res.data));
           } catch {
             // Ignore storage errors
           }

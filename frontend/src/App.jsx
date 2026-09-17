@@ -6,9 +6,9 @@ import { Check, AlertCircle, Info, Loader2 } from 'lucide-react';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import HomeView from './components/views/HomeView';
+import MenuView from './components/views/MenuView';
 
-// Route-based code splitting: lazy load heavy views so initial bundle is tiny
-const MenuView = lazy(() => import('./components/views/MenuView'));
+// Route-based code splitting: lazy load admin and secondary views
 const ServicesView = lazy(() => import('./components/views/ServicesView'));
 const LocationView = lazy(() => import('./components/views/LocationView'));
 const LoginView = lazy(() => import('./components/views/LoginView'));
