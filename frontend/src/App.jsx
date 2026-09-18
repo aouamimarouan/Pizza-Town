@@ -21,6 +21,9 @@ import ReviewSubmissionView from './components/views/ReviewSubmissionView';
 import CartWidget from './components/ui/CartWidget';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { logout as authLogout, getStoredUser } from './services/authService.js';
+import { useTranslation } from 'react-i18next';
+import socket from './services/socket.js';
+import { playOrderNotificationSound, unlockAudio } from './utils/soundAlerts.js';
 
 // Normalize the stored user object
 const toAppUser = (apiUser) => apiUser
@@ -79,12 +82,68 @@ function AppContent() {
   
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation();
 
   const isAdminRoute = location.pathname.startsWith('/admin');
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDarkMode);
   }, [isDarkMode]);
+
+  // Global sound & visual notification for Admin/Moderator across all pages (e.g. Home page, Menu, etc.)
+  useEffect(() => {
+    if (!user.isLoggedIn || (user.role !== 'admin' && user.role !== 'moderator')) {
+      return;
+    }
+    // AdminDashboard (/admin) manages its own notifications and active order list
+    if (isAdminRoute) {
+      return;
+    }
+
+    socket.emit('join_admin');
+
+    const handleNewOrder = (newOrder) => {
+      unlockAudio().finally(() => {
+        playOrderNotificationSound(true);
+      });
+      const orderNum = newOrder.order_id ? newOrder.order_id.split('-')[0] : '';
+      const customer = newOrder.users?.full_name || 'Klant';
+      const price = parseFloat(newOrder.total_price || 0).toFixed(2);
+      
+      toast.success(
+        t('admin.toastNewOrder', `Nieuwe bestelling #${orderNum} van ${customer} (€${price})`),
+        {
+          duration: 8000,
+          position: 'top-right',
+          style: { background: '#059669', color: '#fff', fontWeight: 'bold', border: '1px solid #065f46' }
+        }
+      );
+    };
+
+    const handleNewReservation = (newRes) => {
+      unlockAudio().finally(() => {
+        playOrderNotificationSound(true);
+      });
+      const name = newRes.full_name || 'Klant';
+      toast.success(
+        `Nieuwe tafelreservering: ${name} (${newRes.guests || 2} pers.)`,
+        {
+          icon: '🛎️',
+          duration: 9000,
+          position: 'top-right',
+          style: { background: '#8b5cf6', color: '#fff', fontWeight: 'bold', border: '1px solid #7c3aed' }
+        }
+      );
+    };
+
+    socket.on('new_order', handleNewOrder);
+    socket.on('new_reservation', handleNewReservation);
+
+    return () => {
+      socket.off('new_order', handleNewOrder);
+      socket.off('new_reservation', handleNewReservation);
+    };
+  }, [user.isLoggedIn, user.role, isAdminRoute, t]);
 
   const handleAuthSuccess = useCallback((apiUser) => {
     setUser(toAppUser(apiUser));

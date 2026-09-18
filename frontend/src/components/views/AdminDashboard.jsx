@@ -11,7 +11,7 @@ import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import api from '../../services/api.js';
 import socket from '../../services/socket.js';
-import { playOrderNotificationSound, isSoundAlertEnabled, setSoundAlertEnabled } from '../../utils/soundAlerts.js';
+import { playOrderNotificationSound, isSoundAlertEnabled, setSoundAlertEnabled, unlockAudio } from '../../utils/soundAlerts.js';
 import { printReceipt, printTestReceipt } from '../../utils/printService.js';
 import { resolveImageUrl } from '../../utils/imageUrl.js';
 
@@ -235,15 +235,16 @@ const AdminDashboard = () => {
     };
   }, [totalPendingAttention, soundEnabled]);
 
-  const handleToggleSound = () => {
+  const handleToggleSound = async () => {
     const nextState = !soundEnabled;
     setSoundEnabled(nextState);
     setSoundAlertEnabled(nextState);
     if (nextState) {
+      await unlockAudio();
       playOrderNotificationSound(true); // Force play test chime
-      toast.success('Meldingengeluid ingeschakeld (testbel afgespeeld)', { icon: '🔔' });
+      toast.success(t('admin.toastSoundEnabled', 'Meldingengeluid ingeschakeld (testbel afgespeeld)'), { icon: '🔔' });
     } else {
-      toast('Meldingengeluid gedempt', { icon: '🔕' });
+      toast(t('admin.toastSoundMuted', 'Meldingengeluid gedempt'), { icon: '🔕' });
     }
   };
 
@@ -251,7 +252,9 @@ const AdminDashboard = () => {
     socket.emit('join_admin');
 
     socket.on('new_order', (newOrder) => {
-      playOrderNotificationSound(true);
+      unlockAudio().finally(() => {
+        playOrderNotificationSound(true);
+      });
       setOrders((prev) => {
         const exists = prev.some(o => o.order_id === newOrder.order_id);
         if (exists) return prev;
@@ -266,7 +269,9 @@ const AdminDashboard = () => {
     });
 
     socket.on('new_reservation', (newRes) => {
-      playOrderNotificationSound(true);
+      unlockAudio().finally(() => {
+        playOrderNotificationSound(true);
+      });
       setReservations((prev) => {
         const exists = prev.some(r => r.res_id === newRes.res_id);
         if (exists) return prev;
