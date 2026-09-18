@@ -14,10 +14,7 @@ const SOCKET_URL = getSocketUrl();
 
 const socket = io(SOCKET_URL, {
   autoConnect: true,
-  withCredentials: true,
-  transports: ['websocket', 'polling'],
-  reconnectionAttempts: 5,
-  reconnectionDelay: 2000,
+  withCredentials: true
 });
 
 export default socket;

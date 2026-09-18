@@ -82,16 +82,6 @@ const getReceiptStyles = () => `
   .bold {
     font-weight: 900 !important;
   }
-  .receipt-logo {
-    display: block;
-    margin: 0 auto 6px auto;
-    width: 46mm;
-    max-width: 175px;
-    height: auto;
-    object-fit: contain;
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: crisp-edges;
-  }
   .title {
     font-size: 24px;
     font-weight: 900 !important;
@@ -337,7 +327,6 @@ export const generateReceiptHtml = (order) => {
     </head>
     <body>
       <div class="center">
-        <img src="/images/logo.png" alt="Pizza Town" class="receipt-logo" />
         <div class="title">${RESTAURANT_INFO.name}</div>
         <div class="subtitle">${RESTAURANT_INFO.address}</div>
         <div class="subtitle">Tel: ${RESTAURANT_INFO.phone}</div>
@@ -434,7 +423,6 @@ export const generateTestReceiptHtml = () => {
     </head>
     <body>
       <div class="center">
-        <img src="/images/logo.png" alt="Pizza Town" class="receipt-logo" />
         <div class="title">${RESTAURANT_INFO.name}</div>
         <div class="subtitle">${RESTAURANT_INFO.address}</div>
         <div class="subtitle">Tel: ${RESTAURANT_INFO.phone}</div>
@@ -488,7 +476,8 @@ export const printHtmlContent = (htmlContent) => {
     doc.write(htmlContent);
     doc.close();
 
-    const doPrint = () => {
+    // Give browser time to parse CSS and fonts before triggering print dialog
+    setTimeout(() => {
       try {
         iframe.contentWindow.focus();
         iframe.contentWindow.print();
@@ -507,42 +496,7 @@ export const printHtmlContent = (htmlContent) => {
         }
         resolve(true);
       }
-    };
-
-    // Ensure all images are loaded before printing so logo renders reliably
-    const images = Array.from(doc.images || []);
-    if (images.length > 0) {
-      let loadedCount = 0;
-      let printTriggered = false;
-
-      const checkLoaded = () => {
-        if (printTriggered) return;
-        loadedCount++;
-        if (loadedCount >= images.length) {
-          printTriggered = true;
-          setTimeout(doPrint, 80);
-        }
-      };
-
-      images.forEach((img) => {
-        if (img.complete && img.naturalHeight !== 0) {
-          checkLoaded();
-        } else {
-          img.onload = checkLoaded;
-          img.onerror = checkLoaded;
-        }
-      });
-
-      // Safety fallback: trigger print anyway after 400ms max
-      setTimeout(() => {
-        if (!printTriggered) {
-          printTriggered = true;
-          doPrint();
-        }
-      }, 400);
-    } else {
-      setTimeout(doPrint, 200);
-    }
+    }, 250);
   });
 };
 

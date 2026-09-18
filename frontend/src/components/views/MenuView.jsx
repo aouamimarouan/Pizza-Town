@@ -32,72 +32,28 @@ const mapDbItemToCard = (item) => ({
   image_url: item.image_url || null, // Will handle empty image in MenuCard
 });
 
-// In-memory cache for instant 0ms switching between pages
-let memoryMenuCache = null;
-const CACHE_KEY = 'pt_menu_cache';
-
-const getCachedMenu = () => {
-  if (Array.isArray(memoryMenuCache) && memoryMenuCache.length > 0) {
-    return memoryMenuCache;
-  }
-  try {
-    const raw = localStorage.getItem(CACHE_KEY) || sessionStorage.getItem(CACHE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        memoryMenuCache = parsed;
-        return parsed;
-      }
-    }
-  } catch {
-    // Ignore storage errors
-  }
-  return [];
-};
-
 const MenuView = ({ handleAddToCart }) => {
   const { t } = useTranslation();
   const [activeCategory, setActiveCategory] = useState(categories[0]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [menuItems, setMenuItems] = useState(() => getCachedMenu());
-  const [isLoading, setIsLoading] = useState(() => getCachedMenu().length === 0);
+  const [menuItems, setMenuItems] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedItemForModal, setSelectedItemForModal] = useState(null);
 
   useEffect(() => {
-    let isMounted = true;
     const fetchMenu = async () => {
-      // Only trigger visual spinner if we have no cached items to display
-      if (!memoryMenuCache || memoryMenuCache.length === 0) {
-        setIsLoading(true);
-      }
+      setIsLoading(true);
       try {
         const res = await api.get('/menu');
-        if (isMounted && res.data) {
-          setMenuItems(res.data);
-          memoryMenuCache = res.data;
-          try {
-            localStorage.setItem(CACHE_KEY, JSON.stringify(res.data));
-            sessionStorage.setItem(CACHE_KEY, JSON.stringify(res.data));
-          } catch {
-            // Ignore storage errors
-          }
-        }
+        setMenuItems(res.data);
       } catch (err) {
         console.error(err);
-        if (!memoryMenuCache || memoryMenuCache.length === 0) {
-          toast.error(t('menu.toastError'));
-        }
+        toast.error(t('menu.toastError'));
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       }
     };
     fetchMenu();
-
-    return () => {
-      isMounted = false;
-    };
   }, [t]);
 
   let displayedItems = [];

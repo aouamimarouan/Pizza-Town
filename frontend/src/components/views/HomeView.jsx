@@ -79,10 +79,8 @@ const HomeView = () => {
              <div className="absolute inset-0 bg-ink rounded-lg translate-x-3 translate-y-3 opacity-5"></div>
              {/* Main Image */}
              <img 
-               src="https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=700&auto=format&fit=crop" 
+               src="https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=1200&auto=format&fit=crop" 
                alt="Freshly baked pizza" 
-               fetchPriority="high"
-               decoding="async"
                className="relative w-full h-full object-cover object-center rounded-lg shadow-md border border-mist z-10"
              />
              <div className="absolute -bottom-6 -left-6 bg-paper px-6 py-4 rounded-md shadow-lg border border-mist z-20 hidden sm:block">
@@ -132,17 +130,13 @@ const HomeView = () => {
           {/* Images Collage column */}
           <div className="order-1 lg:order-2 relative h-[450px] sm:h-[600px] w-full">
             <img 
-              src="https://images.unsplash.com/photo-1590947132387-155cc02f3212?q=80&w=600&auto=format&fit=crop" 
+              src="https://images.unsplash.com/photo-1590947132387-155cc02f3212?q=80&w=1000&auto=format&fit=crop" 
               alt="Chef preparing pizza" 
-              loading="lazy"
-              decoding="async"
               className="absolute top-0 right-0 w-[75%] h-[75%] object-cover rounded-lg shadow-md border border-mist z-0" 
             />
             <img 
-              src="https://images.unsplash.com/photo-1574071318508-1cdbab80d002?q=80&w=600&auto=format&fit=crop" 
+              src="https://images.unsplash.com/photo-1574071318508-1cdbab80d002?q=80&w=1000&auto=format&fit=crop" 
               alt="Freshly baked artisan pizza" 
-              loading="lazy"
-              decoding="async"
               className="absolute bottom-0 left-0 w-[60%] h-[50%] object-cover rounded-lg shadow-xl border-[6px] border-paper z-10" 
             />
             
