@@ -55,7 +55,8 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   credentials: true
 }));
-app.use(express.json());
+app.use(express.json({ limit: '15mb' }));
+app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 app.use(cookieParser());
 
 // Attach Socket.io instance to req object
@@ -104,8 +105,11 @@ app.use((req, res) => {
 
 // Global error handler
 app.use((err, req, res, next) => {
+  if (err.type === 'entity.too.large' || err.status === 413) {
+    return res.status(413).json({ error: 'Het geüploade bestand is te groot (maximaal 8MB toegestaan).' });
+  }
   console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong.' });
+  res.status(err.status || 500).json({ error: 'Something went wrong.' });
 });
 
 httpServer.listen(PORT, () => {
