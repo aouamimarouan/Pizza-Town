@@ -46,11 +46,12 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
     if (!name || isNaN(parseFloat(price)) || parseFloat(price) < 0) {
       return res.status(400).json({ error: 'Name and a valid non-negative price are required.' });
     }
+    const cleanCategory = typeof category === 'string' && category.trim() ? category.trim() : null;
     const item = await prisma.menuitems.create({
       data: { 
         item_id: randomUUID(),
-        name, 
-        category, 
+        name: name.trim(), 
+        category: cleanCategory, 
         description, 
         price: parseFloat(price), 
         image_url, 
@@ -100,11 +101,13 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
       }
     }
 
+    const cleanCategory = typeof category === 'string' ? (category.trim() || null) : undefined;
+
     const item = await prisma.menuitems.update({
       where: { item_id: req.params.id },
       data: {
-        ...(name && { name }),
-        ...(category && { category }),
+        ...(name && { name: name.trim() }),
+        ...(cleanCategory !== undefined && { category: cleanCategory }),
         ...(description !== undefined && { description }),
         ...(price !== undefined && { price: parseFloat(price) }),
         ...(image_url !== undefined && { image_url }),

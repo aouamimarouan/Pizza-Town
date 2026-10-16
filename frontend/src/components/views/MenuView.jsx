@@ -7,8 +7,8 @@ import MenuCard from '../ui/MenuCard';
 import ItemCustomizationModal from '../ui/ItemCustomizationModal';
 import api from '../../services/api.js';
 
-// Define the categories in order
-const categories = ['Menu Deals', 'Starters', 'Pizzas', 'Pastas', 'Salads', 'Desserts', 'Drinks', 'Sauces'];
+// Define the default categories in order
+const DEFAULT_CATEGORIES = ['Menu Deals', 'Starters', 'Pizzas', 'Pastas', 'Salads', 'Desserts', 'Drinks', 'Sauces'];
 
 const categoryTranslationKeys = {
   'Menu Deals': 'catMenuDeals',
@@ -34,11 +34,21 @@ const mapDbItemToCard = (item) => ({
 
 const MenuView = ({ handleAddToCart }) => {
   const { t } = useTranslation();
-  const [activeCategory, setActiveCategory] = useState(categories[0]);
+  const [activeCategory, setActiveCategory] = useState(DEFAULT_CATEGORIES[0]);
   const [searchQuery, setSearchQuery] = useState('');
   const [menuItems, setMenuItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedItemForModal, setSelectedItemForModal] = useState(null);
+
+  const categories = React.useMemo(() => {
+    const dynamicCategories = menuItems
+      .map(item => item.category?.trim())
+      .filter(Boolean);
+    const extraCategories = Array.from(new Set(dynamicCategories))
+      .filter(cat => !DEFAULT_CATEGORIES.includes(cat))
+      .sort((a, b) => a.localeCompare(b));
+    return [...DEFAULT_CATEGORIES, ...extraCategories];
+  }, [menuItems]);
 
   useEffect(() => {
     const fetchMenu = async () => {
@@ -113,7 +123,7 @@ const MenuView = ({ handleAddToCart }) => {
                       : 'text-slate hover:text-ink'
                   }`}
                 >
-                  {t(`menu.${categoryTranslationKeys[category]}`)}
+                  {categoryTranslationKeys[category] ? t(`menu.${categoryTranslationKeys[category]}`) : category}
                   {/* Signal Red Underline for active tab */}
                   {activeCategory === category && (
                     <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-signal-red"></div>
@@ -126,7 +136,7 @@ const MenuView = ({ handleAddToCart }) => {
 
         <div className="mb-6 flex justify-between items-end">
           <h3 className="text-2xl font-bold font-display text-ink capitalize">
-            {Object.keys(categoryTranslationKeys).includes(displayTitle) ? t(`menu.${categoryTranslationKeys[displayTitle]}`) : displayTitle}
+            {categoryTranslationKeys[displayTitle] ? t(`menu.${categoryTranslationKeys[displayTitle]}`) : displayTitle}
           </h3>
           {!isLoading && searchQuery && (
             <span className="text-sm font-medium font-mono text-slate">

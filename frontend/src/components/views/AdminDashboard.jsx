@@ -462,14 +462,29 @@ const AdminDashboard = () => {
     if (activeAdminTab === 'reviews') fetchReviews();
   }, [activeAdminTab]);
 
-  const categories = ['Menu Deals', 'Starters', 'Pizzas', 'Pastas', 'Salads', 'Desserts', 'Drinks', 'Sauces'];
+  const DEFAULT_MENU_CATEGORIES = ['Menu Deals', 'Starters', 'Pizzas', 'Pastas', 'Salads', 'Desserts', 'Drinks', 'Sauces'];
+
+  const categories = React.useMemo(() => {
+    const dynamicCategories = menuItems
+      .map(item => item.category?.trim())
+      .filter(Boolean);
+    const extraCategories = Array.from(new Set(dynamicCategories))
+      .filter(cat => !DEFAULT_MENU_CATEGORIES.includes(cat))
+      .sort((a, b) => a.localeCompare(b));
+    return [...DEFAULT_MENU_CATEGORIES, ...extraCategories];
+  }, [menuItems]);
+
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
 
   const openMenuModal = (item = null) => {
+    setIsCreatingCategory(false);
+    setNewCategoryName('');
     if (item) {
       setEditingItem(item.item_id);
       setMenuForm({
         name: item.name,
-        category: item.category,
+        category: item.category || 'Pizzas',
         price: item.price,
         description: item.description || '',
         image_url: item.image_url || '',
@@ -527,6 +542,24 @@ const AdminDashboard = () => {
     e.preventDefault();
     setIsSaving(true);
     try {
+      let finalCategory = menuForm.category;
+
+      if (isCreatingCategory) {
+        const trimmed = newCategoryName.trim();
+        if (!trimmed) {
+          toast.error(t('admin.errCategoryRequired', 'Voer een geldige categorienaam in'));
+          setIsSaving(false);
+          return;
+        }
+        // If it matches an existing category case-insensitively, reuse existing casing
+        const existingMatch = categories.find(c => c.toLowerCase() === trimmed.toLowerCase());
+        finalCategory = existingMatch || trimmed;
+      } else if (!finalCategory || !finalCategory.trim()) {
+        toast.error(t('admin.errCategoryRequired', 'Selecteer een categorie'));
+        setIsSaving(false);
+        return;
+      }
+
       let finalImageUrl = menuForm.image_url;
 
       // If a new local image file was selected by the admin, upload it to database
@@ -545,8 +578,8 @@ const AdminDashboard = () => {
       }
 
       const payload = {
-        name: menuForm.name,
-        category: menuForm.category,
+        name: menuForm.name.trim(),
+        category: finalCategory.trim(),
         price: parseFloat(menuForm.price),
         description: menuForm.description,
         image_url: finalImageUrl || null
@@ -560,6 +593,8 @@ const AdminDashboard = () => {
         toast.success(t('admin.toastMenuCreated', 'Menu-item aangemaakt'));
       }
       setIsMenuModalOpen(false);
+      setIsCreatingCategory(false);
+      setNewCategoryName('');
       fetchMenuItems();
     } catch (err) {
       console.error('Save menu item error:', err);
@@ -1705,14 +1740,61 @@ const AdminDashboard = () => {
 
  <div className="grid grid-cols-2 gap-4">
  <div>
- <label className="block text-xs font-semibold text-slate uppercase tracking-wider mb-2">{t('admin.lblCategory')}</label>
- <select 
- value={menuForm.category}
- onChange={(e) => setMenuForm({...menuForm, category: e.target.value})}
- className="w-full bg-paper border border-slate text-ink rounded-md px-4 py-2.5 focus:outline-none focus:border-emerald-500 transition-colors appearance-none"
- >
- {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
- </select>
+   <div className="flex items-center justify-between mb-2">
+     <label className="block text-xs font-semibold text-slate uppercase tracking-wider">
+       {t('admin.lblCategory')}
+     </label>
+     <button
+       type="button"
+       onClick={() => {
+         setIsCreatingCategory(!isCreatingCategory);
+         if (!isCreatingCategory) {
+           setNewCategoryName('');
+         }
+       }}
+       className="text-xs text-signal-red hover:underline font-medium transition-colors"
+     >
+       {isCreatingCategory ? t('admin.btnCancelNewCategory', 'Bestaande categorie') : t('admin.btnNewCategoryShort', '+ Nieuwe categorie')}
+     </button>
+   </div>
+
+   {isCreatingCategory ? (
+     <div>
+       <input 
+         type="text" 
+         required
+         autoFocus
+         value={newCategoryName}
+         onChange={(e) => setNewCategoryName(e.target.value)}
+         className="w-full bg-paper border border-signal-red text-ink rounded-md px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-signal-red transition-colors text-sm"
+         placeholder={t('admin.plhNewCategory', 'bijv. Burgers, Wraps, Snacks...')}
+       />
+     </div>
+   ) : (
+     <div className="relative">
+       <select 
+         value={menuForm.category}
+         onChange={(e) => {
+           if (e.target.value === '__NEW__') {
+             setIsCreatingCategory(true);
+             setNewCategoryName('');
+           } else {
+             setMenuForm({...menuForm, category: e.target.value});
+           }
+         }}
+         className="w-full bg-paper border border-slate text-ink rounded-md px-4 py-2.5 focus:outline-none focus:border-emerald-500 transition-colors appearance-none cursor-pointer pr-10 text-sm"
+       >
+         {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+         <option disabled value="">──────────</option>
+         <option value="__NEW__" className="text-signal-red font-semibold">
+           {t('admin.optAddNewCategory', '+ Nieuwe categorie toevoegen...')}
+         </option>
+       </select>
+       <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate">
+         <ChevronDown className="w-4 h-4" />
+       </div>
+     </div>
+   )}
  </div>
  <div>
  <label className="block text-xs font-semibold text-slate uppercase tracking-wider mb-2">{t('admin.lblPrice')}</label>
