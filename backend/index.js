@@ -15,6 +15,7 @@ import userRoutes from './routes/user.routes.js';
 import auditRoutes from './routes/audit.routes.js';
 import imagesRoutes from './routes/images.routes.js';
 import reviewsRoutes from './routes/reviews.routes.js';
+import settingsRoutes from './routes/settings.routes.js';
 dotenv.config();
 
 const app = express();
@@ -59,7 +60,8 @@ app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 app.use(cookieParser());
 
-// Attach Socket.io instance to req object
+// Attach Socket.io instance to app and req object
+app.set('io', io);
 app.use((req, res, next) => {
   req.io = io;
   next();
@@ -98,6 +100,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/audit-logs', auditRoutes);
 app.use('/api/images', imagesRoutes);
 app.use('/api/reviews', reviewsRoutes);
+app.use('/api/settings', settingsRoutes);
 // Global 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: `Route ${req.method} ${req.path} not found.` });

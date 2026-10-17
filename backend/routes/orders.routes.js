@@ -4,6 +4,7 @@ import prisma from '../lib/prisma.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
 import { generatePrintPayload, printCustomerReceipt, printKitchenTicket, testConnection } from '../services/printerService.js';
 import { sendPostOrderReviewEmail, sendOrderCancelledEmail } from '../lib/mailer.js';
+import { getStoreSettings } from './settings.routes.js';
 
 const router = Router();
 
@@ -29,13 +30,22 @@ const sanitizeOrder = (order) => {
 // Body: { items: [{ menu_item_id, quantity, customizations }], delivery_type, pickup_time }
 router.post('/', authenticate, async (req, res) => {
   try {
-    // --- Store Operating Hours Check (Belgium: 11:00 to 23:00) ---
+    // Fetch live store parameters
+    const storeSettings = await getStoreSettings();
+
+    // 1. Manual Store Status Check (Admin can toggle open/closed)
+    if (!storeSettings.is_store_open) {
+      return res.status(403).json({
+        error: storeSettings.store_closed_message || "Het restaurant is momenteel gesloten voor bestellingen."
+      });
+    }
+
+    // 2. Standard Operating Hours Check (Belgium: 11:00 to 23:00)
     const belgiumTime = new Date().toLocaleString("en-US", { timeZone: "Europe/Brussels" });
     const currentHour = new Date(belgiumTime).getHours();
     if (currentHour < 11 || currentHour >= 23) {
-      return res.status(403).json({ error: "Le magasin est fermé. Nos horaires : 11h - 23h." });
+      return res.status(403).json({ error: "Het restaurant is gesloten. Onze openingstijden zijn 11:00 - 23:00." });
     }
-    // -------------------------------------------------------------
 
     const { items, delivery_type, delivery_address, pickup_time } = req.body;
     const user_id = req.user.user_id;
@@ -65,8 +75,6 @@ router.post('/', authenticate, async (req, res) => {
       'large': 18.95
     };
 
-    // Calculate totals
-    const delivery_fee = (delivery_type === 'delivery') ? 3.50 : 0.00;
     let items_total = 0;
     const orderItemsData = items.map((item) => {
       const quantity = parseInt(item.quantity);
@@ -116,6 +124,25 @@ router.post('/', authenticate, async (req, res) => {
         customizations: item.customizations || null,
       };
     });
+
+    // Check minimum order amount if set by admin
+    if (storeSettings.min_order_amount > 0 && items_total < storeSettings.min_order_amount) {
+      return res.status(400).json({
+        error: `Minimum bestelbedrag is €${storeSettings.min_order_amount.toFixed(2)} (uw subtotaal is €${items_total.toFixed(2)}).`
+      });
+    }
+
+    // Dynamic delivery fee calculation based on admin settings
+    let delivery_fee = 0.00;
+    if (delivery_type === 'delivery') {
+      if (!storeSettings.delivery_fee_enabled) {
+        delivery_fee = 0.00;
+      } else if (storeSettings.free_delivery_threshold > 0 && items_total >= storeSettings.free_delivery_threshold) {
+        delivery_fee = 0.00;
+      } else {
+        delivery_fee = storeSettings.delivery_fee_amount;
+      }
+    }
 
     const isDineIn = ['dine_in', 'dine-in', 'restaurant', 'eat_in', 'sur_place', 'ter_plaatse'].includes((delivery_type || '').toLowerCase());
     const tva_rate = isDineIn ? 0.12 : 0.06;

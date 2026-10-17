@@ -24,7 +24,7 @@ const Footer = () => {
             </p>
             <p className="flex items-center">
               <Mail className="h-4 w-4 mr-2 text-signal-red" />
-              contact@pizzatown.be
+              pizzatownmeise@gmail.com
             </p>
           </div>
         </div>

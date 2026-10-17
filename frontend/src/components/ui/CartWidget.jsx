@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api.js';
+import socket from '../../services/socket.js';
 import ItemCustomizationModal, { DEAL_CONFIGS, isCustomizable } from './ItemCustomizationModal';
 import Stepper, { Step } from './Stepper';
 import { resolveImageUrl } from '../../utils/imageUrl';
@@ -94,15 +95,66 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
     }
   }, [isOpen, allMenuItems.length]);
 
+  const [storeSettings, setStoreSettings] = useState({
+    delivery_fee_enabled: true,
+    delivery_fee_amount: 3.50,
+    free_delivery_threshold: 0.00,
+    is_store_open: true,
+    store_closed_message: '',
+    min_order_amount: 0.00
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchSettings = async () => {
+      try {
+        const res = await api.get('/settings');
+        if (isMounted && res.data) {
+          setStoreSettings(res.data);
+        }
+      } catch (err) {
+        console.warn('Failed to load store settings:', err.message);
+      }
+    };
+    fetchSettings();
+
+    const handleSettingsUpdated = (newSettings) => {
+      if (isMounted && newSettings) {
+        setStoreSettings(newSettings);
+      }
+    };
+
+    socket.on('settings_updated', handleSettingsUpdated);
+    return () => {
+      isMounted = false;
+      socket.off('settings_updated', handleSettingsUpdated);
+    };
+  }, []);
+
   const activeSuggestions = allMenuItems.filter(item => item.category === activeSuggestionCategory);
 
   const subtotal = cart.reduce((sum, item) => sum + ((item.totalPrice || item.price) * item.quantity), 0);
-  const deliveryFee = orderMode === 'delivery' ? 3.50 : 0;
+  
+  const isFreeDelivery = !storeSettings.delivery_fee_enabled || 
+    (storeSettings.free_delivery_threshold > 0 && subtotal >= storeSettings.free_delivery_threshold);
+
+  const deliveryFee = orderMode === 'delivery' 
+    ? (isFreeDelivery ? 0 : (storeSettings.delivery_fee_amount ?? 3.50)) 
+    : 0;
+
   const tvaRate = 0.06; // 6% BTW for delivery and takeaway (inbegrepen in prijzen)
   const tvaAmount = subtotal - (subtotal / (1 + tvaRate));
   const total = subtotal + deliveryFee;
 
   const handlePlaceOrder = async () => {
+    if (!storeSettings.is_store_open) {
+      toast.error(storeSettings.store_closed_message || 'Het restaurant is momenteel gesloten voor bestellingen.');
+      return;
+    }
+    if (storeSettings.min_order_amount > 0 && subtotal < storeSettings.min_order_amount) {
+      toast.error(`Minimum bestelbedrag is €${storeSettings.min_order_amount.toFixed(2)}.`);
+      return;
+    }
     if (orderMode === 'delivery' && !address.trim()) {
       toast.error('Please provide a delivery address.');
       return;
@@ -485,9 +537,16 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
                 </div>
                 <p className="text-xs text-slate font-sans text-center">
                   {orderMode === 'delivery' 
-                    ? t('cart.deliveryEstimateWithFee', { fee: deliveryFee.toFixed(2), defaultValue: `Geschatte levertijd: 45-60 min (tot 1 uur) • Bezorgkosten: €${deliveryFee.toFixed(2)}` }) 
+                    ? (isFreeDelivery 
+                        ? <span className="text-signal-red font-bold">Geschatte levertijd: 45-60 min • Bezorgkosten: GRATIS!</span>
+                        : t('cart.deliveryEstimateWithFee', { fee: deliveryFee.toFixed(2), defaultValue: `Geschatte levertijd: 45-60 min (tot 1 uur) • Bezorgkosten: €${deliveryFee.toFixed(2)}` })) 
                     : t('cart.pickupEstimate', 'Geschatte afhaaltijd: 15-20 min')}
                 </p>
+                {orderMode === 'delivery' && storeSettings.free_delivery_threshold > 0 && !isFreeDelivery && (
+                  <p className="text-[11px] text-[#4F6B45] font-semibold font-sans text-center mt-1">
+                    🎉 Voeg nog €{(storeSettings.free_delivery_threshold - subtotal).toFixed(2)} toe voor gratis bezorging!
+                  </p>
+                )}
               </div>
 
               {/* Contact & Address Confirmation */}
@@ -718,7 +777,13 @@ const CartWidget = ({ isOpen, setIsOpen, cart, updateQuantity, clearCart, user, 
                     {orderMode === 'delivery' && (
                       <div className="flex justify-between text-slate font-sans text-sm">
                         <span>{t('cart.deliveryFee', 'Delivery Fee')}</span>
-                        <span className="font-mono text-ink">€{deliveryFee.toFixed(2)}</span>
+                        <span className="font-mono text-ink">
+                          {isFreeDelivery ? (
+                            <span className="text-signal-red font-bold uppercase tracking-wider">Gratis</span>
+                          ) : (
+                            `€${deliveryFee.toFixed(2)}`
+                          )}
+                        </span>
                       </div>
                     )}
                     <div className="flex justify-between text-slate font-sans text-sm">

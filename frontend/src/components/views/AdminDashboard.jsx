@@ -4,13 +4,14 @@ import {
  CheckCircle, Receipt, MapPin, AlertCircle, Plus, Edit2, Trash2, X, Loader2,
   ChevronDown, ChevronUp, Printer, Clock, BarChart3, Calendar, BellRing,
   ArrowLeft, LogOut, Flag, Settings, Bike, Utensils, Mail, Star, Volume2, VolumeX,
-  Upload, Image as ImageIcon
+  Upload, Image as ImageIcon, Store, Shield, Check
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import api from '../../services/api.js';
 import socket from '../../services/socket.js';
+import { getStoredUser } from '../../services/authService.js';
 import { playOrderNotificationSound, isSoundAlertEnabled, setSoundAlertEnabled, unlockAudio } from '../../utils/soundAlerts.js';
 import { printReceipt, printTestReceipt } from '../../utils/printService.js';
 import { resolveImageUrl } from '../../utils/imageUrl.js';
@@ -427,19 +428,97 @@ const AdminDashboard = () => {
   const [isAuditLogsLoading, setIsAuditLogsLoading] = useState(true);
 
   const fetchAuditLogs = async () => {
-  setIsAuditLogsLoading(true);
-  try {
-  const res = await api.get('/audit-logs');
-  setAuditLogs(res.data);
-  } catch (err) {
-  toast.error(t('admin.toastLoadAuditErr'));
-  } finally {
-  setIsAuditLogsLoading(false);
-  }
+    setIsAuditLogsLoading(true);
+    try {
+      const res = await api.get('/audit-logs');
+      setAuditLogs(res.data);
+    } catch (err) {
+      toast.error(t('admin.toastLoadAuditErr'));
+    } finally {
+      setIsAuditLogsLoading(false);
+    }
+  };
+
+  // --- Parameters & Settings Console State ---
+  const [settingsSubTab, setSettingsSubTab] = useState('store'); // 'store' | 'roles' | 'audit'
+  const [storeSettings, setStoreSettings] = useState({
+    delivery_fee_enabled: true,
+    delivery_fee_amount: 3.50,
+    free_delivery_threshold: 0.00,
+    is_store_open: true,
+    store_closed_message: '',
+    announcement_banner: '',
+    min_order_amount: 0.00
+  });
+  const [isSettingsLoading, setIsSettingsLoading] = useState(false);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+
+  // User Role Management State
+  const [roleModalUser, setRoleModalUser] = useState(null);
+  const [targetRole, setTargetRole] = useState(null);
+  const [isUpdatingRole, setIsUpdatingRole] = useState(false);
+
+  const currentUser = getStoredUser();
+
+  const fetchSettings = async () => {
+    setIsSettingsLoading(true);
+    try {
+      const res = await api.get('/settings');
+      if (res.data) {
+        setStoreSettings(res.data);
+      }
+    } catch (err) {
+      console.error('Failed to load store settings:', err);
+    } finally {
+      setIsSettingsLoading(false);
+    }
+  };
+
+  const handleSaveStoreSettings = async (e) => {
+    if (e) e.preventDefault();
+    setIsSavingSettings(true);
+    try {
+      const res = await api.put('/settings', storeSettings);
+      setStoreSettings(res.data);
+      toast.success(t('admin.toastSettingsSaved', 'Instellingen succesvol bijgewerkt!'));
+      fetchAuditLogs();
+    } catch (err) {
+      console.error('Save settings error:', err);
+      toast.error(err.response?.data?.error || 'Instellingen opslaan mislukt.');
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
+  const handleOpenRoleModal = (u, newRole) => {
+    setRoleModalUser(u);
+    setTargetRole(newRole);
+  };
+
+  const handleConfirmRoleChange = async () => {
+    if (!roleModalUser || !targetRole) return;
+    setIsUpdatingRole(true);
+    try {
+      await api.patch(`/users/${roleModalUser.user_id}/role`, { role: targetRole });
+      toast.success(t('admin.toastRoleUpdated', { name: roleModalUser.full_name || roleModalUser.email }));
+      setRoleModalUser(null);
+      setTargetRole(null);
+      fetchUsers();
+      fetchAuditLogs();
+    } catch (err) {
+      console.error('Role update error:', err);
+      toast.error(err.response?.data?.error || t('admin.toastRoleError', 'Rol bijwerken mislukt.'));
+    } finally {
+      setIsUpdatingRole(false);
+    }
   };
 
   useEffect(() => {
-  if (activeAdminTab === 'audit') fetchAuditLogs();
+    if (activeAdminTab === 'audit') {
+      fetchAuditLogs();
+      fetchSettings();
+      fetchUsers();
+    }
   }, [activeAdminTab]);
   
   // --- Reviews State ---
@@ -657,7 +736,7 @@ const AdminDashboard = () => {
     { id: 'reservations', label: t('admin.tabRes'), icon: ConciergeBell, badge: unacceptedReservations.length },
     { id: 'users', label: t('admin.tabUsers'), icon: Users },
     { id: 'menu', label: t('admin.tabMenu'), icon: Pizza },
-    { id: 'audit', label: t('admin.tabAudit'), icon: Settings },
+    { id: 'audit', label: t('admin.settingsTitle', 'Parameters & Beheer'), icon: Settings },
     { id: 'reviews', label: 'Client Reviews', icon: Star },
   ];
 
@@ -1585,83 +1664,411 @@ const AdminDashboard = () => {
  </div>
  )
 
- /* --- TAB: AUDIT LOGS --- */
+ /* --- TAB: PARAMETERS & AUDIT LOGS --- */
  ) : activeAdminTab === 'audit' ? (
- isAuditLogsLoading ? (
- <div className="py-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-slate" /></div>
- ) : (
- <div className="overflow-x-auto">
- <table className="w-full text-left border-collapse text-sm">
- <thead>
- <tr className="bg-paper text-slate border-b border-slate font-mono text-xs uppercase tracking-wider">
- <th className="p-4 font-semibold">{t('admin.colTimestamp')}</th>
- <th className="p-4 font-semibold">{t('admin.colAdmin')}</th>
- <th className="p-4 font-semibold">{t('admin.colAction')}</th>
- <th className="p-4 font-semibold">{t('admin.colEntity')}</th>
- <th className="p-4 font-semibold">{t('admin.colDetails')}</th>
- </tr>
- </thead>
- <tbody className="divide-y divide-stone-800/50">
- {auditLogs.length === 0 ? (
- <tr>
- <td colSpan="5" className="p-12 text-center text-slate font-medium">{t('admin.noAuditLogs')}</td>
- </tr>
- ) : (
- auditLogs
- .filter(log => {
-   if (!searchQuery) return true;
-   const q = searchQuery.toLowerCase();
-   return log.admin?.full_name?.toLowerCase().includes(q) || 
-          log.action?.toLowerCase().includes(q) ||
-          log.entity_type?.toLowerCase().includes(q) ||
-          log.entity_id?.toLowerCase().includes(q);
- })
- .map((log) => {
- const isDelete = log.action === 'DELETE';
- const isCreate = log.action === 'CREATE';
- const isUpdate = log.action === 'UPDATE';
- 
- return (
- <tr key={log.id} className="hover:bg-mist transition-colors">
- <td className="p-4 text-slate font-mono text-[11px]">
- {new Date(log.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
- </td>
- <td className="p-4">
- <div className="text-slate font-medium">{log.admin?.full_name || t('admin.systemAdmin')}</div>
- <div className="text-[10px] text-slate font-mono uppercase">{log.admin?.email || t('admin.automatedAdmin')}</div>
- </td>
- <td className="p-4">
- <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border ${
- isDelete ? 'bg-red-950/20 text-red-500 border-red-900/50' :
- isCreate ? 'bg-emerald-950/20 text-signal-red border-emerald-900/50' :
- 'bg-blue-950/20 text-blue-500 border-blue-900/50'
- }`}>
- {log.action}
- </span>
- </td>
- <td className="p-4">
- <div className="text-slate font-medium">{log.entity_type}</div>
- <div className="text-[10px] text-slate font-mono truncate max-w-[100px]">{log.entity_id}</div>
- </td>
- <td className="p-4">
- <div className="text-slate text-xs italic line-clamp-2 max-w-[200px]">
- {log.details && typeof log.details === 'object' 
- ? JSON.stringify(log.details).substring(0, 100) + '...'
- : t('admin.noExtraData')
- }
- </div>
- </td>
- </tr>
- );
- })
- )}
- </tbody>
- </table>
- </div>
- )
- 
- /* --- TAB: REVIEWS --- */
- ) : activeAdminTab === 'reviews' ? (
+  <div className="space-y-6">
+    {/* Sub-tab Navigation */}
+    <div className="flex border-b border-slate gap-2 overflow-x-auto">
+      <button
+        type="button"
+        onClick={() => setSettingsSubTab('store')}
+        className={`flex items-center gap-2 px-4 py-2.5 font-semibold text-sm border-b-2 transition-all whitespace-nowrap cursor-pointer ${
+          settingsSubTab === 'store'
+            ? 'border-signal-red text-signal-red'
+            : 'border-transparent text-slate hover:text-ink'
+        }`}
+      >
+        <Store className="w-4 h-4" />
+        {t('admin.subtabStoreSettings', 'Winkel & Bezorging')}
+      </button>
+
+      <button
+        type="button"
+        onClick={() => setSettingsSubTab('roles')}
+        className={`flex items-center gap-2 px-4 py-2.5 font-semibold text-sm border-b-2 transition-all whitespace-nowrap cursor-pointer ${
+          settingsSubTab === 'roles'
+            ? 'border-signal-red text-signal-red'
+            : 'border-transparent text-slate hover:text-ink'
+        }`}
+      >
+        <Shield className="w-4 h-4" />
+        {t('admin.subtabUserRoles', 'Gebruikers & Rollen')}
+      </button>
+
+      <button
+        type="button"
+        onClick={() => setSettingsSubTab('audit')}
+        className={`flex items-center gap-2 px-4 py-2.5 font-semibold text-sm border-b-2 transition-all whitespace-nowrap cursor-pointer ${
+          settingsSubTab === 'audit'
+            ? 'border-signal-red text-signal-red'
+            : 'border-transparent text-slate hover:text-ink'
+        }`}
+      >
+        <Activity className="w-4 h-4" />
+        {t('admin.subtabAuditLogs', 'Audit Logs')}
+      </button>
+    </div>
+
+    {/* SUBTAB 1: STORE & DELIVERY SETTINGS */}
+    {settingsSubTab === 'store' && (
+      isSettingsLoading ? (
+        <div className="py-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-slate" /></div>
+      ) : (
+        <form onSubmit={handleSaveStoreSettings} className="space-y-6 max-w-4xl">
+          {/* Delivery & Fees Card */}
+          <div className="bg-paper border border-slate rounded-lg p-6 shadow-sm space-y-5">
+            <div className="flex items-center gap-3 pb-3 border-b border-slate">
+              <Bike className="w-5 h-5 text-signal-red" />
+              <div>
+                <h3 className="font-bold text-ink text-base">{t('admin.secDelivery', 'Bezorgkosten & Drempels')}</h3>
+                <p className="text-xs text-slate">{t('admin.descDeliveryFeeEnabled', 'Schakel uit om direct gratis bezorging voor alle klanten te activeren.')}</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {/* Delivery Fee Toggle */}
+              <div className="flex items-center justify-between p-4 bg-mist rounded-md border border-slate/50">
+                <div>
+                  <span className="font-semibold text-sm text-ink block">{t('admin.lblDeliveryFeeEnabled', 'Bezorgkosten actief')}</span>
+                  <span className="text-xs text-slate">{t('admin.descDeliveryFeeEnabled')}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setStoreSettings(prev => ({ ...prev, delivery_fee_enabled: !prev.delivery_fee_enabled }))}
+                  className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors duration-200 cursor-pointer ${
+                    storeSettings.delivery_fee_enabled ? 'bg-signal-red' : 'bg-slate/40'
+                  }`}
+                >
+                  <div
+                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${
+                      storeSettings.delivery_fee_enabled ? 'translate-x-6' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Delivery Fee Amount & Free Threshold */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate uppercase tracking-wider mb-1.5">
+                    {t('admin.lblDeliveryFeeAmount', 'Standaard bezorgkosten (€)')}
+                  </label>
+                  <input
+                    type="number"
+                    step="0.05"
+                    min="0"
+                    disabled={!storeSettings.delivery_fee_enabled}
+                    value={storeSettings.delivery_fee_amount}
+                    onChange={(e) => setStoreSettings(prev => ({ ...prev, delivery_fee_amount: parseFloat(e.target.value) || 0 }))}
+                    className="w-full bg-paper border border-slate text-sm text-ink rounded-md px-3 py-2 font-mono disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:border-ink"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate uppercase tracking-wider mb-1.5">
+                    {t('admin.lblFreeDeliveryThreshold', 'Gratis bezorging vanaf (€)')}
+                  </label>
+                  <input
+                    type="number"
+                    step="1"
+                    min="0"
+                    value={storeSettings.free_delivery_threshold}
+                    onChange={(e) => setStoreSettings(prev => ({ ...prev, free_delivery_threshold: parseFloat(e.target.value) || 0 }))}
+                    className="w-full bg-paper border border-slate text-sm text-ink rounded-md px-3 py-2 font-mono focus:outline-none focus:border-ink"
+                  />
+                  <p className="text-[11px] text-slate mt-1">{t('admin.descFreeDeliveryThreshold', '0 = uitgeschakeld')}</p>
+                </div>
+              </div>
+
+              {/* Min Order Amount */}
+              <div>
+                <label className="block text-xs font-bold text-slate uppercase tracking-wider mb-1.5">
+                  {t('admin.lblMinOrderAmount', 'Minimum bestelbedrag (€)')}
+                </label>
+                <div className="max-w-xs">
+                  <input
+                    type="number"
+                    step="1"
+                    min="0"
+                    value={storeSettings.min_order_amount}
+                    onChange={(e) => setStoreSettings(prev => ({ ...prev, min_order_amount: parseFloat(e.target.value) || 0 }))}
+                    className="w-full bg-paper border border-slate text-sm text-ink rounded-md px-3 py-2 font-mono focus:outline-none focus:border-ink"
+                  />
+                  <p className="text-[11px] text-slate mt-1">{t('admin.descMinOrderAmount', '0 = geen minimum vereist.')}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Store Status Card */}
+          <div className="bg-paper border border-slate rounded-lg p-6 shadow-sm space-y-5">
+            <div className="flex items-center gap-3 pb-3 border-b border-slate">
+              <Store className="w-5 h-5 text-signal-red" />
+              <div>
+                <h3 className="font-bold text-ink text-base">{t('admin.secStoreStatus', 'Winkelstatus & Sluiting')}</h3>
+                <p className="text-xs text-slate">{t('admin.descStoreOpen', 'Schakel uit om tijdelijk geen nieuwe bestellingen meer aan te nemen.')}</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-mist rounded-md border border-slate/50">
+                <div>
+                  <span className="font-semibold text-sm text-ink block">{t('admin.lblStoreOpen', 'Winkel is geopend')}</span>
+                  <span className="text-xs text-slate">
+                    {storeSettings.is_store_open ? 'Winkel accepteert online bestellingen' : 'Winkel is handmatig gesloten voor bestellingen'}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setStoreSettings(prev => ({ ...prev, is_store_open: !prev.is_store_open }))}
+                  className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors duration-200 cursor-pointer ${
+                    storeSettings.is_store_open ? 'bg-emerald-600' : 'bg-signal-red'
+                  }`}
+                >
+                  <div
+                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${
+                      storeSettings.is_store_open ? 'translate-x-6' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {!storeSettings.is_store_open && (
+                <div>
+                  <label className="block text-xs font-bold text-slate uppercase tracking-wider mb-1.5">
+                    {t('admin.lblClosedMessage', 'Bericht bij gesloten winkel')}
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={storeSettings.store_closed_message || ''}
+                    onChange={(e) => setStoreSettings(prev => ({ ...prev, store_closed_message: e.target.value }))}
+                    placeholder={t('admin.plhClosedMessage', 'bijv. Wegens extreme drukte nemen we tijdelijk geen nieuwe bestellingen aan.')}
+                    className="w-full bg-paper border border-slate text-sm text-ink rounded-md p-3 font-sans focus:outline-none focus:border-ink resize-none"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Announcement Banner Card */}
+          <div className="bg-paper border border-slate rounded-lg p-6 shadow-sm space-y-4">
+            <div className="flex items-center gap-3 pb-3 border-b border-slate">
+              <Flag className="w-5 h-5 text-signal-red" />
+              <div>
+                <h3 className="font-bold text-ink text-base">{t('admin.secAnnouncement', 'Aankondigingsbanner')}</h3>
+                <p className="text-xs text-slate">Optioneel bericht dat bovenaan de website getoond kan worden aan alle bezoekers.</p>
+              </div>
+            </div>
+
+            <div>
+              <input
+                type="text"
+                value={storeSettings.announcement_banner || ''}
+                onChange={(e) => setStoreSettings(prev => ({ ...prev, announcement_banner: e.target.value }))}
+                placeholder={t('admin.plhBannerText', 'bijv. Vandaag gratis bezorging op alle bestellingen!')}
+                className="w-full bg-paper border border-slate text-sm text-ink rounded-md px-3 py-2.5 font-sans focus:outline-none focus:border-ink"
+              />
+            </div>
+          </div>
+
+          {/* Save Button */}
+          <div className="flex justify-end pt-2">
+            <button
+              type="submit"
+              disabled={isSavingSettings}
+              className="bg-signal-red hover:bg-ink text-white px-6 py-2.5 rounded-md text-sm font-semibold transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50 shadow-sm"
+            >
+              {isSavingSettings && <Loader2 className="w-4 h-4 animate-spin" />}
+              <Check className="w-4 h-4" />
+              {t('admin.btnSaveSettings', 'Instellingen Opslaan')}
+            </button>
+          </div>
+        </form>
+      )
+    )}
+
+    {/* SUBTAB 2: USER ROLES MANAGEMENT */}
+    {settingsSubTab === 'roles' && (
+      isUsersLoading ? (
+        <div className="py-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-slate" /></div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse text-sm">
+            <thead>
+              <tr className="bg-paper text-slate border-b border-slate font-mono text-xs uppercase tracking-wider">
+                <th className="p-4 font-semibold">{t('admin.colUser')}</th>
+                <th className="p-4 font-semibold">{t('admin.colEmail')}</th>
+                <th className="p-4 font-semibold">{t('admin.colRole')}</th>
+                <th className="p-4 font-semibold">{t('admin.colRegistered')}</th>
+                <th className="p-4 font-semibold text-right">{t('admin.colActions')}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-stone-800/50">
+              {users
+                .filter(u => {
+                  if (!searchQuery) return true;
+                  const q = searchQuery.toLowerCase();
+                  return u.full_name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q) || u.user_id?.toLowerCase().includes(q);
+                })
+                .map((u) => {
+                  const isCurrent = currentUser?.user_id === u.user_id;
+                  const isAdmin = u.role === 'admin';
+
+                  return (
+                    <tr key={u.user_id} className="hover:bg-mist transition-colors">
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-mist border border-slate flex items-center justify-center font-bold text-xs text-ink uppercase">
+                            {u.full_name ? u.full_name.charAt(0) : u.email?.charAt(0) || '?'}
+                          </div>
+                          <div>
+                            <div className="font-semibold text-ink flex items-center gap-1.5">
+                              {u.full_name || 'Geen naam'}
+                              {isCurrent && (
+                                <span className="text-[10px] bg-slate/20 text-slate px-1.5 py-0.5 rounded font-mono">
+                                  {t('admin.currentUserBadge', 'U')}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[11px] text-slate font-mono">{u.phone || 'Geen telefoon'}</div>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="p-4 text-slate font-mono text-xs">
+                        {u.email}
+                      </td>
+
+                      <td className="p-4">
+                        {isAdmin ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/30">
+                            <Shield className="w-3 h-3" />
+                            {t('admin.roleAdmin', 'Beheerder')}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-mist text-slate border border-slate">
+                            {t('admin.roleCustomer', 'Klant')}
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="p-4 text-slate font-mono text-xs">
+                        {u.created_at ? new Date(u.created_at).toLocaleDateString() : '-'}
+                      </td>
+
+                      <td className="p-4 text-right">
+                        {isCurrent ? (
+                          <span className="text-xs text-slate italic" title={t('admin.cantDemoteSelf')}>
+                            {t('admin.cantDemoteSelf', 'Eigen rol')}
+                          </span>
+                        ) : isAdmin ? (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenRoleModal(u, 'user')}
+                            className="bg-red-500/10 hover:bg-signal-red hover:text-white text-signal-red border border-red-500/30 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors inline-flex items-center gap-1 cursor-pointer"
+                          >
+                            <Shield className="w-3.5 h-3.5" />
+                            {t('admin.btnDemoteCustomer', 'Verwijder Beheerder')}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenRoleModal(u, 'admin')}
+                            className="bg-emerald-500/10 hover:bg-emerald-600 hover:text-white text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors inline-flex items-center gap-1 cursor-pointer"
+                          >
+                            <Shield className="w-3.5 h-3.5" />
+                            {t('admin.btnPromoteAdmin', 'Maak Beheerder')}
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+            </tbody>
+          </table>
+        </div>
+      )
+    )}
+
+    {/* SUBTAB 3: AUDIT LOGS */}
+    {settingsSubTab === 'audit' && (
+      isAuditLogsLoading ? (
+        <div className="py-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-slate" /></div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse text-sm">
+            <thead>
+              <tr className="bg-paper text-slate border-b border-slate font-mono text-xs uppercase tracking-wider">
+                <th className="p-4 font-semibold">{t('admin.colTimestamp')}</th>
+                <th className="p-4 font-semibold">{t('admin.colAdmin')}</th>
+                <th className="p-4 font-semibold">{t('admin.colAction')}</th>
+                <th className="p-4 font-semibold">{t('admin.colEntity')}</th>
+                <th className="p-4 font-semibold">{t('admin.colDetails')}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-stone-800/50">
+              {auditLogs.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="p-12 text-center text-slate font-medium">{t('admin.noAuditLogs')}</td>
+                </tr>
+              ) : (
+                auditLogs
+                  .filter(log => {
+                    if (!searchQuery) return true;
+                    const q = searchQuery.toLowerCase();
+                    return log.admin?.full_name?.toLowerCase().includes(q) || 
+                           log.action?.toLowerCase().includes(q) ||
+                           log.entity_type?.toLowerCase().includes(q) ||
+                           log.entity_id?.toLowerCase().includes(q);
+                  })
+                  .map((log) => {
+                    const isDelete = log.action === 'DELETE';
+                    const isCreate = log.action === 'CREATE';
+                    const isUpdate = log.action === 'UPDATE';
+                    
+                    return (
+                      <tr key={log.id} className="hover:bg-mist transition-colors">
+                        <td className="p-4 text-slate font-mono text-[11px]">
+                          {new Date(log.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                        </td>
+                        <td className="p-4">
+                          <div className="text-slate font-medium">{log.admin?.full_name || t('admin.systemAdmin')}</div>
+                          <div className="text-[10px] text-slate font-mono uppercase">{log.admin?.email || t('admin.automatedAdmin')}</div>
+                        </td>
+                        <td className="p-4">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border ${
+                            isDelete ? 'bg-red-950/20 text-red-500 border-red-900/50' :
+                            isCreate ? 'bg-emerald-950/20 text-signal-red border-emerald-900/50' :
+                            'bg-blue-950/20 text-blue-500 border-blue-900/50'
+                          }`}>
+                            {log.action}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <div className="text-slate font-medium">{log.entity_type}</div>
+                          <div className="text-[10px] text-slate font-mono truncate max-w-[100px]">{log.entity_id}</div>
+                        </td>
+                        <td className="p-4">
+                          <div className="text-slate text-xs italic line-clamp-2 max-w-[200px]">
+                            {log.details && typeof log.details === 'object' 
+                              ? JSON.stringify(log.details).substring(0, 100) + '...'
+                              : t('admin.noExtraData')
+                            }
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+              )}
+            </tbody>
+          </table>
+        </div>
+      )
+    )}
+  </div>
+
+  /* --- TAB: REVIEWS --- */
+  ) : activeAdminTab === 'reviews' ? (
     isReviewsLoading ? (
       <div className="py-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-slate" /></div>
     ) : (
@@ -2276,6 +2683,69 @@ const AdminDashboard = () => {
           >
             {isDecliningRes && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
             Reservering Weigeren
+          </button>
+        </div>
+      </div>
+    </div>
+  )}
+
+  {/* Role Confirmation Modal */}
+  {roleModalUser && (
+    <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-paper border border-slate rounded-lg max-w-md w-full p-6 shadow-2xl space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate">
+          <div className="flex items-center gap-2 text-ink font-bold text-base">
+            <Shield className={`w-5 h-5 ${targetRole === 'admin' ? 'text-purple-500' : 'text-slate'}`} />
+            <span>
+              {targetRole === 'admin' 
+                ? t('admin.confirmPromoteTitle', 'Beheerdersrol Toekennen') 
+                : t('admin.confirmDemoteTitle', 'Beheerdersrol Intrekken')}
+            </span>
+          </div>
+          <button 
+            type="button"
+            onClick={() => { setRoleModalUser(null); setTargetRole(null); }}
+            className="text-slate hover:text-ink transition-colors cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <p className="text-sm text-slate">
+          {targetRole === 'admin' 
+            ? t('admin.confirmPromoteDesc', { 
+                name: roleModalUser.full_name || roleModalUser.email, 
+                email: roleModalUser.email 
+              }) 
+            : t('admin.confirmDemoteDesc', { 
+                name: roleModalUser.full_name || roleModalUser.email 
+              })}
+        </p>
+
+        <div className="bg-mist p-3 rounded-md text-xs font-mono space-y-1">
+          <div className="text-ink font-semibold">{roleModalUser.full_name || 'Geen naam'}</div>
+          <div className="text-slate">{roleModalUser.email}</div>
+          <div className="text-slate">ID: {roleModalUser.user_id}</div>
+        </div>
+
+        <div className="flex justify-end gap-3 pt-3 border-t border-slate">
+          <button
+            type="button"
+            onClick={() => { setRoleModalUser(null); setTargetRole(null); }}
+            className="px-4 py-2 text-xs font-bold text-slate hover:text-ink transition-colors cursor-pointer"
+          >
+            {t('common.cancel', 'Annuleren')}
+          </button>
+          <button
+            type="button"
+            onClick={handleConfirmRoleChange}
+            disabled={isUpdatingRole}
+            className={`px-4 py-2 text-white rounded-md text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50 ${
+              targetRole === 'admin' ? 'bg-purple-600 hover:bg-purple-700' : 'bg-signal-red hover:bg-red-700'
+            }`}
+          >
+            {isUpdatingRole && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+            {targetRole === 'admin' ? t('admin.btnPromoteAdmin', 'Maak Beheerder') : t('admin.btnDemoteCustomer', 'Verwijder Beheerder')}
           </button>
         </div>
       </div>

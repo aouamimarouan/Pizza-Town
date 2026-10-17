@@ -29,8 +29,8 @@ const LocationView = () => {
 
               <div className="flex flex-col">
                 <span className="text-xs font-bold text-slate uppercase tracking-widest mb-1">Email</span>
-                <a href="mailto:contact@pizzatown.be" className="text-lg hover:text-signal-red transition-colors">
-                  contact@pizzatown.be
+                <a href="mailto:pizzatownmeise@gmail.com" className="text-lg hover:text-signal-red transition-colors">
+                  pizzatownmeise@gmail.com
                 </a>
               </div>
 
